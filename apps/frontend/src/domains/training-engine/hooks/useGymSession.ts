@@ -20,6 +20,7 @@ import type {
   TutorialBlock,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
 } from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
@@ -28,6 +29,7 @@ import {
   enrollInGoal,
   planTodayRep,
   fetchGraduation,
+  fetchMonthInReview,
   graduate,
 } from '../api/training-engine.api';
 
@@ -47,8 +49,21 @@ export interface GymSession {
   /** Day-30 fork status when due (and not yet graduated); null otherwise. The
    *  gym SURFACES this without blocking the rep (spec §7). */
   graduation: GraduationSummary | null;
+  /** The day-30 month-in-review recap (Treadmill epic Story 6), fetched only
+   *  when graduation is due; null otherwise. The journey screen shown alongside
+   *  the fork. */
+  monthInReview: MonthInReview | null;
+  /** Attendance over the window (Treadmill epic Story 7): "showed up X of N
+   *  days". Kept regardless of graduation status so the gym shows it every day
+   *  (graduation is null until day 30; this isn't). null if the summary lacked
+   *  the count. */
+  attendance: { daysPracticed: number; windowDays: number } | null;
+  /** The current rep shape (Story 5). 'floor' = the short 3-min session. */
+  repMode: 'full' | 'floor';
   /** status 'placement' → enroll with a chosen starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
+  /** Re-plan today's rep as the short 'floor' session (one 3-min brick). */
+  chooseFloor: () => void;
   /** Walk through a graduation door, then re-load (re-plan / re-place). */
   chooseDoor: (door: GraduationDoor) => void;
   /** Re-plan today's rep (e.g. after finishing a session). */
@@ -64,23 +79,61 @@ export function useGymSession(
   const [bricks, setBricks] = useState<TutorialBlock[]>([]);
   const [enrollment, setEnrollment] = useState<GoalEnrollment | null>(null);
   const [graduation, setGraduation] = useState<GraduationSummary | null>(null);
+  const [monthInReview, setMonthInReview] = useState<MonthInReview | null>(
+    null,
+  );
+  const [attendance, setAttendance] = useState<{
+    daysPracticed: number;
+    windowDays: number;
+  } | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [repMode, setRepMode] = useState<'full' | 'floor'>('full');
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
   /** Plan + mint today's rep for an enrollment and go 'ready'. Also checks the
    *  day-30 fork (surfaced alongside the rep, never blocking it). */
-  const planFor = useCallback(async (active: GoalEnrollment) => {
-    const { slug: repSlug, bricks: repBricks } = await planTodayRep(active.id);
+  const planFor = useCallback(
+    async (active: GoalEnrollment, mode: 'full' | 'floor' = 'full') => {
+    setRepMode(mode);
+    const { slug: repSlug, bricks: repBricks } = await planTodayRep(
+      active.id,
+      mode,
+    );
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
     // Best-effort: a graduation-check failure must not block the rep.
     try {
       const grad = await fetchGraduation(active.id);
-      setGraduation(grad.isDue && !grad.graduated ? grad : null);
+      const due = grad.isDue && !grad.graduated;
+      setGraduation(due ? grad : null);
+      // Attendance rides the same summary but is shown EVERY day (Story 7), not
+      // only at graduation — so keep it regardless of isDue.
+      setAttendance(
+        typeof grad.daysPracticedInWindow === 'number' &&
+          typeof grad.windowDays === 'number'
+          ? {
+              daysPracticed: grad.daysPracticedInWindow,
+              windowDays: grad.windowDays,
+            }
+          : null,
+      );
+      // The month-in-review recap (Story 6) only matters at graduation — fetch
+      // it lazily when due. Best-effort: a recap failure must not block the rep.
+      if (due) {
+        try {
+          setMonthInReview(await fetchMonthInReview(active.id));
+        } catch {
+          setMonthInReview(null);
+        }
+      } else {
+        setMonthInReview(null);
+      }
     } catch {
       setGraduation(null);
+      setAttendance(null);
+      setMonthInReview(null);
     }
     setStatus('ready');
   }, []);
@@ -127,6 +180,24 @@ export function useGymSession(
     [goalSlug, planFor],
   );
 
+  /** Re-plan the active enrollment's rep as the short 'floor' session (Story 5).
+   *  Available once an enrollment is ready; a no-op if there's none yet. */
+  const chooseFloor = useCallback(async () => {
+    const active = enrollment;
+    if (!active || runningRef.current) return;
+    runningRef.current = true;
+    setStatus('loading');
+    setError(null);
+    try {
+      await planFor(active, 'floor');
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+      setStatus('error');
+    } finally {
+      runningRef.current = false;
+    }
+  }, [enrollment, planFor]);
+
   const chooseDoor = useCallback(
     async (door: GraduationDoor) => {
       const active = enrollment;
@@ -140,6 +211,7 @@ export function useGymSession(
         // whether the re-load below succeeds (so a failed re-plan can't leave a
         // stuck graduation banner).
         setGraduation(null);
+        setMonthInReview(null);
         // Release before run() re-acquires its own lock. Re-load: go_deeper
         // continues the same enrollment (re-plans with the raised target);
         // lock_it_in/switch_lanes graduated it, so run() finds no active
@@ -172,7 +244,11 @@ export function useGymSession(
     enrollment,
     error,
     graduation,
+    monthInReview,
+    attendance,
+    repMode,
     placeAndStart,
+    chooseFloor,
     chooseDoor,
     refresh: run,
   };

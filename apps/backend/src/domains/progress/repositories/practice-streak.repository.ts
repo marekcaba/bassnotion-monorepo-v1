@@ -154,4 +154,67 @@ export class PracticeStreakRepository {
       throw error;
     }
   }
+
+  /**
+   * Count the distinct calendar days the user practised on/after `sinceDate`
+   * (inclusive, YYYY-MM-DD). The first-ever READ on practice_days — powers the
+   * "showed up X of N days" number, the missed-day check-in, and the week-3 dip.
+   * Uses a head COUNT (no rows transferred); the (user_id, practiced_on DESC)
+   * index serves it.
+   */
+  async countPracticeDaysSince(
+    userId: string,
+    sinceDate: string,
+  ): Promise<number> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { count, error } = await this.supabaseService
+      .getClient()
+      .from('practice_days')
+      .select('practiced_on', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('practiced_on', sinceDate);
+
+    if (error) {
+      logger.error('Failed to count practice days', error, {
+        userId,
+        sinceDate,
+        correlationId,
+      });
+      throw error;
+    }
+    return count ?? 0;
+  }
+
+  /**
+   * The distinct calendar days the user practised on/after `sinceDate`
+   * (YYYY-MM-DD, ascending). Powers the month-in-review practice PATTERN (the
+   * 30-day calendar + "strongest weekday"); distinct from the head-count above.
+   */
+  async listPracticeDaysSince(
+    userId: string,
+    sinceDate: string,
+  ): Promise<string[]> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('practice_days')
+      .select('practiced_on')
+      .eq('user_id', userId)
+      .gte('practiced_on', sinceDate)
+      .order('practiced_on', { ascending: true });
+
+    if (error) {
+      logger.error('Failed to list practice days', error, {
+        userId,
+        sinceDate,
+        correlationId,
+      });
+      throw error;
+    }
+    return (data ?? []).map((r) => (r as { practiced_on: string }).practiced_on);
+  }
 }

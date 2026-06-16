@@ -58,8 +58,26 @@ export function clampKey(semitones: number): number {
 // multiplier): after a too_hard streak or missed days, the bracket tightens so
 // the climb eases without a second code path.
 // ---------------------------------------------------------------------------
-/** Base tempo notch (BPM) between adjacent ladder levels at scalar 1.0. */
-export const SPEED_BASE_NOTCH_BPM = 8;
+/** Default tempo notch (BPM) between adjacent ladder levels at scalar 1.0, used
+ *  when a goal doesn't author its own `target.tempoNotchBpm`. The admin can tune
+ *  it per goal — see GoalTarget.tempoNotchBpm. */
+export const DEFAULT_TEMPO_NOTCH_BPM = 8;
+/** @deprecated alias kept for callers that referenced the old name. */
+export const SPEED_BASE_NOTCH_BPM = DEFAULT_TEMPO_NOTCH_BPM;
+
+/** Reasonable bounds for an authored notch (BPM), so a bad value can't produce
+ *  a degenerate or absurd bracket. */
+export const TEMPO_NOTCH_MIN = 1;
+export const TEMPO_NOTCH_MAX = 30;
+
+/** Resolve the per-goal notch, clamped, falling back to the default. */
+function resolveNotch(tempoNotchBpm: number | undefined): number {
+  const n =
+    typeof tempoNotchBpm === 'number' && Number.isFinite(tempoNotchBpm)
+      ? tempoNotchBpm
+      : DEFAULT_TEMPO_NOTCH_BPM;
+  return Math.max(TEMPO_NOTCH_MIN, Math.min(TEMPO_NOTCH_MAX, Math.round(n)));
+}
 
 /** Resolve the current target tempo from climb position, falling back safely. */
 function currentTempoBpm(state: ClimbState): number {
@@ -68,14 +86,19 @@ function currentTempoBpm(state: ClimbState): number {
   return clampTempo(bpm);
 }
 
-/** The per-level tempo for SPEED, bracketing today's spot. */
-function speedTempoForLevel(state: ClimbState, level: LadderLevel): number {
+/** The per-level tempo for SPEED, bracketing today's spot. `baseNotch` is the
+ *  admin-authored step (clamped); the back-off scalar still tightens it. */
+function speedTempoForLevel(
+  state: ClimbState,
+  level: LadderLevel,
+  baseNotch: number,
+): number {
   const today = currentTempoBpm(state);
   const scalar =
     Number.isFinite(state.difficultyScalar) && state.difficultyScalar > 0
       ? state.difficultyScalar
       : 1;
-  const notch = Math.max(1, Math.round(SPEED_BASE_NOTCH_BPM * scalar));
+  const notch = Math.max(1, Math.round(baseNotch * scalar));
   switch (level) {
     case 'L1':
       return clampTempo(today - notch);
@@ -165,6 +188,9 @@ function materializeBrick(
     order: number;
     tempoBpm?: number;
     keyOverride?: number;
+    /** Brick timebox in minutes (default 2, the 2+2+2 shape). The floor rep
+     *  passes 3 (one longer brick). Clamped to the 1–3 bounds. */
+    timeboxMinutes?: number;
   },
 ): TutorialBlock {
   const cfg = { ...(source.config as Record<string, unknown>) };
@@ -177,8 +203,9 @@ function materializeBrick(
   if (typeof opts.keyOverride === 'number') {
     cfg.keyOverride = clampKey(opts.keyOverride);
   }
-  // The brick's timebox: 2 minutes per the 2+2+2 shape (clamped to bounds).
-  cfg.timeboxMinutes = clampMinutes(2);
+  // The brick's timebox: 2 min for a 2+2+2 full rep; the caller can override
+  // (the 3-min floor brick). Clamped to bounds.
+  cfg.timeboxMinutes = clampMinutes(opts.timeboxMinutes ?? 2);
 
   // Interpolate the tempo into a task instruction's {tempo} token, if present.
   // Harmless for any other block type (no token → unchanged).
@@ -215,14 +242,32 @@ function blockById(
 // Phase 0 ships SPEED; the others throw a clear "not yet implemented" so a
 // mis-typed goal fails loudly in tests rather than silently emitting nonsense.
 // ---------------------------------------------------------------------------
+/** The floor rep's single brick is this long (minutes) — the "3-min version". */
+export const FLOOR_BRICK_MINUTES = 3;
+
 function generateSpeedRep(
   state: ClimbState,
   content: BlockPool,
   history: RepResult[],
+  mode: 'full' | 'floor',
+  baseNotch: number,
 ): TutorialBlock[] {
   const focal = focalBlock(content);
   if (!focal) {
     throw new Error('generateRep(speed): BlockPool.blocks is empty');
+  }
+
+  // FLOOR (Story 5): the short "wrecked after work" session — ONE brick at
+  // today's tempo (L2) for 3 min, "just loop one groove". No ladder, no stretch.
+  if (mode === 'floor') {
+    return [
+      materializeBrick(focal, {
+        level: 'L2',
+        order: 0,
+        tempoBpm: speedTempoForLevel(state, 'L2', baseNotch),
+        timeboxMinutes: FLOOR_BRICK_MINUTES,
+      }),
+    ];
   }
 
   // L1 = spaced review of a prior conquered block once wins exist; else an
@@ -231,13 +276,14 @@ function generateSpeedRep(
   const l1Source = blockById(content, reviewId) ?? focal;
 
   // The daily rep is 2+2+2 = three 2-minute levels = a 6-minute rep:
-  // L1 (easier/review) → L2 (today) → L3 (a notch harder), ONE brick each.
+  // L1 (easier/review) → L2 (today) → L3 (a notch harder), ONE brick each. The
+  // notch (the bracket width) is the admin-authored per-goal step.
   const bricks: TutorialBlock[] = [];
   let order = 0;
   const levels: LadderLevel[] = ['L1', 'L2', 'L3'];
   for (const level of levels) {
     const source = level === 'L1' ? l1Source : focal;
-    const tempoBpm = speedTempoForLevel(state, level);
+    const tempoBpm = speedTempoForLevel(state, level, baseNotch);
     bricks.push(materializeBrick(source, { level, order, tempoBpm }));
     order++;
   }
@@ -254,9 +300,16 @@ export function generateRep(
   history: RepResult[],
   options: GenerateRepOptions,
 ): TutorialBlock[] {
+  const baseNotch = resolveNotch(options.tempoNotchBpm);
   switch (options.goalType) {
     case 'speed':
-      return generateSpeedRep(state, content, history);
+      return generateSpeedRep(
+        state,
+        content,
+        history,
+        options.mode ?? 'full',
+        baseNotch,
+      );
     case 'knowledge':
     case 'vocabulary':
     case 'feel':

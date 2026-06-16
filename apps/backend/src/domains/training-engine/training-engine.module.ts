@@ -8,6 +8,7 @@ import { AdminTrainingGoalsController } from './admin-training-goals.controller.
 import { AdminTrainingGoalsService } from './admin-training-goals.service.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
+import { ProgressModule } from '../progress/progress.module.js';
 
 /**
  * Bass Gym Training Engine — backend domain.
@@ -17,9 +18,15 @@ import { AuthModule } from '../user/auth/auth.module.js';
  * the admin authoring CRUD for `training_goals`. The pure climb planner
  * (`generateRep`) lives in `@bassnotion/contracts`. AuthModule is imported for
  * the AdminGuard on the authoring controller.
+ *
+ * ProgressModule is imported for the StudentState assembler (Treadmill epic,
+ * Story 1): it exports PracticeService + ProgressService, the shared-service
+ * seam through which the engine reads attendance/streak/lifetime-mastery WITHOUT
+ * a cross-domain table query (the product boundary — these become HTTP calls if
+ * Practice Bridge extracts).
  */
 @Module({
-  imports: [ConfigModule, SupabaseModule, AuthModule],
+  imports: [ConfigModule, SupabaseModule, AuthModule, ProgressModule],
   controllers: [TrainingEngineController, AdminTrainingGoalsController],
   providers: [
     TrainingEngineService,

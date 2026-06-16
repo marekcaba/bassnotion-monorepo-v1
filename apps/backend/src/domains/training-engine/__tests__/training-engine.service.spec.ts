@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   ForbiddenException,
   NotFoundException,
@@ -8,9 +8,13 @@ import {
 import {
   TrainingEngineService,
   buildGraduationSummary,
+  buildMonthInReview,
+  deriveStudentSignals,
 } from '../training-engine.service.js';
 import type { TrainingEngineRepository } from '../repositories/training-engine.repository.js';
 import type { RequestContextService } from '../../../shared/services/request-context.service.js';
+import type { PracticeService } from '../../progress/practice.service.js';
+import type { ProgressService } from '../../progress/progress.service.js';
 import type {
   GoalEnrollment,
   RepResult,
@@ -140,6 +144,7 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
         makeEnrollment({ ...(patch as Partial<GoalEnrollment>) }),
     ),
     updateClimbPosition: vi.fn(async () => undefined),
+    patchClimbState: vi.fn(async () => undefined),
     ...repoOverrides,
   } as unknown as TrainingEngineRepository;
 
@@ -153,8 +158,32 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
     getCorrelationId: () => 'corr-1',
   } as unknown as RequestContextService;
 
-  const service = new TrainingEngineService(repo, requestContext);
-  return { service, repo };
+  // Shared-service seam (Story 1): the StudentState assembler reads attendance/
+  // streak/mastery through these. Safe defaults so existing tests are unaffected.
+  const practiceService = {
+    getStreak: vi.fn(async () => ({
+      current: 3,
+      lastPracticedOn: '2026-06-15',
+      isActiveToday: false,
+      ceiling: 1,
+      freezeTokens: 2,
+      freezeUsed: false,
+      milestoneReached: null,
+    })),
+    countPracticeDaysInWindow: vi.fn(async () => 5),
+  } as unknown as PracticeService;
+
+  const progressService = {
+    getLifetimeMasteryByBlock: vi.fn(async () => ({})),
+  } as unknown as ProgressService;
+
+  const service = new TrainingEngineService(
+    repo,
+    requestContext,
+    practiceService,
+    progressService,
+  );
+  return { service, repo, practiceService, progressService };
 }
 
 describe('TrainingEngineService.recordRepResult', () => {
@@ -287,7 +316,14 @@ describe('TrainingEngineService.getTodayRep', () => {
   });
 
   it('brackets the climb-state tempo and interpolates it into the task instruction', async () => {
-    const { service } = makeService();
+    // Pin lastRepDate to today so the Story-2 advance is a no-op here — this test
+    // isolates the BRACKETING from the climb position (advance is covered below).
+    const today = new Date().toISOString().slice(0, 10);
+    const { service } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
+      ),
+    });
     const { bricks } = await service.getTodayRep(USER, ENROLLMENT);
     const instr = (b: { config: unknown }) =>
       (b.config as { instruction?: string }).instruction;
@@ -528,6 +564,20 @@ describe('TrainingEngineService.getGraduation', () => {
     const s = await service.getGraduation(USER, ENROLLMENT);
     expect(s.startTempoBpm).toBe(75);
     expect(s.currentTempoBpm).toBe(99);
+    // Story 7: attendance rides the summary, read via the shared PracticeService.
+    expect(s.daysPracticedInWindow).toBe(5);
+    expect(s.windowDays).toBe(30);
+  });
+
+  it('omits the day count if the attendance read fails (best-effort)', async () => {
+    const { service, practiceService } = makeService();
+    (
+      practiceService.countPracticeDaysInWindow as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(new Error('attendance read down'));
+    const s = await service.getGraduation(USER, ENROLLMENT);
+    expect(s.daysPracticedInWindow).toBeUndefined();
+    // The rest of the summary is intact.
+    expect(s.goalEnrollmentId).toBe(ENROLLMENT);
   });
 
   it('throws NotFound for a missing enrollment', async () => {
@@ -614,5 +664,185 @@ describe('TrainingEngineService.walkThroughDoor', () => {
     await expect(
       service.walkThroughDoor(USER, ENROLLMENT, 'lock_it_in'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+// ── Story 1: StudentState ────────────────────────────────────────────────────
+
+describe('deriveStudentSignals (pure)', () => {
+  const climb = makeClimbState() as never;
+
+  it('counts the leading run of conquered reps (newest-first)', () => {
+    const history = [
+      makeRepResult({ id: 'r3', result: 'conquered', tempoBpm: 100 }),
+      makeRepResult({ id: 'r2', result: 'conquered', tempoBpm: 100 }),
+      makeRepResult({ id: 'r1', result: 'released', tempoBpm: 90 }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.consecutiveWins).toBe(2);
+    // both leading wins share the newest tempo → plateau of 2
+    expect(s.plateauRepCount).toBe(2);
+  });
+
+  it('breaks the win run on the first non-conquered rep', () => {
+    const history = [
+      makeRepResult({ id: 'r2', result: 'too_hard' }),
+      makeRepResult({ id: 'r1', result: 'conquered' }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.consecutiveWins).toBe(0);
+  });
+
+  it('counts too_hard in the recent window and surfaces days-since-last-conquered', () => {
+    const history = [
+      makeRepResult({ id: 'r2', result: 'too_hard' }),
+      makeRepResult({
+        id: 'r1',
+        result: 'conquered',
+        completedAt: '2026-06-08T00:00:00.000Z',
+      }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.recentTooHardCount).toBe(1);
+    expect(s.lastNOutcomes).toEqual(['too_hard', 'conquered']);
+    expect(s.daysSinceLastConquered).toBe(4); // 06-08 → 06-12
+  });
+
+  it('counts "released" toward the back-off (Story 4 — the real UI struggle signal)', () => {
+    // The "too hard — lay it anyway" valve records 'released', not 'too_hard'.
+    const history = [
+      makeRepResult({ id: 'r2', result: 'released' }),
+      makeRepResult({ id: 'r1', result: 'released' }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.recentTooHardCount).toBe(2); // both releases counted → back-off fires
+  });
+
+  it('returns null days-since-conquered when nothing was ever conquered', () => {
+    const history = [makeRepResult({ result: 'released' })];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.daysSinceLastConquered).toBeNull();
+    expect(s.consecutiveWins).toBe(0);
+  });
+});
+
+describe('TrainingEngineService.assembleStudentState', () => {
+  it('assembles a serializable whole-student snapshot from repo + shared services', async () => {
+    const { service, practiceService, progressService } = makeService();
+    const ss = await service.assembleStudentState(USER, ENROLLMENT);
+
+    // goal view from the snapshot/enrollment
+    expect(ss.goal.enrollmentId).toBe(ENROLLMENT);
+    expect(ss.goal.type).toBe('speed');
+    expect(ss.goal.target).toEqual({ tempoBpm: 120 });
+    // climb passed through verbatim
+    expect(ss.climb.currentPosition).toEqual({ tempoBpm: 90 });
+    // attendance sourced via PracticeService (boundary), field is `ceiling`
+    expect(ss.attendance.streakDays).toBe(3);
+    expect(ss.attendance.ceiling).toBe(1);
+    expect(ss.attendance.daysPracticedInWindow).toBe(5);
+    expect(ss.attendance.windowDays).toBe(30);
+    // derived signals present
+    expect(ss.derived.consecutiveWins).toBeGreaterThanOrEqual(0);
+    // the shared services WERE the path (no direct cross-domain query)
+    expect(practiceService.getStreak).toHaveBeenCalledWith(USER);
+    expect(progressService.getLifetimeMasteryByBlock).toHaveBeenCalledWith(USER);
+    // fully serializable (no Date objects / handles leaked in)
+    expect(() => JSON.stringify(ss)).not.toThrow();
+  });
+
+  it('404s when the enrollment is not the caller\'s', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => null),
+    });
+    await expect(
+      service.assembleStudentState(USER, ENROLLMENT),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+// ── Story 2: the climb advances (mat -> treadmill) ───────────────────────────
+
+describe('TrainingEngineService.getTodayRep — climb advance', () => {
+  const today = new Date().toISOString().slice(0, 10);
+
+  it('advances the climb (persists a patch) when the last rep was conquered and not yet advanced today', async () => {
+    // default climb has lastRepDate: null; default history is one conquered rep.
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: null }) as never,
+      ),
+    });
+    await service.getTodayRep(USER, ENROLLMENT);
+
+    expect(repo.patchClimbState).toHaveBeenCalledTimes(1);
+    const patch = (repo.patchClimbState as ReturnType<typeof vi.fn>).mock
+      .calls[0][2] as Record<string, unknown>;
+    // a win raises the tempo one notch from 90 → 98 and stamps last_rep_date
+    expect((patch.current_position as { tempoBpm: number }).tempoBpm).toBe(98);
+    expect(patch.last_rep_date).toBe(today);
+  });
+
+  it('does NOT advance twice in one day (idempotent on last_rep_date)', async () => {
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
+      ),
+    });
+    await service.getTodayRep(USER, ENROLLMENT);
+    expect(repo.patchClimbState).not.toHaveBeenCalled();
+  });
+});
+
+// ── Story 6: month-in-review recap ───────────────────────────────────────────
+
+describe('buildMonthInReview (pure)', () => {
+  it('derives level delta, strongest weekday, rep/groove counts + best tier', () => {
+    const enrollment = makeEnrollmentWithBlock();
+    enrollment.placement = { startTempoBpm: 80 };
+    const review = buildMonthInReview({
+      enrollment,
+      currentPosition: { tempoBpm: 112 },
+      history: [
+        makeRepResult({ id: 'r3', result: 'conquered', achievedTier: 'gold' }),
+        makeRepResult({ id: 'r2', result: 'conquered', achievedTier: 'silver' }),
+        makeRepResult({ id: 'r1', result: 'released', achievedTier: null }),
+      ],
+      // 2024-06-10 is a Monday, -11 a Tuesday; weight Tuesdays.
+      practicedDays: ['2026-06-09', '2026-06-16', '2026-06-23', '2026-06-10'],
+      windowDays: 30,
+      streak: { current: 12, ceiling: 7, freezeTokens: 2 },
+    });
+
+    expect(review.startTempoBpm).toBe(80);
+    expect(review.currentTempoBpm).toBe(112);
+    expect(review.gainedBpm).toBe(32);
+    expect(review.totalReps).toBe(3);
+    expect(review.conqueredReps).toBe(2);
+    // best tier across conquered reps = gold
+    expect(review.grooves).toHaveLength(1);
+    expect(review.grooves[0].title).toBe('C Major Scale');
+    expect(review.grooves[0].bestTier).toBe('gold');
+    expect(review.grooves[0].conqueredReps).toBe(2);
+    // 2026-06-09/16/23 are Tuesdays (UTC) → strongest weekday = 2 (Tue)
+    expect(review.strongestWeekday).toBe(2);
+    expect(review.daysPracticed).toBe(4);
+    expect(review.streakDays).toBe(12);
+    expect(review.ceilingDays).toBe(7);
+  });
+
+  it('handles a cycle with no conquered reps (no grooves, null tier)', () => {
+    const review = buildMonthInReview({
+      enrollment: makeEnrollmentWithBlock(),
+      currentPosition: null,
+      history: [makeRepResult({ result: 'released', achievedTier: null })],
+      practicedDays: [],
+      windowDays: 30,
+      streak: { current: 0, ceiling: 0, freezeTokens: 0 },
+    });
+    expect(review.grooves).toHaveLength(0);
+    expect(review.conqueredReps).toBe(0);
+    expect(review.gainedBpm).toBeNull();
+    expect(review.strongestWeekday).toBeNull();
   });
 });

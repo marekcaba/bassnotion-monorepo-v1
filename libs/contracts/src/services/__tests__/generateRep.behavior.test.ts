@@ -18,6 +18,7 @@ import {
   selectReviewBlock,
   clampTempo,
   clampKey,
+  FLOOR_BRICK_MINUTES,
 } from '../generateRep';
 import type { TutorialBlock } from '../../types/block';
 import type { BlockPool, ClimbState, RepResult } from '../../types/training';
@@ -103,6 +104,64 @@ describe('generateRep — SPEED 2+2+2 bracketing', () => {
     expect(bricks).toHaveLength(3);
     // Strictly ascending order 0..2.
     expect(bricks.map((b) => b.order)).toEqual([0, 1, 2]);
+  });
+
+  it('FLOOR mode returns ONE brick at today\'s tempo for 3 min (Story 5)', () => {
+    const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
+    const bricks = generateRep(
+      makeState({ currentPosition: { tempoBpm: 100 } }),
+      pool,
+      [],
+      { goalType: 'speed', mode: 'floor' },
+    );
+    expect(bricks).toHaveLength(1);
+    const cfg = bricks[0].config as {
+      tempoOverride?: number;
+      timeboxMinutes?: number;
+    };
+    expect(cfg.tempoOverride).toBe(100); // today's tempo (L2), no bracket
+    expect(cfg.timeboxMinutes).toBe(FLOOR_BRICK_MINUTES); // 3-min "loop one groove"
+    expect(bricks[0].ladderPosition).toBe('L2');
+  });
+
+  it('defaults to the full 3-brick rep when mode is omitted', () => {
+    const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
+    expect(generateRep(makeState(), pool, [], SPEED)).toHaveLength(3);
+  });
+
+  it('uses the admin-authored tempoNotchBpm for the bracket width', () => {
+    const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
+    const state = makeState({ currentPosition: { tempoBpm: 100 } });
+    const tempo = (b: TutorialBlock) =>
+      (b.config as { tempoOverride?: number }).tempoOverride;
+
+    // notch 4 → L1 96 / L2 100 / L3 104 (spread 8, not the default 16)
+    const tight = generateRep(state, pool, [], {
+      goalType: 'speed',
+      tempoNotchBpm: 4,
+    });
+    expect(tight.map(tempo)).toEqual([96, 100, 104]);
+
+    // notch 12 → L1 88 / L2 100 / L3 112 (spread 24)
+    const wide = generateRep(state, pool, [], {
+      goalType: 'speed',
+      tempoNotchBpm: 12,
+    });
+    expect(wide.map(tempo)).toEqual([88, 100, 112]);
+  });
+
+  it('clamps a bad authored notch into bounds (falls back / caps)', () => {
+    const pool: BlockPool = { blocks: [makeGrooveBlock('focal')] };
+    const state = makeState({ currentPosition: { tempoBpm: 100 } });
+    const tempo = (b: TutorialBlock) =>
+      (b.config as { tempoOverride?: number }).tempoOverride;
+    // 0 → clamped to >=1, so L1/L3 differ from L2 by at least 1.
+    const zero = generateRep(state, pool, [], {
+      goalType: 'speed',
+      tempoNotchBpm: 0,
+    });
+    expect(tempo(zero[0])).toBeLessThan(100);
+    expect(tempo(zero[2])).toBeGreaterThan(100);
   });
 
   it('brackets today (L2) with an easier L1 and a harder L3', () => {

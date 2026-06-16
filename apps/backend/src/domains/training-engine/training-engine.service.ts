@@ -8,17 +8,25 @@ import {
 import {
   createStructuredLogger,
   generateRep,
+  advanceClimb,
   clampRepTempo,
   GRADUATION_DAYS,
 } from '@bassnotion/contracts';
 import type {
   RepResult,
+  RepResultOutcome,
   TutorialBlock,
   BlockPool,
+  ClimbState,
   GoalEnrollment,
   GoalSnapshot,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
+  ConqueredGroove,
+  MasteryTier,
+  StudentState,
+  StudentSignals,
 } from '@bassnotion/contracts';
 
 /** Whole days between two UTC YYYY-MM-DD strings (b − a). Local copy to avoid a
@@ -29,7 +37,15 @@ function dayDiff(a: string, b: string): number {
 }
 import { RequestContextService } from '../../shared/services/request-context.service.js';
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
+import { PracticeService } from '../progress/practice.service.js';
+import { ProgressService } from '../progress/progress.service.js';
 import type { InsertRepResult } from './types/training-engine.types.js';
+
+/** Default attendance window for StudentState (matches the 30-day graduation
+ *  clock — "showed up X of 30 days"). */
+const ATTENDANCE_WINDOW_DAYS = GRADUATION_DAYS;
+/** How many recent rep outcomes derived.lastNOutcomes carries. */
+const RECENT_OUTCOME_WINDOW = 5;
 
 /**
  * TrainingEngineService — the backend surface of the Bass Gym Training Engine.
@@ -59,6 +75,10 @@ export class TrainingEngineService {
     private readonly repository: TrainingEngineRepository,
     @Inject(RequestContextService)
     private readonly requestContext: RequestContextService,
+    // Shared-service seam (product boundary): attendance/streak + lifetime
+    // mastery are read THROUGH these, never via a direct cross-domain query.
+    private readonly practiceService: PracticeService,
+    private readonly progressService: ProgressService,
   ) {}
 
   /**
@@ -108,6 +128,157 @@ export class TrainingEngineService {
     goalEnrollmentId: string,
   ): Promise<RepResult[]> {
     return this.repository.getRepResultsForEnrollment(userId, goalEnrollmentId);
+  }
+
+  /**
+   * Assemble the whole-student read-model for one enrollment (Treadmill epic
+   * Story 1; designed in BASS_GYM_CURRICULUM_SPEC_v1 §2.5). This is the IMPURE
+   * boundary: it reads the DB + shared services and freezes `now` ONCE, then
+   * hands a plain, serializable StudentState to the pure planners. Every
+   * time-relative field is pre-computed here — the pure consumers never call a
+   * clock.
+   *
+   * The engine's own tables are read directly via the repository; attendance +
+   * streak + lifetime mastery are read THROUGH PracticeService/ProgressService
+   * (the product boundary — never a direct cross-domain query).
+   */
+  async assembleStudentState(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<StudentState> {
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+    const climb = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!climb) {
+      throw new NotFoundException('Climb state not found for this enrollment');
+    }
+
+    // Freeze "now" once — the single anchor every daysSince*/window derives from.
+    const assembledAt = new Date().toISOString();
+    const todayUtc = assembledAt.slice(0, 10);
+
+    const repHistory = await this.repository.getRepResultsForEnrollment(
+      userId,
+      goalEnrollmentId,
+    );
+
+    // Cross-boundary reads, through the shared services (best-effort: a coaching
+    // signal must never break planning the rep — both degrade to empty/zero).
+    const [streak, daysPracticedInWindow, lifetimeMastery] = await Promise.all([
+      this.practiceService.getStreak(userId),
+      this.practiceService.countPracticeDaysInWindow(
+        userId,
+        ATTENDANCE_WINDOW_DAYS,
+      ),
+      this.progressService.getLifetimeMasteryByBlock(userId),
+    ]);
+
+    const lastRep = repHistory[0] ?? null;
+    const daysSinceLastRep = lastRep
+      ? dayDiff(lastRep.completedAt.slice(0, 10), todayUtc)
+      : null;
+
+    const startedDay = enrollment.startedAt.slice(0, 10);
+    const daysSinceStart = Math.max(0, dayDiff(startedDay, todayUtc));
+
+    const startTempoBpm =
+      typeof enrollment.placement?.startTempoBpm === 'number'
+        ? (enrollment.placement.startTempoBpm as number)
+        : null;
+
+    return {
+      assembledAt,
+      goal: {
+        enrollmentId: enrollment.id,
+        type: enrollment.goalSnapshot.type,
+        target: enrollment.goalSnapshot.target,
+        status: enrollment.status,
+        startTempoBpm,
+        daysSinceStart,
+        graduationDaysRemaining: Math.max(0, GRADUATION_DAYS - daysSinceStart),
+      },
+      climb,
+      repHistory,
+      lastRep,
+      daysSinceLastRep,
+      derived: deriveStudentSignals(repHistory, climb, todayUtc),
+      lifetimeMastery,
+      attendance: {
+        streakDays: streak.current,
+        ceiling: streak.ceiling,
+        isActiveToday: streak.isActiveToday,
+        lastPracticedOn: streak.lastPracticedOn,
+        freezeTokens: streak.freezeTokens,
+        daysPracticedInWindow,
+        windowDays: ATTENDANCE_WINDOW_DAYS,
+      },
+    };
+  }
+
+  /**
+   * The treadmill step (Story 2): run the pure advanceClimb against the frozen
+   * StudentState, persist the delta, and return the (possibly) advanced climb so
+   * today's rep plans from it. Idempotent per calendar day — guarded on
+   * climb.lastRepDate so re-opening the gym twice today advances once. Returns
+   * the unchanged climb when not due or when the climb didn't move.
+   */
+  private async maybeAdvanceClimb(
+    userId: string,
+    goalEnrollmentId: string,
+    student: StudentState,
+  ): Promise<ClimbState> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const climb = student.climb;
+    const today = student.assembledAt.slice(0, 10);
+
+    // Already advanced today → don't double-advance (re-open is a no-op).
+    if (climb.lastRepDate === today) return climb;
+
+    const delta = advanceClimb(student, { goalType: student.goal.type });
+
+    // Stamp last_rep_date even on a hold, so a no-op day still closes the window
+    // (a day with no win shouldn't re-trigger advance attempts on every re-open).
+    const patch: Record<string, unknown> = { last_rep_date: today };
+    if (delta.changed) {
+      if (delta.currentPosition) patch.current_position = delta.currentPosition;
+      if (typeof delta.difficultyScalar === 'number') {
+        patch.difficulty_scalar = delta.difficultyScalar;
+      }
+      if (typeof delta.backoffCount === 'number') {
+        patch.backoff_count = delta.backoffCount;
+      }
+    }
+
+    await this.repository.patchClimbState(userId, goalEnrollmentId, patch);
+
+    logger.info('Advanced climb', {
+      userId,
+      goalEnrollmentId,
+      changed: delta.changed,
+      nextTempoBpm: (delta.currentPosition?.tempoBpm as number) ?? null,
+      difficultyScalar: delta.difficultyScalar ?? null,
+      correlationId,
+    });
+
+    // Apply the delta in-memory so the rep plans from the advanced position
+    // without a re-read.
+    return {
+      ...climb,
+      currentPosition: delta.currentPosition ?? climb.currentPosition,
+      difficultyScalar: delta.difficultyScalar ?? climb.difficultyScalar,
+      backoffCount: delta.backoffCount ?? climb.backoffCount,
+      lastRepDate: today,
+    };
   }
 
   /** All of a user's goal enrollments (the gym's "my goals" list). */
@@ -295,10 +466,16 @@ export class TrainingEngineService {
   async getTodayRep(
     userId: string,
     goalEnrollmentId: string,
+    /** Rep shape (Story 5): 'full' = the 6-min 2+2+2; 'floor' = the short 3-min
+     *  "loop one groove" session. Defaults to 'full'. */
+    mode: 'full' | 'floor' = 'full',
   ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
+    // The enrollment is still needed for the block_set → BlockPool resolution
+    // (StudentState carries the climb + history + goalType the planner needs,
+    // but not the goal's content recipe).
     const enrollment = await this.repository.findEnrollmentById(
       userId,
       goalEnrollmentId,
@@ -307,27 +484,38 @@ export class TrainingEngineService {
       throw new NotFoundException('Goal enrollment not found for this user');
     }
 
-    const climbState = await this.repository.findClimbState(
+    // The whole-student read-model (Story 1). It freezes `now` once and supplies
+    // the climb + history + goalType the pure planner consumes; advanceClimb
+    // reads its `derived` signals. generateRep's signature is UNCHANGED — we
+    // destructure StudentState into the same args it always took.
+    const student = await this.assembleStudentState(userId, goalEnrollmentId);
+
+    // Mat -> treadmill (Story 2): move the climb based on how the LAST rep(s)
+    // landed, BEFORE planning today's. Guarded to once per calendar day via
+    // last_rep_date (the read-time / dayDiff pattern — re-opening the gym twice
+    // a day advances once). The pure advanceClimb decides the delta; we persist
+    // it and apply it in-memory so today's rep plans from the new position.
+    const climb = await this.maybeAdvanceClimb(
       userId,
       goalEnrollmentId,
+      student,
     );
-    if (!climbState) {
-      throw new NotFoundException('Climb state not found for this enrollment');
-    }
 
     const pool = this.resolveBlockPool(enrollment);
-    const history = await this.repository.getRepResultsForEnrollment(
-      userId,
-      goalEnrollmentId,
-    );
-
-    const bricks = generateRep(climbState, pool, history, {
-      goalType: enrollment.goalSnapshot.type,
+    const bricks = generateRep(climb, pool, student.repHistory, {
+      goalType: student.goal.type,
+      mode,
+      // Admin-authored bracket width (target.tempoNotchBpm); generateRep clamps
+      // + falls back to the default when unset.
+      tempoNotchBpm: student.goal.target?.tempoNotchBpm as number | undefined,
     });
 
-    const title = enrollment.goalSnapshot.target?.tempoBpm
-      ? `Daily Rep — target ${enrollment.goalSnapshot.target.tempoBpm} BPM`
-      : 'Daily Rep';
+    const title =
+      mode === 'floor'
+        ? 'Daily Rep — floor (short session)'
+        : student.goal.target?.tempoBpm
+          ? `Daily Rep — target ${student.goal.target.tempoBpm} BPM`
+          : 'Daily Rep';
 
     const slug = await this.mintVirtualTutorial(
       userId,
@@ -387,7 +575,90 @@ export class TrainingEngineService {
       userId,
       goalEnrollmentId,
     );
-    return buildGraduationSummary(enrollment, climb?.currentPosition ?? null);
+    // Attendance (Story 7) via the shared service (boundary-clean) — the
+    // "showed up X of N days" proof. Best-effort: a read failure must not break
+    // the graduation summary, so it degrades to omitting the count.
+    let attendance:
+      | { daysPracticedInWindow: number; windowDays: number }
+      | undefined;
+    try {
+      const daysPracticedInWindow =
+        await this.practiceService.countPracticeDaysInWindow(
+          userId,
+          ATTENDANCE_WINDOW_DAYS,
+        );
+      attendance = {
+        daysPracticedInWindow,
+        windowDays: ATTENDANCE_WINDOW_DAYS,
+      };
+    } catch {
+      attendance = undefined;
+    }
+    return buildGraduationSummary(
+      enrollment,
+      climb?.currentPosition ?? null,
+      attendance,
+    );
+  }
+
+  /**
+   * The day-30 month-in-review recap (Story 6): the player's journey through the
+   * cycle — level then→now, practice pattern, reps/grooves conquered, streak.
+   * Assembled read-time from the engine's own rep_results + the enrollment/climb
+   * + the shared practice/streak services (boundary-clean). A recap, always a
+   * win. Each cross-boundary read is best-effort so a stat outage can't break it.
+   */
+  async getMonthInReview(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<MonthInReview> {
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+    const climb = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    const history = await this.repository.getRepResultsForEnrollment(
+      userId,
+      goalEnrollmentId,
+    );
+
+    // Cross-boundary reads (shared services), best-effort.
+    let practicedDays: string[] = [];
+    let streak: {
+      current: number;
+      ceiling: number;
+      freezeTokens: number;
+    } = { current: 0, ceiling: 0, freezeTokens: 0 };
+    try {
+      [practicedDays, streak] = await Promise.all([
+        this.practiceService.listPracticeDaysInWindow(
+          userId,
+          ATTENDANCE_WINDOW_DAYS,
+        ),
+        this.practiceService.getStreak(userId).then((s) => ({
+          current: s.current,
+          ceiling: s.ceiling,
+          freezeTokens: s.freezeTokens,
+        })),
+      ]);
+    } catch {
+      // leave the safe defaults
+    }
+
+    return buildMonthInReview({
+      enrollment,
+      currentPosition: climb?.currentPosition ?? null,
+      history,
+      practicedDays,
+      windowDays: ATTENDANCE_WINDOW_DAYS,
+      streak,
+    });
   }
 
   /**
@@ -486,12 +757,77 @@ export class TrainingEngineService {
 const GO_DEEPER_STEP_BPM = 10;
 
 /**
+ * Pure derivation of the coach signals from rep history (exported for tests).
+ * No I/O, no clock — `todayUtc` is passed in. Mirrors the §2.5 design: a leading
+ * run of conquered reps, the recent too_hard count, the recent-outcome tail, and
+ * days-since-last-conquered. Plateau (consecutive same-tempo wins) is computed
+ * from the leading conquered run at the same tempo.
+ *
+ * `history` is newest-first (the repository's order).
+ */
+export function deriveStudentSignals(
+  history: RepResult[],
+  climb: ClimbState,
+  todayUtc: string,
+): StudentSignals {
+  // Leading run of conquered reps from the newest end.
+  let consecutiveWins = 0;
+  for (const r of history) {
+    if (r.result === 'conquered') consecutiveWins++;
+    else break;
+  }
+
+  // Plateau: of that leading conquered run, how many share the newest rep's
+  // tempo (a "stuck at the same speed" signal for the week-3 dip).
+  let plateauRepCount = 0;
+  const newestTempo = history[0]?.tempoBpm ?? null;
+  if (newestTempo != null) {
+    for (let i = 0; i < consecutiveWins; i++) {
+      if (history[i]?.tempoBpm === newestTempo) plateauRepCount++;
+      else break;
+    }
+  }
+
+  // Struggle signal for the back-off ladder (Story 4): the "too hard — lay it
+  // anyway" release valve records 'released' (the only struggle signal the drill
+  // UI actually emits — 'too_hard' is an engine-only enum reserved for a future
+  // explicit signal). Count BOTH so the back-off fires from real play.
+  const recentTooHardCount = history
+    .slice(0, RECENT_OUTCOME_WINDOW)
+    .filter((r) => r.result === 'too_hard' || r.result === 'released').length;
+
+  const lastNOutcomes: RepResultOutcome[] = history
+    .slice(0, RECENT_OUTCOME_WINDOW)
+    .map((r) => r.result);
+
+  const lastConquered = history.find((r) => r.result === 'conquered') ?? null;
+  const daysSinceLastConquered = lastConquered
+    ? dayDiff(lastConquered.completedAt.slice(0, 10), todayUtc)
+    : null;
+
+  // climb is part of the signature so future signals (e.g. backoffCount-aware)
+  // can read it without a re-plumb; v1 derives purely from history.
+  void climb;
+
+  return {
+    consecutiveWins,
+    recentTooHardCount,
+    lastNOutcomes,
+    daysSinceLastConquered,
+    plateauRepCount,
+  };
+}
+
+/**
  * Pure read-time graduation summary (exported for tests). daysElapsed from
  * started_at; isDue at GRADUATION_DAYS. The landing is a mirror, not pass/fail.
  */
 export function buildGraduationSummary(
   enrollment: GoalEnrollment,
   currentPosition: Record<string, unknown> | null,
+  /** Attendance over the window (Story 7), if the caller read it. Omitted →
+   *  the summary leaves daysPracticedInWindow/windowDays undefined. */
+  attendance?: { daysPracticedInWindow: number; windowDays: number },
 ): GraduationSummary {
   const today = new Date().toISOString().slice(0, 10);
   const started = enrollment.startedAt.slice(0, 10);
@@ -510,5 +846,95 @@ export function buildGraduationSummary(
     startTempoBpm: start,
     currentTempoBpm: current,
     targetTempoBpm: target,
+    ...(attendance
+      ? {
+          daysPracticedInWindow: attendance.daysPracticedInWindow,
+          windowDays: attendance.windowDays,
+        }
+      : {}),
+  };
+}
+
+const TIER_RANK: Record<MasteryTier, number> = {
+  bronze: 0,
+  silver: 1,
+  gold: 2,
+};
+
+/**
+ * Pure month-in-review assembly (exported for tests). No I/O, no clock — every
+ * input is passed in. Derives the level delta, the strongest practice weekday,
+ * rep/groove counts, and the best tier per lane (the groove's display name comes
+ * from the goal's block title — the gym has one groove per goal, so the recap
+ * groups by goal, not by ephemeral per-level brick ids).
+ */
+export function buildMonthInReview(input: {
+  enrollment: GoalEnrollment;
+  currentPosition: Record<string, unknown> | null;
+  history: RepResult[];
+  practicedDays: string[];
+  windowDays: number;
+  streak: { current: number; ceiling: number; freezeTokens: number };
+}): MonthInReview {
+  const { enrollment, currentPosition, history, practicedDays, windowDays } =
+    input;
+
+  const start =
+    (enrollment.placement?.startTempoBpm as number | undefined) ?? null;
+  const current = (currentPosition?.tempoBpm as number | undefined) ?? null;
+  const gainedBpm =
+    typeof start === 'number' && typeof current === 'number'
+      ? current - start
+      : null;
+
+  // Strongest weekday: the day-of-week with the most practice days (0=Sun).
+  const weekdayCounts = new Array(7).fill(0) as number[];
+  for (const d of practicedDays) {
+    const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
+    if (dow >= 0 && dow <= 6) weekdayCounts[dow]++;
+  }
+  let strongestWeekday: number | null = null;
+  let best = 0;
+  for (let i = 0; i < 7; i++) {
+    if (weekdayCounts[i] > best) {
+      best = weekdayCounts[i];
+      strongestWeekday = i;
+    }
+  }
+
+  const conquered = history.filter((r) => r.result === 'conquered');
+  // Best tier across the conquered reps (the goal's single lane in v1).
+  let bestTier: MasteryTier | null = null;
+  for (const r of conquered) {
+    const t = r.achievedTier;
+    if (t && (bestTier === null || TIER_RANK[t] > TIER_RANK[bestTier])) {
+      bestTier = t;
+    }
+  }
+
+  // The lane's display name = the goal's focal block title (the groove), falling
+  // back to a generic label. One lane per goal in v1.
+  const focalTitle =
+    enrollment.goalSnapshot.blockSet?.[0]?.block?.title ?? 'Your groove';
+  const grooves: ConqueredGroove[] =
+    conquered.length > 0
+      ? [{ title: focalTitle, bestTier, conqueredReps: conquered.length }]
+      : [];
+
+  return {
+    goalEnrollmentId: enrollment.id,
+    startTempoBpm: start,
+    currentTempoBpm: current,
+    gainedBpm,
+    daysPracticed: practicedDays.length,
+    windowDays,
+    practicedDays,
+    strongestWeekday,
+    totalReps: history.length,
+    conqueredReps: conquered.length,
+    grooves,
+    streakDays: input.streak.current,
+    ceilingDays: input.streak.ceiling,
+    freezeTokens: input.streak.freezeTokens,
   };
 }

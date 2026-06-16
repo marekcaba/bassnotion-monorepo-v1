@@ -346,6 +346,13 @@ export function useGrooveCardPlayback({
     );
   }, [transportFromContext]);
   const activeStore = useActiveGrooveCardStore();
+  // Reactive subscription to the active card (a slice — re-renders this hook
+  // when ANOTHER card takes over). Drives the displacement cleanup below: in a
+  // drill, multiple groove-card bricks are mounted at once and a card that loses
+  // active status must drop its own stem tracks, or the engine keeps re-arming
+  // them on loop (the L1+L2+L3-at-one-T0 overlap). On single-card surfaces this
+  // never fires (only one card mounts → it's always the active one).
+  const activeCardId = useActiveGrooveCardStore((s) => s.activeCardId);
   const trackPrefix = `${cardId}#`;
 
   // LAUNCH-02.5d: tighter key cap on the waitlist surface — the marketing
@@ -354,8 +361,18 @@ export function useGrooveCardPlayback({
   const keyRange = mode === 'waitlist' ? KEY_RANGE_WAITLIST : KEY_RANGE_BLOCK;
 
   // ── state -----------------------------------------------------------------
+  // The tempo the card should START at. originalBpm is the SOURCE (baked
+  // recording) and stays the stretch-ratio denominator everywhere; a per-use
+  // tempoOverride (e.g. the training engine's climb position) is the TARGET the
+  // brick begins playing at. Routing the override here — instead of mutating
+  // originalBpm — keeps the ratio honest (target/source), so the stems actually
+  // stretch to the override instead of playing at the baked tempo.
+  const startBpm =
+    typeof block.tempoOverride === 'number'
+      ? clampTempo(block.tempoOverride)
+      : block.originalBpm;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBpm, setCurrentBpm] = useState<number>(block.originalBpm);
+  const [currentBpm, setCurrentBpm] = useState<number>(startBpm);
   const [currentSemitones, setCurrentSemitones] = useState(0);
   // The active premium bassline variant ("Lines & Fills"). null = the default
   // bass. Selecting one hands new PCM to the bass worklet, which swaps it in at
@@ -532,16 +549,27 @@ export function useGrooveCardPlayback({
   // local state honest. We do NOT pull the global default into currentBpm
   // (that's what made the UI read 120 instead of the saved tempo).
   useEffect(() => {
-    musicalTruth.setBPM?.(clampTempo(block.originalBpm));
-    setCurrentBpm(block.originalBpm);
+    // Arm the transport at the START tempo (tempoOverride for a drill brick,
+    // else the groove's own originalBpm) — NOT originalBpm unconditionally, or a
+    // generated rep would always begin at the baked tempo and ignore the climb.
+    musicalTruth.setBPM?.(clampTempo(startBpm));
+    setCurrentBpm(startBpm);
+    // Sync the DISPLAYED bpm to the shared transport ONLY while this card is the
+    // active one. musicalTruth is a PAGE SINGLETON: with multiple drill bricks
+    // mounted (the gym rep's L1/L2/L3), an unguarded subscription makes every
+    // card show whatever the last-active brick set — so all three read e.g. 98
+    // instead of their own 82/90/98 target. An inactive brick keeps showing its
+    // own startBpm (its tempoOverride). (isActiveCard is read at callback time —
+    // current state, no stale closure.)
     const unsub = musicalTruth.subscribe?.((truth) => {
-      setCurrentBpm(truth.bpm);
+      if (activeStore.isActiveCard(cardId)) setCurrentBpm(truth.bpm);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-    // block.originalBpm is stable per card; re-running on change is correct.
-  }, [block.originalBpm]);
+    // startBpm is stable per card (derived from stable block fields).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startBpm]);
 
   // Loop duration in seconds at the current BPM — used by setKey + setTempo
   // (to compute the next loop-boundary audio time for the deferred
@@ -1097,6 +1125,35 @@ export function useGrooveCardPlayback({
     unregisterStemTracks();
     activeStore.clearActiveCard(cardId);
   }, [activeStore, cardId, unregisterStemTracks]);
+
+  // ── displacement cleanup (drill multi-brick) -----------------------------
+  // When ANOTHER card becomes active while this card is still mounted (the
+  // drill case: 3 groove-card bricks share one PlaybackEngine + Transport), the
+  // active-card store flips activeCardId but nothing told THIS card to drop its
+  // stems — so its tracks stay registered and the scheduler re-arms them on the
+  // next loop, stacking L1+L2+L3 audio at one T0 (the stagger/feedback). The
+  // successor's becomeActive() only stopAudioStems() once; it can't unregister a
+  // sibling's tracks. So each card cleans up ITSELF when displaced.
+  //
+  // `wasActiveRef` ensures we only tear down a card that actually became active
+  // (a brick the user never played has no tracks to drop, and must not yank the
+  // engine from the real active card). Single-card surfaces never hit this (only
+  // one card mounts, so activeCardId is only ever this card or null).
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (activeCardId === cardId) {
+      wasActiveRef.current = true;
+      return;
+    }
+    // activeCardId is now a DIFFERENT card (or null after our own clear). Only
+    // act if WE were the one playing — drop our stems so the new card owns the
+    // engine alone.
+    if (activeCardId != null && wasActiveRef.current) {
+      wasActiveRef.current = false;
+      const engine = WindowRegistry.getPlaybackEngine();
+      engine?.unregisterTracksByPrefix?.(trackPrefix);
+    }
+  }, [activeCardId, cardId, trackPrefix]);
 
   // Boundary-aligned loop-selection swap.
   //   - At play start the current selection is baked into registerStemTracks

@@ -11,6 +11,7 @@ import {
   type TutorialCompletionSummary,
   type Tutorial as TutorialContract,
   type DrillCompletionData,
+  type MasteryTier,
 } from '@bassnotion/contracts';
 
 /** What getBlockCompletions surfaces per completed block, indexed by blockId. */
@@ -459,5 +460,41 @@ export class ProgressService {
     );
 
     return { tutorials: summaries };
+  }
+
+  /**
+   * Lifetime mastery for a user, reduced to the BEST tier per block across ALL
+   * tutorials (including virtual training-rep tutorials). Keyed by `blockId`
+   * alone — so the same block conquered under a virtual rep and elsewhere
+   * collapse to one entry. The shared read the training engine's StudentState
+   * assembler consumes; existing public progress methods drop `achievedTier`,
+   * so this is net-new. Blocks with no recorded tier are omitted.
+   */
+  async getLifetimeMasteryByBlock(
+    userId: string,
+  ): Promise<Record<string, { bestTier: MasteryTier; lastSeenAt: string }>> {
+    const rows =
+      await this.progressRepository.getAllBlockCompletionsForUser(userId);
+
+    const rank: Record<MasteryTier, number> = { bronze: 0, silver: 1, gold: 2 };
+    const isTier = (v: unknown): v is MasteryTier =>
+      v === 'bronze' || v === 'silver' || v === 'gold';
+
+    const out: Record<string, { bestTier: MasteryTier; lastSeenAt: string }> =
+      {};
+    for (const row of rows) {
+      const tier = (row.data as DrillCompletionData | null)?.achievedTier;
+      if (!isTier(tier)) continue; // no tier recorded → not a mastery signal
+
+      const prev = out[row.block_id];
+      if (!prev) {
+        out[row.block_id] = { bestTier: tier, lastSeenAt: row.completed_at };
+        continue;
+      }
+      // Keep the strongest tier; track the most recent time it was seen.
+      if (rank[tier] > rank[prev.bestTier]) prev.bestTier = tier;
+      if (row.completed_at > prev.lastSeenAt) prev.lastSeenAt = row.completed_at;
+    }
+    return out;
   }
 }

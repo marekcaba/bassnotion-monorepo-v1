@@ -30,6 +30,8 @@ interface Draft {
   title: string;
   description: string;
   targetTempo: number;
+  /** BPM step between rep levels (L1=today−notch … L3=today+notch). */
+  tempoNotch: number;
   instruction: string;
 }
 
@@ -38,6 +40,7 @@ const EMPTY_DRAFT: Draft = {
   title: '',
   description: '',
   targetTempo: 120,
+  tempoNotch: 8,
   instruction: 'Play the {item} at {tempo} BPM. Keep it even and relaxed.',
 };
 
@@ -48,7 +51,7 @@ function draftToInput(d: Draft): CreateGoalInput {
     type: d.type,
     title: d.title.trim(),
     description: d.description.trim() || null,
-    target: { tempoBpm: d.targetTempo },
+    target: { tempoBpm: d.targetTempo, tempoNotchBpm: d.tempoNotch },
     assessmentConfig: {},
     blockSet: [
       {
@@ -172,6 +175,21 @@ export default function AdminTrainingGoalsPage() {
               onChange={(e) => set('targetTempo', Number(e.target.value))}
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
+          </label>
+          <label className="block space-y-1 text-xs font-medium text-gray-600">
+            Tempo step between levels (BPM)
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={draft.tempoNotch}
+              onChange={(e) => set('tempoNotch', Number(e.target.value))}
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+            <span className="block text-[10px] font-normal text-gray-400">
+              The daily bracket: L1 = today −{draft.tempoNotch || 0}, L3 = today
+              +{draft.tempoNotch || 0} BPM (spread {(draft.tempoNotch || 0) * 2}).
+            </span>
           </label>
         </div>
 
