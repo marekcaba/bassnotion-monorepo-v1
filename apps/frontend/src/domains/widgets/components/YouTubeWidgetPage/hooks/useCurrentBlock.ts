@@ -36,18 +36,37 @@ export function useCurrentBlock({
     const refs = blockRefs.current;
     if (!container || !refs) return;
 
+    // Track the latest visibility ratio per block across observer batches, then
+    // pick the MOST-visible block as current. The old code set current to the
+    // LAST intersecting entry in a batch — which is wrong when several sections
+    // intersect at once (e.g. a drill where multiple bricks unlock together and
+    // are all ≥50% visible): it would jump current to the last brick instead of
+    // the one actually in view, stranding the auto-advance.
+    const ratios = new Map<string, number>();
+    const blockIdFor = (target: Element): string | undefined =>
+      Array.from(refs.entries()).find(([, el]) => el === target)?.[0];
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const blockId = Array.from(refs.entries()).find(
-              ([, el]) => el === entry.target,
-            )?.[0];
-            if (blockId) setCurrentBlockId(blockId);
+          const id = blockIdFor(entry.target);
+          if (!id) continue;
+          ratios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0);
+        }
+        // Choose the most-visible block (highest ratio > 0).
+        let bestId: string | null = null;
+        let bestRatio = 0;
+        for (const [id, ratio] of ratios) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestId = id;
           }
         }
+        if (bestId) setCurrentBlockId(bestId);
       },
-      { root: container, threshold: 0.5 },
+      // Multiple thresholds so the ratio updates smoothly as sections scroll,
+      // letting "most visible" track the leading edge rather than snapping.
+      { root: container, threshold: [0.25, 0.5, 0.75, 1] },
     );
 
     refs.forEach((el) => observer.observe(el));

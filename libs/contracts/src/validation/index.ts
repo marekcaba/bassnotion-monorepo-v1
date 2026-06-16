@@ -31,3 +31,6 @@ export * from './waitlist-schemas.js';
 
 // Founder upsell card (admin-editable copy + sizes)
 export * from './founder-card-schemas.js';
+
+// Bass Gym Training Engine validation (Phase 1)
+export * from './training-schemas.js';

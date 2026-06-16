@@ -23,7 +23,7 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { useProgress } from '@/domains/progress/hooks/useProgress';
 import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
 import { useDrillSession } from '@/domains/drill/hooks/useDrillSession';
-import { useRecordSession } from '@/domains/drill/hooks/useStreak';
+import { useRecordSession, useStreak } from '@/domains/drill/hooks/useStreak';
 import { DrillPlanScreen } from './DrillPlanScreen';
 import {
   DrillSummaryScreen,
@@ -37,12 +37,17 @@ interface DrillSessionFrameProps {
    *  player (which types this as any[]). Drills rarely carry exercises, but a
    *  mixed tutorial might. */
   exercises: unknown[];
+  /** Story 5: this is the short FLOOR session (one 3-min brick). Completing it
+   *  records a FLOOR rep (showed up) — it advances the floor streak but NOT the
+   *  ceiling (which is the full focused rep). Defaults to false (full rep). */
+  isFloor?: boolean;
 }
 
 export function DrillSessionFrame({
   tutorial,
   tutorialSlug,
   exercises,
+  isFloor = false,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -78,16 +83,26 @@ export function DrillSessionFrame({
   // duplicate would be harmless anyway. A "run it again" → plan → summary cycle
   // re-arms it, but the same-day server no-op keeps the count correct.
   const recordSession = useRecordSession();
+  // The already-cached streak (the user's streak BEFORE this session). Used as
+  // the summary's immediate fallback so the "🔥 N-day streak" line is present
+  // the instant the summary renders, instead of popping in 1-3s later when the
+  // record mutation's round-trip resolves. The mutation result (the post-record
+  // value) replaces it as soon as it lands — same calendar day, so it differs by
+  // at most the +1 this session earned.
+  const cachedStreak = useStreak();
   const recordedRef = useRef(false);
   useEffect(() => {
     if (phase === 'summary' && !recordedRef.current) {
       recordedRef.current = true;
-      recordSession.mutate();
+      // A FULL rep (all bricks) = a CEILING rep (advances floor + ceiling). A
+      // FLOOR session (Story 5: the short 3-min version) advances the floor
+      // streak only — "showed up", streak safe, but not the full-focus ceiling.
+      recordSession.mutate(!isFloor);
     }
     if (phase === 'plan') {
       recordedRef.current = false; // re-arm for a fresh run
     }
-  }, [phase, recordSession]);
+  }, [phase, recordSession, isFloor]);
 
   const summaryItems = useMemo<DrillSummaryItem[]>(() => {
     const dataById = new Map(
@@ -112,6 +127,9 @@ export function DrillSessionFrame({
         items={summaryItems}
         onRestart={restart}
         onDone={() => navigateWithTransition('/app')}
+        // Post-record value once the mutation lands; until then the cached
+        // pre-session streak so the line never pops in from nothing.
+        streak={recordSession.data ?? cachedStreak.data ?? null}
       />
     );
   }

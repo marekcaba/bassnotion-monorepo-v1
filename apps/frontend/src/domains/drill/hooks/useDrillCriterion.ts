@@ -44,12 +44,23 @@ export interface UseDrillCriterionResult {
   progress: CriterionProgress | null;
 }
 
+/**
+ * Optional sink fired ONCE when a measured criterion transitions false→true.
+ * This is the training-engine's CompletionSignalSource seam (spec §10 seam 1 /
+ * §12): the hook stays a pure measurer, but lets the engine observe the moment
+ * a time/loops criterion is met without the hook knowing anything about the
+ * engine. Button-driven criteria (conquer/manual) emit at their button
+ * handlers, not here. Non-invasive: existing 2-arg callers are unaffected.
+ */
+export type CriterionMetCallback = (progress: CriterionProgress) => void;
+
 /** ~30fps poll — fine for a countdown / loop counter; cheap. */
 const TICK_MS = 250;
 
 export function useDrillCriterion(
   criterion: DrillCompletionCriterion | undefined,
   playback: CriterionPlaybackSignals,
+  onMet?: CriterionMetCallback,
 ): UseDrillCriterionResult {
   const type = criterion?.type;
   const target = criterion?.target ?? 0;
@@ -114,19 +125,49 @@ export function useDrillCriterion(
     return () => clearInterval(id);
   }, [type, playback.isPlaying]);
 
+  // Compute the measured result (single source of truth for the return + the
+  // onMet transition effect below).
+  let result: UseDrillCriterionResult;
   if (type === 'time') {
     const targetSec = target * 60;
-    return {
+    result = {
       isMet: targetSec > 0 && elapsedSec >= targetSec,
       progress: { current: elapsedSec, target: targetSec },
     };
-  }
-  if (type === 'loops') {
-    return {
+  } else if (type === 'loops') {
+    result = {
       isMet: target > 0 && loopCount >= target,
       progress: { current: loopCount, target },
     };
+  } else {
+    // conquer / manual / undefined — driven by the brick's button, not measured.
+    result = { isMet: false, progress: null };
   }
-  // conquer / manual / undefined — driven by the brick's button, not measured.
-  return { isMet: false, progress: null };
+
+  // Fire onMet ONCE on the false→true edge. Both the callback and the latest
+  // progress live in refs so the effect depends ONLY on the boolean edge (the
+  // progress object is a fresh literal each render — depending on it would re-run
+  // the effect every tick for no reason).
+  //
+  // In the drill executor each brick mounts its OWN hook instance and unmounts
+  // before the next, so the criterion never changes within an instance. But the
+  // hook doesn't ENFORCE that, so reset the edge latch when the criterion
+  // identity changes — otherwise a reused instance with a fresh criterion would
+  // have a stale `true` suppress the next legitimate fire.
+  const onMetRef = useRef(onMet);
+  onMetRef.current = onMet;
+  const progressRef = useRef(result.progress);
+  progressRef.current = result.progress;
+  const wasMetRef = useRef(false);
+  useEffect(() => {
+    wasMetRef.current = false;
+  }, [type, target]);
+  useEffect(() => {
+    if (result.isMet && !wasMetRef.current) {
+      onMetRef.current?.(progressRef.current ?? { current: 0, target: 0 });
+    }
+    wasMetRef.current = result.isMet;
+  }, [result.isMet]);
+
+  return result;
 }

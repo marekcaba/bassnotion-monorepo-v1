@@ -514,6 +514,7 @@ export type {
   GrooveBlock,
   GrooveCardBlock,
   GrooveCardBlockConfig,
+  ReferenceDropConfig,
   GrooveCardStemSet,
   BasslineVariant,
   ChordChartEntry,
@@ -533,6 +534,48 @@ export type {
   AnyBlock,
   BlockProgress,
 } from './block.js';
+
+// Bass Gym Training Engine types (Phase 0)
+export type {
+  GoalType,
+  LadderLevel,
+  EnrollmentStatus,
+  RepResultOutcome,
+  ProgressSignal,
+  ProgressSignalKind,
+  PrereqThreshold,
+  GoalTarget,
+  BlockRef,
+  Stage,
+  Topic,
+  TopicProgress,
+  Goal,
+  AdminGoalSummary,
+  CreateGoalInput,
+  UpdateGoalInput,
+  GoalSnapshot,
+  GoalEnrollment,
+  GraduationDoor,
+  GraduationSummary,
+  MonthInReview,
+  ConqueredGroove,
+  RepResult,
+  ClimbState,
+  StudentState,
+  StudentSignals,
+  StudentAttendance,
+  SiblingGoalSummary,
+  UserMilestone,
+  BlockPool,
+  GenerateRep,
+  GenerateRepOptions,
+  ProgressSignalSource,
+  RepResultSink,
+  RepResultInput,
+} from './training.js';
+
+// Value export (pure mapper, not a type) — drill completion → ProgressSignal.
+export { drillCompletionToSignal } from './training.js';
 
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
 export { CHORD_SLOTS_PER_BAR } from './block.js';

@@ -40,12 +40,13 @@ async function fetchStreak(): Promise<GetPracticeStreakResponse> {
   return apiClient.get<GetPracticeStreakResponse>(STREAK_PATH);
 }
 
-async function postSessionCompleted(): Promise<GetPracticeStreakResponse> {
+async function postSessionCompleted(
+  ceiling: boolean,
+): Promise<GetPracticeStreakResponse> {
   await authToken();
-  // Send an empty object body: the endpoint takes no payload, but apiClient
-  // sets Content-Type: application/json and Fastify rejects that with an empty
-  // body ("Body cannot be empty..."). {} is valid JSON and satisfies it.
-  return apiClient.post<GetPracticeStreakResponse>(STREAK_PATH, {});
+  // Body carries `ceiling` (a FULL focused rep advances the ceiling tier). The
+  // {} fallback also satisfies Fastify's non-empty application/json body guard.
+  return apiClient.post<GetPracticeStreakResponse>(STREAK_PATH, { ceiling });
 }
 
 /** Read the user's current practice streak. Undefined while loading/disabled. */
@@ -78,7 +79,8 @@ export function useRecordSession() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: postSessionCompleted,
+    // `ceiling` (default false) marks a full focused rep (advances the ceiling).
+    mutationFn: (ceiling = false) => postSessionCompleted(ceiling),
     onSuccess: (data) => {
       queryClient.setQueryData<GetPracticeStreakResponse>(
         streakKeys.current(user?.id),

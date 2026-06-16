@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Post,
@@ -70,14 +71,19 @@ export class UserProgressController {
    *
    * Record that the user completed a drill session today and return the updated
    * streak. Idempotent within a calendar day. Called by the frontend when the
-   * drill reaches its summary screen.
+   * drill reaches its summary screen. Body `{ ceiling: true }` marks a FULL
+   * focused rep (advances the ceiling tier); absent/false = floor only.
    */
   @Post('practice-streak')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   async recordPracticeSession(
     @CurrentUser() user: AuthUser,
+    @Body() body?: { ceiling?: boolean },
   ): Promise<GetPracticeStreakResponse> {
-    return this.practiceService.recordSessionCompleted(user.id);
+    return this.practiceService.recordSessionCompleted(
+      user.id,
+      body?.ceiling === true,
+    );
   }
 }

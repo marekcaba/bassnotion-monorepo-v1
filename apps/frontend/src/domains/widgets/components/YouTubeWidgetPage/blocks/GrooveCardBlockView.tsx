@@ -44,6 +44,7 @@ import {
   buildCycleKeys,
   type DynamicLoopConfig,
 } from './groove-card/useDynamicLoop';
+import { useReferenceDrop } from './groove-card/useReferenceDrop';
 import { useActiveGrooveCardStore } from '@/domains/playback/store/active-groove-card.store';
 import {
   DEFAULT_PREVIEW_CAPTION,
@@ -152,6 +153,12 @@ export function GrooveCardBlockView({
       ...c,
       title: c.title ?? '',
       subtitle: c.subtitle ?? '',
+      // originalBpm is the SOURCE tempo (the baked recording, e.g. 133) — it is
+      // the denominator of the stem stretch ratio (currentBpm / originalBpm) and
+      // MUST stay the recorded tempo. A per-use tempoOverride is the TARGET the
+      // brick should START at; it is applied to currentBpm by the playback hook,
+      // NOT to originalBpm (collapsing them = ratio 1.0 = no stretch = plays at
+      // the baked tempo). See useGrooveCardPlayback's tempoOverride handling.
       originalBpm: c.originalBpm ?? 100,
       originalKey: c.originalKey ?? 'E',
       lengthBars: c.lengthBars ?? 4,
@@ -506,6 +513,21 @@ export function GrooveCardBlockView({
     setKey: playback.setKey,
     getNextSeamTime: playback.getNextSeamTime,
     getCurrentTime: playback.getCurrentTime,
+  });
+
+  // Reference-Drop drill (Lock The Pocket): admin-authored on the block. Fades
+  // the chosen reference stem(s) out/in on bar boundaries so the return reveals
+  // tempo drift. Inert unless config.referenceDrop?.enabled. Reads the same seam
+  // clock + countdown as the dynamic loop.
+  const referenceDrop = useReferenceDrop({
+    config: config.referenceDrop,
+    isPlaying: playback.isPlaying,
+    // BAR-level clock: the drill's cadence is in BARS, derived from the real
+    // playhead phase × lengthBars (a groove loop = lengthBars bars).
+    lengthBars: config.lengthBars ?? 4,
+    getCurrentTime: playback.getCurrentTime,
+    loopDurationSeconds: playback.loopDurationSeconds,
+    loopStartAudioTime: playback.loopStartAudioTime,
   });
 
   // Next-key preview label for the controls' "current → next" display.
@@ -1048,6 +1070,37 @@ export function GrooveCardBlockView({
 
       {isDrillBrick && (
         <>
+          {/* Reference-Drop cue (Lock The Pocket): tells the student the
+              reference is about to drop / is gone, so the drill is "hold through
+              the silence", not a surprise. Only while the drill is active. */}
+          {referenceDrop.isActive && (
+            <div
+              className={`mb-2 rounded-md px-3 py-1.5 text-center text-xs font-medium ${
+                referenceDrop.isDropped
+                  ? 'bg-amber-500/15 text-amber-300'
+                  : 'bg-white/5 text-white/60'
+              }`}
+              aria-live="polite"
+            >
+              {referenceDrop.isDropped ? (
+                <>
+                  🔇 Reference gone — hold the pulse
+                  {referenceDrop.barsUntilChange != null &&
+                    ` · back in ${referenceDrop.barsUntilChange} bar${
+                      referenceDrop.barsUntilChange === 1 ? '' : 's'
+                    }`}
+                </>
+              ) : (
+                <>
+                  🥁 Lock in
+                  {referenceDrop.barsUntilChange != null &&
+                    ` · reference drops in ${referenceDrop.barsUntilChange} bar${
+                      referenceDrop.barsUntilChange === 1 ? '' : 's'
+                    }`}
+                </>
+              )}
+            </div>
+          )}
           <ConquerOutcome
             criterionType={criterion?.type}
             progress={criterionRuntime.progress}

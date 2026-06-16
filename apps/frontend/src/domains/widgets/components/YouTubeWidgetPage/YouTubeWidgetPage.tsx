@@ -1170,6 +1170,16 @@ function YouTubeWidgetPageContent({
         setHasPassedUnderstand(true);
       }
 
+      // Snapshot the bricks ALREADY completed at mount (the baseline). The
+      // auto-advance below must only fire for a brick completed AFRESH this
+      // session — otherwise, on a REPLAY of an already-done rep (every brick
+      // pre-completed), it cascades brick→brick and snaps the player to the last
+      // one, so they can't re-experience the rep from the top. Captured once,
+      // here, before any in-session completion lands.
+      autoAdvanceBaselineRef.current = new Set(
+        blocks.filter((b) => blockProgress[b.id]?.completed).map((b) => b.id),
+      );
+
       if (initialBlockId && !hasSetCurrentActRef.current) {
         setCurrentBlockId(initialBlockId);
         hasSetCurrentActRef.current = true;
@@ -1245,6 +1255,9 @@ function YouTubeWidgetPageContent({
   // rendered — so a single click reliably advances. The ref guards against
   // re-firing for the same block.
   const lastAutoAdvancedRef = useRef<string | null>(null);
+  // Bricks already completed when the player mounted (a prior day's reps on a
+  // REPLAY). Auto-advance must skip these — see the capture in the init effect.
+  const autoAdvanceBaselineRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const current = blocks[currentBlockIndex];
     if (!current) return;
@@ -1256,6 +1269,9 @@ function YouTubeWidgetPageContent({
             .completionCriterion));
     if (!isBrick) return;
     if (!blockProgress[current.id]?.completed) return;
+    // Pre-completed at mount (replay) → don't cascade past it; let the player
+    // move at their own pace from the top.
+    if (autoAdvanceBaselineRef.current.has(current.id)) return;
     if (lastAutoAdvancedRef.current === current.id) return;
     const nextBlock = blocks[currentBlockIndex + 1];
     if (!nextBlock) return; // last brick → the drill frame shows the summary
@@ -1626,6 +1642,12 @@ function YouTubeWidgetPageContent({
         {blocks.map((block, blockIndex) => {
           const isBlockActive = currentBlockId === block.id;
           const isBlockCompleted = !!blockProgress[block.id]?.completed;
+          // REPLAY: this brick was already completed when the player mounted (a
+          // prior day's rep). The brick should render FRESH (timer running, no
+          // "Done" state) so the player can re-experience it — its done-state
+          // then follows the IN-SESSION conquer, not the stale persisted one.
+          // (Unlock-gating still uses the real isBlockCompleted above.)
+          const wasPreCompleted = autoAdvanceBaselineRef.current.has(block.id);
           const hasNextBlock = blockIndex < blocks.length - 1;
           // A block is unlocked iff every block before it is completed
           // (block 0 is always unlocked). Same rule DynamicIsland uses
@@ -1820,7 +1842,15 @@ function YouTubeWidgetPageContent({
                 <BlockRenderer
                   block={block}
                   isActive={isBlockActive}
-                  isCompleted={isBlockCompleted}
+                  // On a REPLAY a pre-completed drill brick renders fresh (so the
+                  // done-state follows the in-session conquer, not the stale one).
+                  // Plain content blocks (text/celebration/explain) keep their
+                  // real completion; only drill bricks (task) get the fresh start.
+                  isCompleted={
+                    block.type === 'task'
+                      ? isBlockCompleted && !wasPreCompleted
+                      : isBlockCompleted
+                  }
                   onComplete={markBlockComplete}
                   onNext={scrollToNextBlock}
                 />
@@ -1833,7 +1863,9 @@ function YouTubeWidgetPageContent({
                     <BlockRenderer
                       block={block}
                       isActive={isBlockActive}
-                      isCompleted={isBlockCompleted}
+                      // Replay: a pre-completed groove brick renders fresh (timer
+                      // runs); its done-state then follows the in-session conquer.
+                      isCompleted={isBlockCompleted && !wasPreCompleted}
                       onComplete={markBlockComplete}
                       onNext={scrollToNextBlock}
                     />
