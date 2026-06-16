@@ -15,6 +15,7 @@ import type { TrainingEngineRepository } from '../repositories/training-engine.r
 import type { RequestContextService } from '../../../shared/services/request-context.service.js';
 import type { PracticeService } from '../../progress/practice.service.js';
 import type { ProgressService } from '../../progress/progress.service.js';
+import type { SubscriptionRepository } from '../../billing/repositories/subscription.repository.js';
 import type {
   GoalEnrollment,
   RepResult,
@@ -198,7 +199,10 @@ function makeGoal() {
   };
 }
 
-function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
+function makeService(
+  repoOverrides: Partial<TrainingEngineRepository> = {},
+  subRepoOver?: Partial<SubscriptionRepository>,
+) {
   const repo = {
     findEnrollmentById: vi.fn(async () => makeEnrollmentWithBlock()),
     findClimbState: vi.fn(async () => makeClimbState()),
@@ -249,13 +253,27 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
     getLifetimeMasteryByBlock: vi.fn(async () => ({})),
   } as unknown as ProgressService;
 
+  // The gym is the membership product's entitlement: enroll/today-rep gate on an
+  // active subscription, and the goal window binds to currentPeriodEnd. Default
+  // to an ACTIVE subscriber (period 30 days out) so existing tests are
+  // unaffected; gate tests override findByUserId.
+  const subscriptionRepository = {
+    findByUserId: vi.fn(async () => ({
+      status: 'active',
+      currentPeriodEnd: new Date('2026-07-16T00:00:00.000Z'),
+    })),
+    hasActiveSubscription: vi.fn(async () => true),
+    ...(subRepoOver ?? {}),
+  } as unknown as SubscriptionRepository;
+
   const service = new TrainingEngineService(
     repo,
     requestContext,
     practiceService,
     progressService,
+    subscriptionRepository,
   );
-  return { service, repo, practiceService, progressService };
+  return { service, repo, practiceService, progressService, subscriptionRepository };
 }
 
 describe('TrainingEngineService.recordRepResult', () => {
@@ -474,6 +492,16 @@ describe('TrainingEngineService.getTodayRep', () => {
     const { topicProgress } = await service.getTodayRep(USER, ENROLLMENT);
     expect(topicProgress).toBeUndefined();
   });
+
+  it('GATES today-rep on an active subscription — a lapsed member is Forbidden', async () => {
+    const { service } = makeService(
+      {},
+      { findByUserId: vi.fn(async () => null) }, // membership lapsed
+    );
+    await expect(service.getTodayRep(USER, ENROLLMENT)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
 });
 
 describe('TrainingEngineService.listMyEnrollments', () => {
@@ -508,6 +536,66 @@ describe('TrainingEngineService.enrollInGoal', () => {
       ENROLLMENT,
       expect.objectContaining({ tempoBpm: 120 }),
     );
+  });
+
+  it('GATES enroll on an active subscription — non-member is Forbidden', async () => {
+    const { service, repo } = makeService(
+      { findEnrollmentByGoal: vi.fn(async () => null) },
+      { findByUserId: vi.fn(async () => null) }, // no subscription
+    );
+    await expect(
+      service.enrollInGoal(USER, 'speed-c-major-scale'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repo.createEnrollment).not.toHaveBeenCalled();
+  });
+
+  it('GATES enroll on a CANCELED subscription too', async () => {
+    const { service } = makeService(
+      { findEnrollmentByGoal: vi.fn(async () => null) },
+      {
+        findByUserId: vi.fn(async () => ({
+          status: 'canceled',
+          currentPeriodEnd: new Date('2026-07-16T00:00:00.000Z'),
+        })),
+      } as never,
+    );
+    await expect(
+      service.enrollInGoal(USER, 'speed-c-major-scale'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('binds the goal deadline to the subscription billing period', async () => {
+    const { service, repo } = makeService(
+      { findEnrollmentByGoal: vi.fn(async () => null) },
+      {
+        findByUserId: vi.fn(async () => ({
+          status: 'active',
+          currentPeriodEnd: new Date('2026-07-16T00:00:00.000Z'),
+        })),
+      } as never,
+    );
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    // placement (arg 4) carries goalDeadline = the period end.
+    const placement = (repo.createEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][3];
+    expect(placement.goalDeadline).toBe('2026-07-16T00:00:00.000Z');
+  });
+
+  it('caps a LIFETIME member (period ~2099) to the 30-day cycle (goalDeadline null)', async () => {
+    const { service, repo } = makeService(
+      { findEnrollmentByGoal: vi.fn(async () => null) },
+      {
+        findByUserId: vi.fn(async () => ({
+          status: 'active',
+          currentPeriodEnd: new Date('2099-12-31T00:00:00.000Z'),
+        })),
+      } as never,
+    );
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    const placement = (repo.createEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][3];
+    // null → assembleStudentState falls back to the fixed 30-day clock.
+    expect(placement.goalDeadline).toBeNull();
   });
 
   it('FREEZES content-ladder topics into the snapshot (Build B persistence fix)', async () => {

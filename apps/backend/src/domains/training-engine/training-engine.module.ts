@@ -9,6 +9,7 @@ import { AdminTrainingGoalsService } from './admin-training-goals.service.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 import { ProgressModule } from '../progress/progress.module.js';
+import { MembershipModule } from '../billing/membership.module.js';
 
 /**
  * Bass Gym Training Engine — backend domain.
@@ -26,7 +27,17 @@ import { ProgressModule } from '../progress/progress.module.js';
  * Practice Bridge extracts).
  */
 @Module({
-  imports: [ConfigModule, SupabaseModule, AuthModule, ProgressModule],
+  imports: [
+    ConfigModule,
+    SupabaseModule,
+    AuthModule,
+    ProgressModule,
+    // MembershipModule exports SubscriptionRepository — the gym is the monthly
+    // membership product's entitlement: enroll/today-rep require an active
+    // subscription, and the goal window binds to the subscription's billing
+    // period (currentPeriodEnd). See enrollInGoal / getTodayRep.
+    MembershipModule,
+  ],
   controllers: [TrainingEngineController, AdminTrainingGoalsController],
   providers: [
     TrainingEngineService,

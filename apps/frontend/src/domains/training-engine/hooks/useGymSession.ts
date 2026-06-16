@@ -77,7 +77,12 @@ export interface GymSession {
 
 export function useGymSession(
   goalSlug: string = DEFAULT_GOAL_SLUG,
+  /** Gate the whole flow. The gym is the membership product's entitlement —
+   *  the page passes `enabled: isMember` so a non-member never auto-enrolls
+   *  (which the backend would 403 anyway). Defaults to true. */
+  options: { enabled?: boolean } = {},
 ): GymSession {
+  const { enabled = true } = options;
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<GymStatus>('loading');
   const [slug, setSlug] = useState<string | null>(null);
@@ -242,11 +247,12 @@ export function useGymSession(
   );
 
   // Wait for auth to resolve before touching the AuthGuard-protected endpoints
-  // (firing on raw mount races AuthProvider setting the token → a 401).
+  // (firing on raw mount races AuthProvider setting the token → a 401). Also
+  // gated on `enabled` (membership) so a non-member never auto-enrolls.
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!enabled || !isAuthenticated || !user) return;
     void run();
-  }, [isAuthenticated, user, run]);
+  }, [enabled, isAuthenticated, user, run]);
 
   return {
     status,
