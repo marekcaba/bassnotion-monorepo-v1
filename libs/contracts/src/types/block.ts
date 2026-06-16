@@ -493,6 +493,30 @@ export interface GrooveCardBlockConfig {
   /** DRILL: how this brick completes (time/loops/conquer/manual). Presence (or
    *  `role`) makes the card a drill brick. Absent on plain tutorial cards. */
   completionCriterion?: DrillCompletionCriterion;
+  /** DRILL: Reference-Drop pulse-steadiness drill (Lock The Pocket). When
+   *  enabled, the chosen reference stem(s) fade OUT for `dropForBars` and back
+   *  IN on a bar boundary every `everyBars` — the return reveals tempo drift.
+   *  Trains Pulse·Steadiness + Timing·Awareness. ALL behaviour is admin-authored
+   *  here (nothing hardcoded); absent/disabled = the drill doesn't run. */
+  referenceDrop?: ReferenceDropConfig;
+}
+
+/** What a Reference-Drop drill fades, and on what cadence. Admin-authored on the
+ *  groove-card block; the playback hook reads it and schedules the gain ramps on
+ *  bar boundaries (no values are baked into the engine). */
+export interface ReferenceDropConfig {
+  /** Off unless true — the feature never runs implicitly. */
+  enabled: boolean;
+  /** The reference drops once per this many bars (e.g. 4 → every 4th bar window). */
+  everyBars: number;
+  /** How many bars the reference stays dropped before fading back in. */
+  dropForBars: number;
+  /** Which reference stem(s) fade: 'drums' (the harder, musical test) and/or
+   *  'click' (the classic metronome-mute). At least one. */
+  dropTargets: Array<'drums' | 'click'>;
+  /** Gain-ramp duration in ms for the fade out/in. Optional; the hook falls
+   *  back to a short default (~80ms) when omitted. */
+  fadeMs?: number;
 }
 
 /**

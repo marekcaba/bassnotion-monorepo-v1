@@ -201,6 +201,19 @@ export const grooveCardBlockConfigSchema = z
         targetTier: z.enum(['bronze', 'silver', 'gold']).optional(),
       })
       .optional(),
+    // DRILL: Reference-Drop pulse-steadiness drill (Lock The Pocket). All
+    // behaviour admin-authored; must be declared here or the non-passthrough
+    // schema STRIPS it on save (same trap noted on chordChart above). dropTargets
+    // is non-empty so an enabled drill always fades something.
+    referenceDrop: z
+      .object({
+        enabled: z.boolean(),
+        everyBars: z.number().int().positive(),
+        dropForBars: z.number().int().positive(),
+        dropTargets: z.array(z.enum(['drums', 'click'])).min(1),
+        fadeMs: z.number().int().nonnegative().optional(),
+      })
+      .optional(),
   })
   .refine(
     (c) =>

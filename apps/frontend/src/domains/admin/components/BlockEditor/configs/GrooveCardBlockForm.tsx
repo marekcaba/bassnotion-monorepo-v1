@@ -21,6 +21,7 @@ import { useCallback } from 'react';
 import type {
   GrooveCardBlockConfig,
   GrooveCardStemSet,
+  ReferenceDropConfig,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
@@ -291,6 +292,14 @@ export function GrooveCardBlockForm({
         </p>
       </fieldset>
 
+      {/* Reference-Drop — the pulse-steadiness drill (Lock The Pocket). The
+          chosen reference stem(s) fade out for N bars then back in on a bar
+          boundary; the return reveals tempo drift. All admin-authored here. */}
+      <ReferenceDropFields
+        value={config.referenceDrop}
+        onChange={(rd) => updateField('referenceDrop', rd)}
+      />
+
       {/* Completion criterion — how this drill brick is "done". */}
       <CompletionCriterionFields
         value={config.completionCriterion}
@@ -376,5 +385,128 @@ export function GrooveCardBlockForm({
           Allow bookmark: contract-only field, no UI surface in v1.
           When the bookmark feature lands, re-expose here. */}
     </div>
+  );
+}
+
+/** Form defaults the admin SEES and can change — NOT engine constants. Enabling
+ *  the drill seeds these; every field is then editable. */
+const REFERENCE_DROP_DEFAULT: ReferenceDropConfig = {
+  enabled: true,
+  everyBars: 4,
+  dropForBars: 2,
+  dropTargets: ['drums'],
+  fadeMs: 80,
+};
+
+/**
+ * Reference-Drop admin control. Enable toggle reveals the cadence + targets +
+ * fade. All values are written straight onto the block's `referenceDrop` config
+ * (nothing hardcoded in the engine — the hook reads exactly what's set here).
+ */
+function ReferenceDropFields({
+  value,
+  onChange,
+}: {
+  value?: ReferenceDropConfig;
+  onChange: (rd: ReferenceDropConfig | undefined) => void;
+}) {
+  const enabled = !!value?.enabled;
+  const rd = value ?? REFERENCE_DROP_DEFAULT;
+
+  const toggle = (on: boolean) =>
+    onChange(on ? { ...REFERENCE_DROP_DEFAULT, ...value, enabled: true } : undefined);
+
+  const set = <K extends keyof ReferenceDropConfig>(
+    key: K,
+    v: ReferenceDropConfig[K],
+  ) => onChange({ ...rd, [key]: v, enabled: true });
+
+  const toggleTarget = (target: 'drums' | 'click') => {
+    const has = rd.dropTargets.includes(target);
+    const next = has
+      ? rd.dropTargets.filter((t) => t !== target)
+      : [...rd.dropTargets, target];
+    // An enabled drill must fade something — ignore an attempt to clear the last.
+    if (next.length === 0) return;
+    set('dropTargets', next);
+  };
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
+        Reference-Drop (pulse drill) — optional
+      </legend>
+      <label className="flex items-center gap-2 text-xs text-white/60">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        Drop the reference periodically to train pulse-steadiness
+      </label>
+
+      {enabled && (
+        <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="text-xs text-white/50">Drop every (bars)</span>
+              <input
+                type="number"
+                min={1}
+                value={rd.everyBars}
+                onChange={(e) =>
+                  set('everyBars', Math.max(1, Number(e.target.value)))
+                }
+                className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs text-white/50">Stays dropped (bars)</span>
+              <input
+                type="number"
+                min={1}
+                value={rd.dropForBars}
+                onChange={(e) =>
+                  set('dropForBars', Math.max(1, Number(e.target.value)))
+                }
+                className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white"
+              />
+            </label>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs text-white/50">Drop which reference</span>
+            <div className="flex gap-4 text-xs text-white/70">
+              {(['drums', 'click'] as const).map((target) => (
+                <label key={target} className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={rd.dropTargets.includes(target)}
+                    onChange={() => toggleTarget(target)}
+                  />
+                  {target === 'drums' ? 'Drums (musical)' : 'Click (metronome)'}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="space-y-1 block">
+            <span className="text-xs text-white/50">Fade (ms)</span>
+            <input
+              type="number"
+              min={0}
+              value={rd.fadeMs ?? 80}
+              onChange={(e) =>
+                set('fadeMs', Math.max(0, Number(e.target.value)))
+              }
+              className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white"
+            />
+          </label>
+          <p className="text-xs text-white/40">
+            The reference fades out for {rd.dropForBars} bar
+            {rd.dropForBars === 1 ? '' : 's'} every {rd.everyBars}, returning on
+            the bar — the player holds the pulse through the gap.
+          </p>
+        </div>
+      )}
+    </fieldset>
   );
 }
