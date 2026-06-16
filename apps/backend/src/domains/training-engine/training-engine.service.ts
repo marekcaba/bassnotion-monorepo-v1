@@ -41,6 +41,7 @@ import { RequestContextService } from '../../shared/services/request-context.ser
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
 import { PracticeService } from '../progress/practice.service.js';
 import { ProgressService } from '../progress/progress.service.js';
+import { SubscriptionRepository } from '../billing/repositories/subscription.repository.js';
 import type { InsertRepResult } from './types/training-engine.types.js';
 
 /** Default attendance window for StudentState (matches the 30-day graduation
@@ -48,6 +49,11 @@ import type { InsertRepResult } from './types/training-engine.types.js';
 const ATTENDANCE_WINDOW_DAYS = GRADUATION_DAYS;
 /** How many recent rep outcomes derived.lastNOutcomes carries. */
 const RECENT_OUTCOME_WINDOW = 5;
+/** A subscription period ending beyond this is treated as "lifetime" (the
+ *  founder/lifetime grant stamps ~2099-12-31). Such a goal can't span decades,
+ *  so it falls back to the normal 30-day cycle. ~5 years out (in ms) is well
+ *  past any real monthly/annual period but short of the 2099 sentinel. */
+const LIFETIME_PERIOD_CUTOFF_MS = Date.now() + 5 * 365 * 24 * 60 * 60 * 1000;
 
 /**
  * TrainingEngineService — the backend surface of the Bass Gym Training Engine.
@@ -81,6 +87,10 @@ export class TrainingEngineService {
     // mastery are read THROUGH these, never via a direct cross-domain query.
     private readonly practiceService: PracticeService,
     private readonly progressService: ProgressService,
+    // The gym IS the monthly membership product's entitlement: enroll +
+    // today-rep require an active subscription, and the goal window binds to the
+    // subscription's billing period. Read through the billing domain's repo.
+    private readonly subscriptionRepository: SubscriptionRepository,
   ) {}
 
   /**
@@ -196,6 +206,19 @@ export class TrainingEngineService {
         ? (enrollment.placement.startTempoBpm as number)
         : null;
 
+    // The goal's deadline (founder: bind the goal to the billing period). When
+    // the enrollment captured a billing-period end (`placement.goalDeadline`),
+    // the days-remaining counts to THAT — the goal closes cleanly at renewal,
+    // not a fixed day-30. Absent (lifetime / pre-gate enrollments) → the
+    // existing 30-day clock. Floored at 0.
+    const goalDeadline =
+      typeof enrollment.placement?.goalDeadline === 'string'
+        ? (enrollment.placement.goalDeadline as string)
+        : null;
+    const graduationDaysRemaining = goalDeadline
+      ? Math.max(0, dayDiff(todayUtc, goalDeadline.slice(0, 10)))
+      : Math.max(0, GRADUATION_DAYS - daysSinceStart);
+
     // Content-ladder (epic §3 Build A): per-topic quota tallies + current stage,
     // a pure derivation from the frozen topics + the rep history (topicId). Only
     // present on a multi-topic goal — single-focal SPEED goals leave it absent.
@@ -214,7 +237,7 @@ export class TrainingEngineService {
         status: enrollment.status,
         startTempoBpm,
         daysSinceStart,
-        graduationDaysRemaining: Math.max(0, GRADUATION_DAYS - daysSinceStart),
+        graduationDaysRemaining,
       },
       climb,
       repHistory,
@@ -318,6 +341,16 @@ export class TrainingEngineService {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
+    // GATE: the gym is the monthly-membership product's entitlement. Only an
+    // active subscriber may enroll. (Resolves the period window too — see below.)
+    const window = await this.resolveMembershipWindow(userId);
+    if (!window.hasAccess) {
+      throw new ForbiddenException(
+        'The Bass Gym is part of the membership — an active subscription is ' +
+          'required to set a goal.',
+      );
+    }
+
     const goal = await this.repository.findGoalBySlug(goalSlug);
     if (!goal) {
       throw new NotFoundException(`Training goal "${goalSlug}" not found`);
@@ -330,11 +363,15 @@ export class TrainingEngineService {
       typeof picked === 'number'
         ? clampRepTempo(picked)
         : (goal.target?.tempoBpm ?? 60);
-    // Record where the player started (audit). `placed` distinguishes a real
-    // placement from the target/floor fallback.
+    // Record where the player started (audit) + the goal's DEADLINE: the goal is
+    // bound to the membership's billing period (founder: don't cut a goal mid-
+    // rep at month end — close it cleanly at the period boundary). Stored on the
+    // opaque placement JSONB → zero migration. null = the 30-day fallback
+    // (lifetime/no-period members; see resolveMembershipWindow).
     const placementRecord = {
       startTempoBpm,
       placed: typeof picked === 'number',
+      goalDeadline: window.periodEnd, // ISO string or null
     };
 
     const existing = await this.repository.findEnrollmentByGoal(
@@ -395,6 +432,46 @@ export class TrainingEngineService {
     });
 
     return enrollment;
+  }
+
+  /**
+   * Resolve the caller's membership window — the gym IS the monthly membership
+   * product's entitlement (founder: the membership is the first product, the
+   * goal lives inside it).
+   *
+   * Returns:
+   *   - hasAccess: an ACTIVE / TRIALING subscription? (the gate)
+   *   - periodEnd: the goal's deadline = the subscription's billing period end
+   *     (ISO), so the goal closes cleanly at renewal — NOT a fixed day-30 — and
+   *     a fresh goal can emerge. null falls back to the 30-day window for a
+   *     LIFETIME member (synthetic period far in the future → an open-ended goal
+   *     makes no sense; they run normal 30-day cycles on repeat).
+   *
+   * Accelerator is a DIFFERENT product with its own (future) gym access — it is
+   * intentionally NOT a path to membership-gym here.
+   */
+  private async resolveMembershipWindow(
+    userId: string,
+  ): Promise<{ hasAccess: boolean; periodEnd: string | null }> {
+    // Admins bypass the gate (matching the rest of the app — admins get full
+    // entitlement). No billing period → the normal 30-day goal cycle.
+    if (await this.repository.isAdmin(userId)) {
+      return { hasAccess: true, periodEnd: null };
+    }
+
+    const sub = await this.subscriptionRepository.findByUserId(userId);
+    const active =
+      !!sub && (sub.status === 'active' || sub.status === 'trialing');
+    if (!active) return { hasAccess: false, periodEnd: null };
+
+    // A lifetime/founder grant carries a synthetic far-future period end; a goal
+    // can't span ~73 years, so treat it as no period → the 30-day cycle.
+    const end = sub.currentPeriodEnd;
+    const periodEnd =
+      end && end.getTime() < LIFETIME_PERIOD_CUTOFF_MS
+        ? end.toISOString()
+        : null;
+    return { hasAccess: true, periodEnd };
   }
 
   /** Create the enrollment's climb_state only if it doesn't already exist. */
@@ -497,6 +574,18 @@ export class TrainingEngineService {
   }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
+
+    // GATE: planning a rep is gym access — gate it on an active subscription
+    // too (not just enroll), so a lapsed member can't keep pulling new reps.
+    // The in-flight goal still CLOSES cleanly at its period deadline (the rep
+    // they're mid-way through isn't yanked); this just stops NEW reps once the
+    // membership has ended.
+    const window = await this.resolveMembershipWindow(userId);
+    if (!window.hasAccess) {
+      throw new ForbiddenException(
+        'The Bass Gym is part of the membership — renew to keep training.',
+      );
+    }
 
     // The enrollment is still needed for the block_set → BlockPool resolution
     // (StudentState carries the climb + history + goalType the planner needs,

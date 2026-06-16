@@ -7,12 +7,14 @@ import type {
   MonthInReview,
   TopicProgress,
 } from '@bassnotion/contracts';
+import Link from 'next/link';
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
 import { useGymSession } from '@/domains/training-engine/hooks/useGymSession';
 import { useRepResultSync } from '@/domains/training-engine/hooks/useRepResultSync';
+import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 
 /**
  * /app/gym — the daily-rep entry point (Bass Gym Training Engine, Phase 3).
@@ -72,6 +74,37 @@ function GymPlacement({
         >
           Start at {tempo} BPM
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The membership wall — the gym is part of the monthly membership product, so a
+ * non-member sees this instead of the gym (the backend enforces it too; this is
+ * the friendly front door, not the only gate). Goal = your goal for the month;
+ * it's bound to the membership period. Links to /pricing to join.
+ */
+function GymMembershipWall() {
+  return (
+    <div className="flex min-h-[60vh] w-full items-center justify-center px-4">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-center text-white">
+        <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
+          The Bass Gym
+        </p>
+        <h1 className="text-2xl font-semibold">
+          Your goal for the month lives in the membership
+        </h1>
+        <p className="text-sm text-white/50">
+          Membership gives you a coach-built daily rep — a 6-minute goal that
+          climbs with you for the month, then resets fresh. Join to set yours.
+        </p>
+        <Link
+          href="/pricing"
+          className="inline-block w-full rounded-md bg-[#E8A44A] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[#E8A44A]/90"
+        >
+          See membership
+        </Link>
       </div>
     </div>
   );
@@ -379,6 +412,12 @@ function GymGraduation({
 }
 
 export default function GymPage() {
+  // The gym is the monthly-membership product's entitlement. Gate on membership
+  // BEFORE the session runs, so a non-member sees the wall and never auto-enrolls
+  // (the backend enforces it too — this is the friendly front door).
+  const { tier, isLoading: entitlementLoading } = useEntitlement();
+  const isMember = tier === 'member';
+
   const {
     status,
     slug,
@@ -394,7 +433,7 @@ export default function GymPage() {
     chooseFloor,
     chooseDoor,
     refresh,
-  } = useGymSession();
+  } = useGymSession(undefined, { enabled: isMember });
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -416,6 +455,20 @@ export default function GymPage() {
     () => exercises,
     [exercises, exercises?.length, exercises?.[0]?.id],
   );
+
+  // Membership gate. While entitlement resolves, show the skeleton (never flash
+  // the wall to a member, nor the gym to a non-member). Resolved + non-member →
+  // the upsell wall.
+  if (entitlementLoading) {
+    return <TutorialPageSkeleton />;
+  }
+  if (!isMember) {
+    return (
+      <>
+        <GymMembershipWall />
+      </>
+    );
+  }
 
   if (status === 'error') {
     return (
