@@ -81,6 +81,12 @@ export interface PrereqThreshold {
 /** What the goal aims at, e.g. { tempoBpm: 120 }. Shape varies by type. */
 export interface GoalTarget {
   tempoBpm?: number;
+  /** Admin-authored BPM step between adjacent rep levels (SPEED): L1 = today −
+   *  notch, L2 = today, L3 = today + notch. The L1↔L3 spread is 2× this. Lets
+   *  the author tune how aggressive the daily bracket is per goal (a tight
+   *  groove wants a small step; a forgiving one can spread wider). Falls back to
+   *  DEFAULT_TEMPO_NOTCH_BPM when unset. */
+  tempoNotchBpm?: number;
   [key: string]: unknown;
 }
 
@@ -440,6 +446,9 @@ export interface GenerateRepOptions {
    *  tempo for 3 min ("just loop one groove") — protects the floor streak, not
    *  the ceiling. Defaults to 'full' when omitted. */
   mode?: 'full' | 'floor';
+  /** The admin-authored SPEED tempo step between adjacent levels (from the
+   *  goal's target.tempoNotchBpm). Falls back to DEFAULT_TEMPO_NOTCH_BPM. */
+  tempoNotchBpm?: number;
 }
 
 /**

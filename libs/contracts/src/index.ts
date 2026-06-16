@@ -66,6 +66,10 @@ export {
   KEY_MAX as REP_KEY_MAX,
   REP_BRICK_COUNT,
   SPEED_BASE_NOTCH_BPM,
+  DEFAULT_TEMPO_NOTCH_BPM,
+  TEMPO_NOTCH_MIN,
+  TEMPO_NOTCH_MAX,
+  FLOOR_BRICK_MINUTES,
 } from './services/generateRep.js';
 
 // Bass Gym Training Engine — the climb advance brain (Treadmill epic, Story 2)

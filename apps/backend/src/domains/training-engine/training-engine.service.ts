@@ -505,6 +505,9 @@ export class TrainingEngineService {
     const bricks = generateRep(climb, pool, student.repHistory, {
       goalType: student.goal.type,
       mode,
+      // Admin-authored bracket width (target.tempoNotchBpm); generateRep clamps
+      // + falls back to the default when unset.
+      tempoNotchBpm: student.goal.target?.tempoNotchBpm as number | undefined,
     });
 
     const title =
