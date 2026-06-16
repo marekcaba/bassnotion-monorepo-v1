@@ -552,6 +552,8 @@ export type {
   GoalEnrollment,
   GraduationDoor,
   GraduationSummary,
+  MonthInReview,
+  ConqueredGroove,
   RepResult,
   ClimbState,
   StudentState,

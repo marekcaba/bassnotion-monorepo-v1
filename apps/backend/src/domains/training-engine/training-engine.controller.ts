@@ -15,6 +15,7 @@ import type {
   GoalEnrollment,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
 } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
@@ -150,6 +151,23 @@ export class TrainingEngineController {
     @Param('enrollmentId') enrollmentId: string,
   ): Promise<GraduationSummary> {
     return this.trainingEngineService.getGraduation(user.id, enrollmentId);
+  }
+
+  /**
+   * GET /api/v1/training-engine/enrollments/:enrollmentId/month-in-review
+   *
+   * The day-30 recap (Treadmill epic Story 6): the player's journey through the
+   * cycle — level then→now, practice pattern, reps/grooves conquered, streak.
+   * Read-only, "always a win".
+   */
+  @Get('enrollments/:enrollmentId/month-in-review')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getMonthInReview(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+  ): Promise<MonthInReview> {
+    return this.trainingEngineService.getMonthInReview(user.id, enrollmentId);
   }
 
   /**

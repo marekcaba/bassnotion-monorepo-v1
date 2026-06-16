@@ -12,6 +12,7 @@ import type {
   TutorialBlock,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -81,6 +82,18 @@ export async function fetchGraduation(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,
     )}/graduation`,
+  );
+}
+
+/** GET .../enrollments/:id/month-in-review — the day-30 recap (Story 6). */
+export async function fetchMonthInReview(
+  enrollmentId: string,
+): Promise<MonthInReview> {
+  await ensureAuthToken();
+  return apiClient.get<MonthInReview>(
+    `/api/v1/training-engine/enrollments/${encodeURIComponent(
+      enrollmentId,
+    )}/month-in-review`,
   );
 }
 

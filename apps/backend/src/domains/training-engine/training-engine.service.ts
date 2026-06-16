@@ -22,6 +22,9 @@ import type {
   GoalSnapshot,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
+  ConqueredGroove,
+  MasteryTier,
   StudentState,
   StudentSignals,
 } from '@bassnotion/contracts';
@@ -589,6 +592,66 @@ export class TrainingEngineService {
   }
 
   /**
+   * The day-30 month-in-review recap (Story 6): the player's journey through the
+   * cycle — level then→now, practice pattern, reps/grooves conquered, streak.
+   * Assembled read-time from the engine's own rep_results + the enrollment/climb
+   * + the shared practice/streak services (boundary-clean). A recap, always a
+   * win. Each cross-boundary read is best-effort so a stat outage can't break it.
+   */
+  async getMonthInReview(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<MonthInReview> {
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+    const climb = await this.repository.findClimbState(
+      userId,
+      goalEnrollmentId,
+    );
+    const history = await this.repository.getRepResultsForEnrollment(
+      userId,
+      goalEnrollmentId,
+    );
+
+    // Cross-boundary reads (shared services), best-effort.
+    let practicedDays: string[] = [];
+    let streak: {
+      current: number;
+      ceiling: number;
+      freezeTokens: number;
+    } = { current: 0, ceiling: 0, freezeTokens: 0 };
+    try {
+      [practicedDays, streak] = await Promise.all([
+        this.practiceService.listPracticeDaysInWindow(
+          userId,
+          ATTENDANCE_WINDOW_DAYS,
+        ),
+        this.practiceService.getStreak(userId).then((s) => ({
+          current: s.current,
+          ceiling: s.ceiling,
+          freezeTokens: s.freezeTokens,
+        })),
+      ]);
+    } catch {
+      // leave the safe defaults
+    }
+
+    return buildMonthInReview({
+      enrollment,
+      currentPosition: climb?.currentPosition ?? null,
+      history,
+      practicedDays,
+      windowDays: ATTENDANCE_WINDOW_DAYS,
+      streak,
+    });
+  }
+
+  /**
    * Walk through one of the 3 doors at graduation (spec §7):
    *   - go_deeper   → raise the goal target + RESET the 30-day clock (keep
    *                   climbing, the same enrollment continues).
@@ -775,5 +838,89 @@ export function buildGraduationSummary(
           windowDays: attendance.windowDays,
         }
       : {}),
+  };
+}
+
+const TIER_RANK: Record<MasteryTier, number> = {
+  bronze: 0,
+  silver: 1,
+  gold: 2,
+};
+
+/**
+ * Pure month-in-review assembly (exported for tests). No I/O, no clock — every
+ * input is passed in. Derives the level delta, the strongest practice weekday,
+ * rep/groove counts, and the best tier per lane (the groove's display name comes
+ * from the goal's block title — the gym has one groove per goal, so the recap
+ * groups by goal, not by ephemeral per-level brick ids).
+ */
+export function buildMonthInReview(input: {
+  enrollment: GoalEnrollment;
+  currentPosition: Record<string, unknown> | null;
+  history: RepResult[];
+  practicedDays: string[];
+  windowDays: number;
+  streak: { current: number; ceiling: number; freezeTokens: number };
+}): MonthInReview {
+  const { enrollment, currentPosition, history, practicedDays, windowDays } =
+    input;
+
+  const start =
+    (enrollment.placement?.startTempoBpm as number | undefined) ?? null;
+  const current = (currentPosition?.tempoBpm as number | undefined) ?? null;
+  const gainedBpm =
+    typeof start === 'number' && typeof current === 'number'
+      ? current - start
+      : null;
+
+  // Strongest weekday: the day-of-week with the most practice days (0=Sun).
+  const weekdayCounts = new Array(7).fill(0) as number[];
+  for (const d of practicedDays) {
+    const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
+    if (dow >= 0 && dow <= 6) weekdayCounts[dow]++;
+  }
+  let strongestWeekday: number | null = null;
+  let best = 0;
+  for (let i = 0; i < 7; i++) {
+    if (weekdayCounts[i] > best) {
+      best = weekdayCounts[i];
+      strongestWeekday = i;
+    }
+  }
+
+  const conquered = history.filter((r) => r.result === 'conquered');
+  // Best tier across the conquered reps (the goal's single lane in v1).
+  let bestTier: MasteryTier | null = null;
+  for (const r of conquered) {
+    const t = r.achievedTier;
+    if (t && (bestTier === null || TIER_RANK[t] > TIER_RANK[bestTier])) {
+      bestTier = t;
+    }
+  }
+
+  // The lane's display name = the goal's focal block title (the groove), falling
+  // back to a generic label. One lane per goal in v1.
+  const focalTitle =
+    enrollment.goalSnapshot.blockSet?.[0]?.block?.title ?? 'Your groove';
+  const grooves: ConqueredGroove[] =
+    conquered.length > 0
+      ? [{ title: focalTitle, bestTier, conqueredReps: conquered.length }]
+      : [];
+
+  return {
+    goalEnrollmentId: enrollment.id,
+    startTempoBpm: start,
+    currentTempoBpm: current,
+    gainedBpm,
+    daysPracticed: practicedDays.length,
+    windowDays,
+    practicedDays,
+    strongestWeekday,
+    totalReps: history.length,
+    conqueredReps: conquered.length,
+    grooves,
+    streakDays: input.streak.current,
+    ceilingDays: input.streak.ceiling,
+    freezeTokens: input.streak.freezeTokens,
   };
 }

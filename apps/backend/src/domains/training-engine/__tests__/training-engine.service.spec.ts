@@ -8,6 +8,7 @@ import {
 import {
   TrainingEngineService,
   buildGraduationSummary,
+  buildMonthInReview,
   deriveStudentSignals,
 } from '../training-engine.service.js';
 import type { TrainingEngineRepository } from '../repositories/training-engine.repository.js';
@@ -780,5 +781,58 @@ describe('TrainingEngineService.getTodayRep — climb advance', () => {
     });
     await service.getTodayRep(USER, ENROLLMENT);
     expect(repo.patchClimbState).not.toHaveBeenCalled();
+  });
+});
+
+// ── Story 6: month-in-review recap ───────────────────────────────────────────
+
+describe('buildMonthInReview (pure)', () => {
+  it('derives level delta, strongest weekday, rep/groove counts + best tier', () => {
+    const enrollment = makeEnrollmentWithBlock();
+    enrollment.placement = { startTempoBpm: 80 };
+    const review = buildMonthInReview({
+      enrollment,
+      currentPosition: { tempoBpm: 112 },
+      history: [
+        makeRepResult({ id: 'r3', result: 'conquered', achievedTier: 'gold' }),
+        makeRepResult({ id: 'r2', result: 'conquered', achievedTier: 'silver' }),
+        makeRepResult({ id: 'r1', result: 'released', achievedTier: null }),
+      ],
+      // 2024-06-10 is a Monday, -11 a Tuesday; weight Tuesdays.
+      practicedDays: ['2026-06-09', '2026-06-16', '2026-06-23', '2026-06-10'],
+      windowDays: 30,
+      streak: { current: 12, ceiling: 7, freezeTokens: 2 },
+    });
+
+    expect(review.startTempoBpm).toBe(80);
+    expect(review.currentTempoBpm).toBe(112);
+    expect(review.gainedBpm).toBe(32);
+    expect(review.totalReps).toBe(3);
+    expect(review.conqueredReps).toBe(2);
+    // best tier across conquered reps = gold
+    expect(review.grooves).toHaveLength(1);
+    expect(review.grooves[0].title).toBe('C Major Scale');
+    expect(review.grooves[0].bestTier).toBe('gold');
+    expect(review.grooves[0].conqueredReps).toBe(2);
+    // 2026-06-09/16/23 are Tuesdays (UTC) → strongest weekday = 2 (Tue)
+    expect(review.strongestWeekday).toBe(2);
+    expect(review.daysPracticed).toBe(4);
+    expect(review.streakDays).toBe(12);
+    expect(review.ceilingDays).toBe(7);
+  });
+
+  it('handles a cycle with no conquered reps (no grooves, null tier)', () => {
+    const review = buildMonthInReview({
+      enrollment: makeEnrollmentWithBlock(),
+      currentPosition: null,
+      history: [makeRepResult({ result: 'released', achievedTier: null })],
+      practicedDays: [],
+      windowDays: 30,
+      streak: { current: 0, ceiling: 0, freezeTokens: 0 },
+    });
+    expect(review.grooves).toHaveLength(0);
+    expect(review.conqueredReps).toBe(0);
+    expect(review.gainedBpm).toBeNull();
+    expect(review.strongestWeekday).toBeNull();
   });
 });

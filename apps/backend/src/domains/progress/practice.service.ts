@@ -223,6 +223,29 @@ export class PracticeService {
       return 0;
     }
   }
+
+  /**
+   * The calendar days the user practised in the last `windowDays` (YYYY-MM-DD,
+   * ascending). The shared read the month-in-review recap uses for the practice
+   * PATTERN (30-day calendar + strongest weekday). Returns [] on failure (a
+   * recap stat must not break graduation).
+   */
+  async listPracticeDaysInWindow(
+    userId: string,
+    windowDays: number,
+  ): Promise<string[]> {
+    const since = subtractUtcDays(this.todayUtc(), Math.max(0, windowDays - 1));
+    try {
+      return await this.streakRepo.listPracticeDaysSince(userId, since);
+    } catch (error) {
+      this.logger.error('Failed to list practice days in window', error as Error, {
+        userId,
+        windowDays,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      return [];
+    }
+  }
 }
 
 // ── Pure streak math (exported for unit tests) ──────────────────────────────

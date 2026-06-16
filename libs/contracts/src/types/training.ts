@@ -214,6 +214,50 @@ export interface GraduationSummary {
 }
 
 // =====================================================
+// MonthInReview — the day-30 recap (Treadmill epic Story 6). The journey screen:
+// level then→now, the practice pattern, reps/grooves conquered, streak. Assembled
+// read-time at graduation from the engine's own data + the shared streak/practice
+// services. A recap, "always a win" — never pass/fail.
+// =====================================================
+
+/** A groove/lane conquered this cycle, with the player's best tier in it. */
+export interface ConqueredGroove {
+  /** Display name (the goal/groove title, e.g. "Lock the Pocket"). */
+  title: string;
+  /** Best tier reached across this cycle's conquered reps, or null. */
+  bestTier: MasteryTier | null;
+  /** How many reps were conquered in this lane. */
+  conqueredReps: number;
+}
+
+export interface MonthInReview {
+  goalEnrollmentId: string;
+  /** Level then → now (BPM for SPEED; null when unknown). */
+  startTempoBpm: number | null;
+  currentTempoBpm: number | null;
+  /** current − start (null if either unknown). */
+  gainedBpm: number | null;
+
+  /** Practice pattern. */
+  daysPracticed: number;
+  windowDays: number;
+  /** The distinct days practised (YYYY-MM-DD, ascending) — drives the calendar. */
+  practicedDays: string[];
+  /** 0=Sun…6=Sat, the weekday the player practised most (null if no days). */
+  strongestWeekday: number | null;
+
+  /** Reps & grooves. */
+  totalReps: number;
+  conqueredReps: number;
+  grooves: ConqueredGroove[];
+
+  /** Streak snapshot at graduation. */
+  streakDays: number;
+  ceilingDays: number;
+  freezeTokens: number;
+}
+
+// =====================================================
 // RepResult — append-only history; the engine's source of truth.
 // =====================================================
 

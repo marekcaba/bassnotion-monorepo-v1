@@ -20,6 +20,7 @@ import type {
   TutorialBlock,
   GraduationSummary,
   GraduationDoor,
+  MonthInReview,
 } from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
@@ -28,6 +29,7 @@ import {
   enrollInGoal,
   planTodayRep,
   fetchGraduation,
+  fetchMonthInReview,
   graduate,
 } from '../api/training-engine.api';
 
@@ -47,6 +49,10 @@ export interface GymSession {
   /** Day-30 fork status when due (and not yet graduated); null otherwise. The
    *  gym SURFACES this without blocking the rep (spec §7). */
   graduation: GraduationSummary | null;
+  /** The day-30 month-in-review recap (Treadmill epic Story 6), fetched only
+   *  when graduation is due; null otherwise. The journey screen shown alongside
+   *  the fork. */
+  monthInReview: MonthInReview | null;
   /** Attendance over the window (Treadmill epic Story 7): "showed up X of N
    *  days". Kept regardless of graduation status so the gym shows it every day
    *  (graduation is null until day 30; this isn't). null if the summary lacked
@@ -69,6 +75,9 @@ export function useGymSession(
   const [bricks, setBricks] = useState<TutorialBlock[]>([]);
   const [enrollment, setEnrollment] = useState<GoalEnrollment | null>(null);
   const [graduation, setGraduation] = useState<GraduationSummary | null>(null);
+  const [monthInReview, setMonthInReview] = useState<MonthInReview | null>(
+    null,
+  );
   const [attendance, setAttendance] = useState<{
     daysPracticed: number;
     windowDays: number;
@@ -87,7 +96,8 @@ export function useGymSession(
     // Best-effort: a graduation-check failure must not block the rep.
     try {
       const grad = await fetchGraduation(active.id);
-      setGraduation(grad.isDue && !grad.graduated ? grad : null);
+      const due = grad.isDue && !grad.graduated;
+      setGraduation(due ? grad : null);
       // Attendance rides the same summary but is shown EVERY day (Story 7), not
       // only at graduation — so keep it regardless of isDue.
       setAttendance(
@@ -99,9 +109,21 @@ export function useGymSession(
             }
           : null,
       );
+      // The month-in-review recap (Story 6) only matters at graduation — fetch
+      // it lazily when due. Best-effort: a recap failure must not block the rep.
+      if (due) {
+        try {
+          setMonthInReview(await fetchMonthInReview(active.id));
+        } catch {
+          setMonthInReview(null);
+        }
+      } else {
+        setMonthInReview(null);
+      }
     } catch {
       setGraduation(null);
       setAttendance(null);
+      setMonthInReview(null);
     }
     setStatus('ready');
   }, []);
@@ -161,6 +183,7 @@ export function useGymSession(
         // whether the re-load below succeeds (so a failed re-plan can't leave a
         // stuck graduation banner).
         setGraduation(null);
+        setMonthInReview(null);
         // Release before run() re-acquires its own lock. Re-load: go_deeper
         // continues the same enrollment (re-plans with the raised target);
         // lock_it_in/switch_lanes graduated it, so run() finds no active
@@ -193,6 +216,7 @@ export function useGymSession(
     enrollment,
     error,
     graduation,
+    monthInReview,
     attendance,
     placeAndStart,
     chooseDoor,
