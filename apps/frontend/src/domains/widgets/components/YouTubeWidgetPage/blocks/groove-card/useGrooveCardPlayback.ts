@@ -346,6 +346,13 @@ export function useGrooveCardPlayback({
     );
   }, [transportFromContext]);
   const activeStore = useActiveGrooveCardStore();
+  // Reactive subscription to the active card (a slice — re-renders this hook
+  // when ANOTHER card takes over). Drives the displacement cleanup below: in a
+  // drill, multiple groove-card bricks are mounted at once and a card that loses
+  // active status must drop its own stem tracks, or the engine keeps re-arming
+  // them on loop (the L1+L2+L3-at-one-T0 overlap). On single-card surfaces this
+  // never fires (only one card mounts → it's always the active one).
+  const activeCardId = useActiveGrooveCardStore((s) => s.activeCardId);
   const trackPrefix = `${cardId}#`;
 
   // LAUNCH-02.5d: tighter key cap on the waitlist surface — the marketing
@@ -1110,6 +1117,35 @@ export function useGrooveCardPlayback({
     unregisterStemTracks();
     activeStore.clearActiveCard(cardId);
   }, [activeStore, cardId, unregisterStemTracks]);
+
+  // ── displacement cleanup (drill multi-brick) -----------------------------
+  // When ANOTHER card becomes active while this card is still mounted (the
+  // drill case: 3 groove-card bricks share one PlaybackEngine + Transport), the
+  // active-card store flips activeCardId but nothing told THIS card to drop its
+  // stems — so its tracks stay registered and the scheduler re-arms them on the
+  // next loop, stacking L1+L2+L3 audio at one T0 (the stagger/feedback). The
+  // successor's becomeActive() only stopAudioStems() once; it can't unregister a
+  // sibling's tracks. So each card cleans up ITSELF when displaced.
+  //
+  // `wasActiveRef` ensures we only tear down a card that actually became active
+  // (a brick the user never played has no tracks to drop, and must not yank the
+  // engine from the real active card). Single-card surfaces never hit this (only
+  // one card mounts, so activeCardId is only ever this card or null).
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (activeCardId === cardId) {
+      wasActiveRef.current = true;
+      return;
+    }
+    // activeCardId is now a DIFFERENT card (or null after our own clear). Only
+    // act if WE were the one playing — drop our stems so the new card owns the
+    // engine alone.
+    if (activeCardId != null && wasActiveRef.current) {
+      wasActiveRef.current = false;
+      const engine = WindowRegistry.getPlaybackEngine();
+      engine?.unregisterTracksByPrefix?.(trackPrefix);
+    }
+  }, [activeCardId, cardId, trackPrefix]);
 
   // Boundary-aligned loop-selection swap.
   //   - At play start the current selection is baked into registerStemTracks
