@@ -47,6 +47,11 @@ export interface GymSession {
   /** Day-30 fork status when due (and not yet graduated); null otherwise. The
    *  gym SURFACES this without blocking the rep (spec §7). */
   graduation: GraduationSummary | null;
+  /** Attendance over the window (Treadmill epic Story 7): "showed up X of N
+   *  days". Kept regardless of graduation status so the gym shows it every day
+   *  (graduation is null until day 30; this isn't). null if the summary lacked
+   *  the count. */
+  attendance: { daysPracticed: number; windowDays: number } | null;
   /** status 'placement' → enroll with a chosen starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
   /** Walk through a graduation door, then re-load (re-plan / re-place). */
@@ -64,6 +69,10 @@ export function useGymSession(
   const [bricks, setBricks] = useState<TutorialBlock[]>([]);
   const [enrollment, setEnrollment] = useState<GoalEnrollment | null>(null);
   const [graduation, setGraduation] = useState<GraduationSummary | null>(null);
+  const [attendance, setAttendance] = useState<{
+    daysPracticed: number;
+    windowDays: number;
+  } | null>(null);
   const [error, setError] = useState<Error | null>(null);
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
@@ -79,8 +88,20 @@ export function useGymSession(
     try {
       const grad = await fetchGraduation(active.id);
       setGraduation(grad.isDue && !grad.graduated ? grad : null);
+      // Attendance rides the same summary but is shown EVERY day (Story 7), not
+      // only at graduation — so keep it regardless of isDue.
+      setAttendance(
+        typeof grad.daysPracticedInWindow === 'number' &&
+          typeof grad.windowDays === 'number'
+          ? {
+              daysPracticed: grad.daysPracticedInWindow,
+              windowDays: grad.windowDays,
+            }
+          : null,
+      );
     } catch {
       setGraduation(null);
+      setAttendance(null);
     }
     setStatus('ready');
   }, []);
@@ -172,6 +193,7 @@ export function useGymSession(
     enrollment,
     error,
     graduation,
+    attendance,
     placeAndStart,
     chooseDoor,
     refresh: run,

@@ -562,7 +562,30 @@ export class TrainingEngineService {
       userId,
       goalEnrollmentId,
     );
-    return buildGraduationSummary(enrollment, climb?.currentPosition ?? null);
+    // Attendance (Story 7) via the shared service (boundary-clean) — the
+    // "showed up X of N days" proof. Best-effort: a read failure must not break
+    // the graduation summary, so it degrades to omitting the count.
+    let attendance:
+      | { daysPracticedInWindow: number; windowDays: number }
+      | undefined;
+    try {
+      const daysPracticedInWindow =
+        await this.practiceService.countPracticeDaysInWindow(
+          userId,
+          ATTENDANCE_WINDOW_DAYS,
+        );
+      attendance = {
+        daysPracticedInWindow,
+        windowDays: ATTENDANCE_WINDOW_DAYS,
+      };
+    } catch {
+      attendance = undefined;
+    }
+    return buildGraduationSummary(
+      enrollment,
+      climb?.currentPosition ?? null,
+      attendance,
+    );
   }
 
   /**
@@ -725,6 +748,9 @@ export function deriveStudentSignals(
 export function buildGraduationSummary(
   enrollment: GoalEnrollment,
   currentPosition: Record<string, unknown> | null,
+  /** Attendance over the window (Story 7), if the caller read it. Omitted →
+   *  the summary leaves daysPracticedInWindow/windowDays undefined. */
+  attendance?: { daysPracticedInWindow: number; windowDays: number },
 ): GraduationSummary {
   const today = new Date().toISOString().slice(0, 10);
   const started = enrollment.startedAt.slice(0, 10);
@@ -743,5 +769,11 @@ export function buildGraduationSummary(
     startTempoBpm: start,
     currentTempoBpm: current,
     targetTempoBpm: target,
+    ...(attendance
+      ? {
+          daysPracticedInWindow: attendance.daysPracticedInWindow,
+          windowDays: attendance.windowDays,
+        }
+      : {}),
   };
 }

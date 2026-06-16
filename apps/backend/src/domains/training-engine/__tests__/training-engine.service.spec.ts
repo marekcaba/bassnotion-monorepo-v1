@@ -563,6 +563,20 @@ describe('TrainingEngineService.getGraduation', () => {
     const s = await service.getGraduation(USER, ENROLLMENT);
     expect(s.startTempoBpm).toBe(75);
     expect(s.currentTempoBpm).toBe(99);
+    // Story 7: attendance rides the summary, read via the shared PracticeService.
+    expect(s.daysPracticedInWindow).toBe(5);
+    expect(s.windowDays).toBe(30);
+  });
+
+  it('omits the day count if the attendance read fails (best-effort)', async () => {
+    const { service, practiceService } = makeService();
+    (
+      practiceService.countPracticeDaysInWindow as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(new Error('attendance read down'));
+    const s = await service.getGraduation(USER, ENROLLMENT);
+    expect(s.daysPracticedInWindow).toBeUndefined();
+    // The rest of the summary is intact.
+    expect(s.goalEnrollmentId).toBe(ENROLLMENT);
   });
 
   it('throws NotFound for a missing enrollment', async () => {

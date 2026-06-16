@@ -73,6 +73,28 @@ function GymPlacement({
 }
 
 /**
+ * "Showed up X of N days" (Treadmill epic Story 7) — the attendance proof,
+ * shown every day above the rep. A quiet strip, not a banner.
+ */
+function GymDayCount({
+  daysPracticed,
+  windowDays,
+}: {
+  daysPracticed: number;
+  windowDays: number;
+}) {
+  return (
+    <p className="mx-auto mb-3 w-full max-w-2xl text-center text-xs text-white/45">
+      🔥 You showed up{' '}
+      <span className="font-semibold text-white/70">
+        {daysPracticed} of {windowDays} days
+      </span>{' '}
+      this cycle.
+    </p>
+  );
+}
+
+/**
  * Day-30 graduation fork (spec §7) — surfaced ABOVE the rep, never blocking it.
  * "Reflects reality, always a win." Three doors auto-filled from the landing.
  */
@@ -83,7 +105,13 @@ function GymGraduation({
   graduation: GraduationSummary;
   onChoose: (door: GraduationDoor) => void;
 }) {
-  const { startTempoBpm, currentTempoBpm, targetTempoBpm } = graduation;
+  const {
+    startTempoBpm,
+    currentTempoBpm,
+    targetTempoBpm,
+    daysPracticedInWindow,
+    windowDays,
+  } = graduation;
   const gained =
     typeof startTempoBpm === 'number' && typeof currentTempoBpm === 'number'
       ? currentTempoBpm - startTempoBpm
@@ -101,6 +129,9 @@ function GymGraduation({
       <p className="mt-1 text-sm text-white/50">
         Started {startTempoBpm ?? '—'} BPM → now {currentTempoBpm ?? '—'} BPM
         {typeof targetTempoBpm === 'number' && ` · target ${targetTempoBpm}`}.
+        {typeof daysPracticedInWindow === 'number' &&
+          typeof windowDays === 'number' &&
+          ` You showed up ${daysPracticedInWindow} of ${windowDays} days.`}{' '}
         Where to from here?
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -138,6 +169,7 @@ export default function GymPage() {
     enrollment,
     error,
     graduation,
+    attendance,
     placeAndStart,
     chooseDoor,
     refresh,
@@ -197,10 +229,20 @@ export default function GymPage() {
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
-        {graduation && (
+        {graduation ? (
           <div className="px-4 pt-4">
+            {/* Graduation banner carries the day-count itself — don't double it. */}
             <GymGraduation graduation={graduation} onChoose={chooseDoor} />
           </div>
+        ) : (
+          attendance && (
+            <div className="px-4 pt-4">
+              <GymDayCount
+                daysPracticed={attendance.daysPracticed}
+                windowDays={attendance.windowDays}
+              />
+            </div>
+          )
         )}
         <DrillSessionFrame
           tutorial={memoizedTutorial}

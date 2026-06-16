@@ -205,6 +205,12 @@ export interface GraduationSummary {
   startTempoBpm: number | null;
   currentTempoBpm: number | null;
   targetTempoBpm: number | null;
+  /** Attendance over the graduation window (Treadmill epic Story 7): how many
+   *  distinct calendar days the player practised, and the window length — the
+   *  "you showed up X of N days" proof. Optional (a summary built without the
+   *  attendance read omits them); the gym/graduation screen renders when present. */
+  daysPracticedInWindow?: number;
+  windowDays?: number;
 }
 
 // =====================================================
