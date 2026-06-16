@@ -15,7 +15,7 @@
  * the brick ids + the completion map.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type DrillPhase = 'plan' | 'running' | 'summary';
 
@@ -43,20 +43,40 @@ export function useDrillSession({
 }: UseDrillSessionArgs): UseDrillSessionResult {
   const [phase, setPhase] = useState<DrillPhase>('plan');
 
+  // The set of bricks ALREADY completed when this attempt started (the carried-
+  // in DB baseline). A daily rep is REPLAYABLE: completing it persists (streak
+  // counted, idempotent per day), so on a second visit / "run it again" the
+  // bricks are still completed in the DB. Without this baseline the running
+  // phase would see allComplete=true immediately and bounce straight to the
+  // summary — the loop. We only auto-advance to summary once a brick is
+  // completed AFRESH this attempt (i.e. beyond the baseline), so a replay
+  // requires actually playing through again. (Replaying is a DB no-op — that's
+  // the intended "wanna repeat? go ahead, it doesn't change anything" feel.)
+  const baselineRef = useRef<Set<string>>(new Set());
+
+  // A fresh in-attempt completion = a brick completed now that was NOT already
+  // done at start. Reaching summary needs every brick complete AND at least one
+  // completed this attempt.
+  const completedThisAttempt = brickIds.some(
+    (id) => completedIds.has(id) && !baselineRef.current.has(id),
+  );
   const allComplete =
     brickIds.length > 0 && brickIds.every((id) => completedIds.has(id));
 
-  // Auto-advance running → summary once every brick is complete. Guarded so it
-  // only fires from the running phase (re-opening the plan after a restart
-  // shouldn't immediately bounce to summary just because progress persists).
   useEffect(() => {
     if (!isDrill) return;
-    if (phase === 'running' && allComplete) {
+    if (phase === 'running' && allComplete && completedThisAttempt) {
       setPhase('summary');
     }
-  }, [isDrill, phase, allComplete]);
+  }, [isDrill, phase, allComplete, completedThisAttempt]);
 
-  const start = useCallback(() => setPhase('running'), []);
+  // Entering the running phase snapshots the current completions as the
+  // baseline for THIS attempt. Both the first run and every "run it again" go
+  // through here, so a replay always starts from a clean baseline.
+  const start = useCallback(() => {
+    baselineRef.current = new Set(completedIds);
+    setPhase('running');
+  }, [completedIds]);
   const restart = useCallback(() => setPhase('plan'), []);
 
   return { phase, start, restart };
