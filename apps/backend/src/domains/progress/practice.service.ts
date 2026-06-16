@@ -198,6 +198,31 @@ export class PracticeService {
       };
     }
   }
+
+  /**
+   * How many distinct calendar days the user practised in the last `windowDays`
+   * (inclusive of today). The shared-service read the training engine's
+   * StudentState assembler uses for the "showed up X of N days" signal — the
+   * engine never touches `practice_days` directly (product boundary). Returns 0
+   * on any read failure rather than throwing (a coaching signal must not break
+   * planning the rep).
+   */
+  async countPracticeDaysInWindow(
+    userId: string,
+    windowDays: number,
+  ): Promise<number> {
+    const since = subtractUtcDays(this.todayUtc(), Math.max(0, windowDays - 1));
+    try {
+      return await this.streakRepo.countPracticeDaysSince(userId, since);
+    } catch (error) {
+      this.logger.error('Failed to count practice days in window', error as Error, {
+        userId,
+        windowDays,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      return 0;
+    }
+  }
 }
 
 // ── Pure streak math (exported for unit tests) ──────────────────────────────
@@ -206,6 +231,12 @@ export class PracticeService {
 export function dayDiff(a: string, b: string): number {
   const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
   return Math.round(ms / 86_400_000);
+}
+
+/** `n` whole days before a UTC YYYY-MM-DD date, as YYYY-MM-DD. */
+export function subtractUtcDays(date: string, n: number): string {
+  const ms = Date.parse(`${date}T00:00:00Z`) - n * 86_400_000;
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
 /**

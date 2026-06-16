@@ -247,6 +247,112 @@ export interface ClimbState {
 }
 
 // =====================================================
+// StudentState — the whole-student read-model (Bass Gym Treadmill epic, Story 1;
+// designed + adversarially verified in BASS_GYM_CURRICULUM_SPEC_v1 §2.5).
+//
+// A read-only, DERIVED, fully-serializable snapshot of one student against one
+// goal — assembled IMPURELY on the backend (TrainingEngineService) and handed as
+// PLAIN DATA into the pure planners (generateRep today, advanceClimb next) so the
+// engine makes coach-like decisions instead of last-rep-only ones.
+//
+// PURITY CONTRACT: there is NO clock, NO DB handle, NO service reference in here.
+// Every time-relative fact (daysSince*, daysPracticedInWindow, isActiveToday) is a
+// number/boolean the assembler PRE-COMPUTED from the single frozen `assembledAt`.
+// The pure consumers read those fields; they never call a clock or diff a raw
+// timestamp.
+//
+// FUTURE-PROOF: goal.target + climb.currentPosition stay opaque (no top-level
+// `bpm`) so knowledge/vocabulary/feel goals ride the same shape; new signals are
+// optional + derived → adding one is a code change, never a migration.
+// =====================================================
+
+/** Coach signals DERIVED from repHistory at assembly time (window anchored to
+ *  `assembledAt`), pre-computed so the pure consumers don't re-walk the array. */
+export interface StudentSignals {
+  /** Leading run of `conquered` from newest → advanceClimb raises the position. */
+  consecutiveWins: number;
+  /** `too_hard` in the recent window → the back-off ladder (§4). */
+  recentTooHardCount: number;
+  /** Tail of repHistory outcomes (newest-first) → back-off + dip reasoning. */
+  lastNOutcomes: RepResultOutcome[];
+  /** today − last conquered completedAt (null if never conquered). */
+  daysSinceLastConquered: number | null;
+  /** Consecutive same-tempo conquered reps → week-3 plateau/dip targeting. */
+  plateauRepCount?: number;
+}
+
+/** Attendance + streak — sourced via the shared PracticeService (boundary owner),
+ *  never a direct `practice_days` / `profiles` query from the engine domain. */
+export interface StudentAttendance {
+  /** getStreak().current — the lapse-aware floor streak ("showed up"). */
+  streakDays: number;
+  /** getStreak().ceiling — full-focused-rep streak. NOTE: `ceiling`, not `streakCeiling`. */
+  ceiling: number;
+  isActiveToday: boolean;
+  lastPracticedOn: string | null;
+  freezeTokens: number;
+  /** NET-NEW windowed COUNT on practice_days (the "28/30 days" number). */
+  daysPracticedInWindow: number;
+  /** The window the count was taken over (e.g. 30). */
+  windowDays: number;
+}
+
+/** A lightweight per-(other goal) summary for multi-goal coaching. Not a full
+ *  StudentState — promote to full only when the user switches to that goal. */
+export interface SiblingGoalSummary {
+  enrollmentId: string;
+  type: GoalType;
+  status: EnrollmentStatus;
+  daysSinceLastRep: number | null;
+}
+
+export interface StudentState {
+  /** The ONE frozen "now" the assembler stamped (ISO). Pure fns derive nothing
+   *  from a live clock — every days-since / window field below came from this. */
+  assembledAt: string;
+
+  goal: {
+    enrollmentId: string;
+    type: GoalType;
+    /** Opaque target ({ tempoBpm?; [k]: unknown }) — NOT tempo-only. */
+    target: GoalTarget;
+    status: EnrollmentStatus;
+    /** placement.startTempoBpm (the audit of where the climb began), or null.
+     *  (`placement.placed` is intentionally NOT surfaced — written but read nowhere.) */
+    startTempoBpm: number | null;
+    /** PRE-COMPUTED: today − started_at (drives the week-3 dip ∈ [14,28]). */
+    daysSinceStart: number;
+    /** GRADUATION_DAYS − daysSinceStart, floored at 0 (the fork clock). */
+    graduationDaysRemaining: number;
+  };
+
+  /** The climb_states row VERBATIM — carries currentPosition, difficultyScalar,
+   *  backoffCount, spacedReviewQueue, lastRepDate. generateRep already takes a
+   *  ClimbState as arg 1, so generateRep(ss.climb, …) is a drop-in. */
+  climb: ClimbState;
+
+  /** This goal's rep_results, newest-first (the repository's order). */
+  repHistory: RepResult[];
+  /** repHistory[0] — the outcome that moves the climb / triggers a check-in. */
+  lastRep: RepResult | null;
+  /** PRE-COMPUTED: today − lastRep.completedAt (null if no reps yet). */
+  daysSinceLastRep: number | null;
+
+  derived: StudentSignals;
+
+  /** Lifetime mastery across ALL goals/tutorials — from block_completions via
+   *  ProgressService (a NET-NEW read; existing public methods drop the tier).
+   *  Keyed by blockId alone so the same block conquered under a virtual training
+   *  tutorial and elsewhere collapse to one entry. */
+  lifetimeMastery: Record<string, { bestTier: MasteryTier; lastSeenAt: string }>;
+
+  attendance: StudentAttendance;
+
+  /** Multi-goal coaching — absent in v1 (single active goal). */
+  siblingGoals?: SiblingGoalSummary[];
+}
+
+// =====================================================
 // user_milestones — append-only trophy case.
 // =====================================================
 

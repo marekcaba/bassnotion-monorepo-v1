@@ -154,4 +154,36 @@ export class PracticeStreakRepository {
       throw error;
     }
   }
+
+  /**
+   * Count the distinct calendar days the user practised on/after `sinceDate`
+   * (inclusive, YYYY-MM-DD). The first-ever READ on practice_days — powers the
+   * "showed up X of N days" number, the missed-day check-in, and the week-3 dip.
+   * Uses a head COUNT (no rows transferred); the (user_id, practiced_on DESC)
+   * index serves it.
+   */
+  async countPracticeDaysSince(
+    userId: string,
+    sinceDate: string,
+  ): Promise<number> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const { count, error } = await this.supabaseService
+      .getClient()
+      .from('practice_days')
+      .select('practiced_on', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('practiced_on', sinceDate);
+
+    if (error) {
+      logger.error('Failed to count practice days', error, {
+        userId,
+        sinceDate,
+        correlationId,
+      });
+      throw error;
+    }
+    return count ?? 0;
+  }
 }

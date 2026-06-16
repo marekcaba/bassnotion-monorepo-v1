@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   ForbiddenException,
   NotFoundException,
@@ -8,9 +8,12 @@ import {
 import {
   TrainingEngineService,
   buildGraduationSummary,
+  deriveStudentSignals,
 } from '../training-engine.service.js';
 import type { TrainingEngineRepository } from '../repositories/training-engine.repository.js';
 import type { RequestContextService } from '../../../shared/services/request-context.service.js';
+import type { PracticeService } from '../../progress/practice.service.js';
+import type { ProgressService } from '../../progress/progress.service.js';
 import type {
   GoalEnrollment,
   RepResult,
@@ -153,8 +156,32 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
     getCorrelationId: () => 'corr-1',
   } as unknown as RequestContextService;
 
-  const service = new TrainingEngineService(repo, requestContext);
-  return { service, repo };
+  // Shared-service seam (Story 1): the StudentState assembler reads attendance/
+  // streak/mastery through these. Safe defaults so existing tests are unaffected.
+  const practiceService = {
+    getStreak: vi.fn(async () => ({
+      current: 3,
+      lastPracticedOn: '2026-06-15',
+      isActiveToday: false,
+      ceiling: 1,
+      freezeTokens: 2,
+      freezeUsed: false,
+      milestoneReached: null,
+    })),
+    countPracticeDaysInWindow: vi.fn(async () => 5),
+  } as unknown as PracticeService;
+
+  const progressService = {
+    getLifetimeMasteryByBlock: vi.fn(async () => ({})),
+  } as unknown as ProgressService;
+
+  const service = new TrainingEngineService(
+    repo,
+    requestContext,
+    practiceService,
+    progressService,
+  );
+  return { service, repo, practiceService, progressService };
 }
 
 describe('TrainingEngineService.recordRepResult', () => {
@@ -613,6 +640,90 @@ describe('TrainingEngineService.walkThroughDoor', () => {
     });
     await expect(
       service.walkThroughDoor(USER, ENROLLMENT, 'lock_it_in'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+// ── Story 1: StudentState ────────────────────────────────────────────────────
+
+describe('deriveStudentSignals (pure)', () => {
+  const climb = makeClimbState() as never;
+
+  it('counts the leading run of conquered reps (newest-first)', () => {
+    const history = [
+      makeRepResult({ id: 'r3', result: 'conquered', tempoBpm: 100 }),
+      makeRepResult({ id: 'r2', result: 'conquered', tempoBpm: 100 }),
+      makeRepResult({ id: 'r1', result: 'released', tempoBpm: 90 }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.consecutiveWins).toBe(2);
+    // both leading wins share the newest tempo → plateau of 2
+    expect(s.plateauRepCount).toBe(2);
+  });
+
+  it('breaks the win run on the first non-conquered rep', () => {
+    const history = [
+      makeRepResult({ id: 'r2', result: 'too_hard' }),
+      makeRepResult({ id: 'r1', result: 'conquered' }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.consecutiveWins).toBe(0);
+  });
+
+  it('counts too_hard in the recent window and surfaces days-since-last-conquered', () => {
+    const history = [
+      makeRepResult({ id: 'r2', result: 'too_hard' }),
+      makeRepResult({
+        id: 'r1',
+        result: 'conquered',
+        completedAt: '2026-06-08T00:00:00.000Z',
+      }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.recentTooHardCount).toBe(1);
+    expect(s.lastNOutcomes).toEqual(['too_hard', 'conquered']);
+    expect(s.daysSinceLastConquered).toBe(4); // 06-08 → 06-12
+  });
+
+  it('returns null days-since-conquered when nothing was ever conquered', () => {
+    const history = [makeRepResult({ result: 'released' })];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.daysSinceLastConquered).toBeNull();
+    expect(s.consecutiveWins).toBe(0);
+  });
+});
+
+describe('TrainingEngineService.assembleStudentState', () => {
+  it('assembles a serializable whole-student snapshot from repo + shared services', async () => {
+    const { service, practiceService, progressService } = makeService();
+    const ss = await service.assembleStudentState(USER, ENROLLMENT);
+
+    // goal view from the snapshot/enrollment
+    expect(ss.goal.enrollmentId).toBe(ENROLLMENT);
+    expect(ss.goal.type).toBe('speed');
+    expect(ss.goal.target).toEqual({ tempoBpm: 120 });
+    // climb passed through verbatim
+    expect(ss.climb.currentPosition).toEqual({ tempoBpm: 90 });
+    // attendance sourced via PracticeService (boundary), field is `ceiling`
+    expect(ss.attendance.streakDays).toBe(3);
+    expect(ss.attendance.ceiling).toBe(1);
+    expect(ss.attendance.daysPracticedInWindow).toBe(5);
+    expect(ss.attendance.windowDays).toBe(30);
+    // derived signals present
+    expect(ss.derived.consecutiveWins).toBeGreaterThanOrEqual(0);
+    // the shared services WERE the path (no direct cross-domain query)
+    expect(practiceService.getStreak).toHaveBeenCalledWith(USER);
+    expect(progressService.getLifetimeMasteryByBlock).toHaveBeenCalledWith(USER);
+    // fully serializable (no Date objects / handles leaked in)
+    expect(() => JSON.stringify(ss)).not.toThrow();
+  });
+
+  it('404s when the enrollment is not the caller\'s', async () => {
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => null),
+    });
+    await expect(
+      service.assembleStudentState(USER, ENROLLMENT),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
