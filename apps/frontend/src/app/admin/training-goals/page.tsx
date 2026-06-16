@@ -13,7 +13,12 @@
 
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import type { Goal, GoalType, CreateGoalInput } from '@bassnotion/contracts';
+import type {
+  Goal,
+  GoalType,
+  CreateGoalInput,
+  Topic,
+} from '@bassnotion/contracts';
 
 import {
   useAdminTrainingGoals,
@@ -21,6 +26,7 @@ import {
   useDeleteTrainingGoal,
   useUpdateTrainingGoal,
 } from '@/domains/admin/hooks/useAdminTrainingGoals';
+import { TopicStageEditor } from '@/domains/admin/components/TopicStageEditor';
 import { Button } from '@/shared/components/ui/button';
 
 const GOAL_TYPES: GoalType[] = ['speed', 'knowledge', 'vocabulary', 'feel'];
@@ -33,6 +39,11 @@ interface Draft {
   /** BPM step between rep levels (L1=today−notch … L3=today+notch). */
   tempoNotch: number;
   instruction: string;
+  /** Content-ladder (Build B): when true, the goal is MULTI-TOPIC — it ships
+   *  `topics` (one quota bar per topic, stages authored inline) instead of the
+   *  single focal task block. When false, the existing single-focal SPEED shape. */
+  multiTopic: boolean;
+  topics: Topic[];
 }
 
 const EMPTY_DRAFT: Draft = {
@@ -42,17 +53,34 @@ const EMPTY_DRAFT: Draft = {
   targetTempo: 120,
   tempoNotch: 8,
   instruction: 'Play the {item} at {tempo} BPM. Keep it even and relaxed.',
+  multiTopic: false,
+  topics: [],
 };
 
-/** Assemble a CreateGoalInput from the simple draft (the SPEED-task shape). */
+/** Assemble a CreateGoalInput from the draft. Two shapes (mutually exclusive):
+ *  - MULTI-TOPIC (content ladder): ships `topics`; the engine serves one topic
+ *    per rep, climbs its stages, counts quotas. No single focal block.
+ *  - SINGLE-FOCAL SPEED (the original): one inline task block in `blockSet`. */
 function draftToInput(d: Draft): CreateGoalInput {
-  const focalId = `${slugify(d.title) || 'goal'}-focal`;
-  return {
+  const base = {
     type: d.type,
     title: d.title.trim(),
     description: d.description.trim() || null,
     target: { tempoBpm: d.targetTempo, tempoNotchBpm: d.tempoNotch },
     assessmentConfig: {},
+    prerequisites: [],
+    day30Milestone: {},
+    forkConfig: {},
+    isActive: true,
+  } satisfies Partial<CreateGoalInput>;
+
+  if (d.multiTopic) {
+    return { ...base, topics: d.topics };
+  }
+
+  const focalId = `${slugify(d.title) || 'goal'}-focal`;
+  return {
+    ...base,
     blockSet: [
       {
         blockId: focalId,
@@ -74,10 +102,6 @@ function draftToInput(d: Draft): CreateGoalInput {
         },
       },
     ] as CreateGoalInput['blockSet'],
-    prerequisites: [],
-    day30Milestone: {},
-    forkConfig: {},
-    isActive: true,
   };
 }
 
@@ -96,17 +120,35 @@ export default function AdminTrainingGoalsPage() {
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
+  // Which topic/stage panels in the TopicStageEditor are open (parent-owned).
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
 
-  const canSave = draft.title.trim().length > 0 && draft.instruction.trim();
+  const toggleExpanded = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // Multi-topic goals need ≥1 topic, each with a title + quota; single-focal
+  // goals need the focal instruction. Title is always required.
+  const topicsValid =
+    draft.topics.length > 0 &&
+    draft.topics.every((t) => t.title.trim().length > 0 && t.repQuota > 0);
+  const canSave =
+    draft.title.trim().length > 0 &&
+    (draft.multiTopic ? topicsValid : !!draft.instruction.trim());
 
   const handleCreate = async () => {
     setError(null);
     try {
       await createGoal.mutateAsync(draftToInput(draft));
       setDraft(EMPTY_DRAFT);
+      setExpanded(new Set());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create goal');
     }
@@ -213,21 +255,71 @@ export default function AdminTrainingGoalsPage() {
           />
         </label>
 
-        <label className="block space-y-1 text-xs font-medium text-gray-600">
-          Focal task instruction (use {'{tempo}'} — the engine fills the
-          per-level BPM)
-          <textarea
-            value={draft.instruction}
-            onChange={(e) => set('instruction', e.target.value)}
-            rows={2}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-          />
-        </label>
+        {/* ── Goal structure: single-focal vs content-ladder (Build B) ─────── */}
+        <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Structure
+            </span>
+            <div className="flex rounded-md border border-gray-300 bg-white p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => set('multiTopic', false)}
+                className={`rounded px-2.5 py-1 ${
+                  !draft.multiTopic
+                    ? 'bg-[#E8A44A] font-medium text-black'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Single focal task
+              </button>
+              <button
+                type="button"
+                onClick={() => set('multiTopic', true)}
+                className={`rounded px-2.5 py-1 ${
+                  draft.multiTopic
+                    ? 'bg-[#E8A44A] font-medium text-black'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Content ladder (topics)
+              </button>
+            </div>
+          </div>
 
-        {draft.type !== 'speed' && (
+          {draft.multiTopic ? (
+            <div className="space-y-2">
+              <p className="text-[11px] text-gray-400">
+                Author ~3 topics, each with a rep quota and internal stages. The
+                engine serves one topic per rep and counts toward its quota; the
+                student sees a progress bar per topic, never the stages.
+              </p>
+              <TopicStageEditor
+                value={draft.topics}
+                onChange={(topics) => set('topics', topics)}
+                expanded={expanded}
+                onToggleExpanded={toggleExpanded}
+              />
+            </div>
+          ) : (
+            <label className="block space-y-1 text-xs font-medium text-gray-600">
+              Focal task instruction (use {'{tempo}'} — the engine fills the
+              per-level BPM)
+              <textarea
+                value={draft.instruction}
+                onChange={(e) => set('instruction', e.target.value)}
+                rows={2}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+              />
+            </label>
+          )}
+        </div>
+
+        {draft.type !== 'speed' && !draft.multiTopic && (
           <p className="text-xs text-amber-700">
-            Note: only SPEED goals plan a rep today. Other types are authored
-            but not yet playable (engine support lands later).
+            Note: a single-focal goal of a non-SPEED type isn’t playable yet.
+            For KNOWLEDGE / VOCABULARY / FEEL goals, use a content ladder — the
+            engine serves those through topics.
           </p>
         )}
 
@@ -269,8 +361,13 @@ export default function AdminTrainingGoalsPage() {
                   </p>
                   <p className="truncate text-xs text-gray-400">
                     {g.slug}
-                    {typeof g.target?.tempoBpm === 'number' &&
-                      ` · target ${g.target.tempoBpm} BPM`}
+                    {g.topics && g.topics.length > 0
+                      ? ` · ${g.topics.length} topics · ${g.topics.reduce(
+                          (n, t) => n + (t.repQuota || 0),
+                          0,
+                        )} reps`
+                      : typeof g.target?.tempoBpm === 'number' &&
+                        ` · target ${g.target.tempoBpm} BPM`}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">

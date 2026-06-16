@@ -13,6 +13,7 @@ import type {
   GraduationSummary,
   GraduationDoor,
   MonthInReview,
+  TopicProgress,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -65,9 +66,19 @@ export async function planTodayRep(
   enrollmentId: string,
   /** Story 5: 'floor' plans the short 3-min session; default 'full'. */
   mode: 'full' | 'floor' = 'full',
-): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+): Promise<{
+  slug: string;
+  bricks: TutorialBlock[];
+  /** Content-ladder (Build B): per-topic quota bars for the gym path view.
+   *  Present only on a multi-topic goal; absent for single-focal SPEED. */
+  topicProgress?: TopicProgress[];
+}> {
   await ensureAuthToken();
-  return apiClient.post<{ slug: string; bricks: TutorialBlock[] }>(
+  return apiClient.post<{
+    slug: string;
+    bricks: TutorialBlock[];
+    topicProgress?: TopicProgress[];
+  }>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,
     )}/today-rep`,

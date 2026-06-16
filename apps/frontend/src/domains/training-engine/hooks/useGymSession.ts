@@ -21,6 +21,7 @@ import type {
   GraduationSummary,
   GraduationDoor,
   MonthInReview,
+  TopicProgress,
 } from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
@@ -60,6 +61,10 @@ export interface GymSession {
   attendance: { daysPracticed: number; windowDays: number } | null;
   /** The current rep shape (Story 5). 'floor' = the short 3-min session. */
   repMode: 'full' | 'floor';
+  /** Content-ladder (Build B): per-topic quota bars for the gym path view.
+   *  Present only on a multi-topic goal (rides the today-rep response); null for
+   *  single-focal SPEED. The student sees ~3 bars; "stages" are never surfaced. */
+  topicProgress: TopicProgress[] | null;
   /** status 'placement' → enroll with a chosen starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
   /** Re-plan today's rep as the short 'floor' session (one 3-min brick). */
@@ -88,6 +93,9 @@ export function useGymSession(
   } | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [repMode, setRepMode] = useState<'full' | 'floor'>('full');
+  const [topicProgress, setTopicProgress] = useState<TopicProgress[] | null>(
+    null,
+  );
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
@@ -96,13 +104,16 @@ export function useGymSession(
   const planFor = useCallback(
     async (active: GoalEnrollment, mode: 'full' | 'floor' = 'full') => {
     setRepMode(mode);
-    const { slug: repSlug, bricks: repBricks } = await planTodayRep(
-      active.id,
-      mode,
-    );
+    const {
+      slug: repSlug,
+      bricks: repBricks,
+      topicProgress: repTopicProgress,
+    } = await planTodayRep(active.id, mode);
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
+    // Content-ladder (Build B): the path bars ride the today-rep response.
+    setTopicProgress(repTopicProgress ?? null);
     // Best-effort: a graduation-check failure must not block the rep.
     try {
       const grad = await fetchGraduation(active.id);
@@ -247,6 +258,7 @@ export function useGymSession(
     monthInReview,
     attendance,
     repMode,
+    topicProgress,
     placeAndStart,
     chooseFloor,
     chooseDoor,

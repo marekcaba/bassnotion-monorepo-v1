@@ -16,6 +16,7 @@ import type {
   GraduationSummary,
   GraduationDoor,
   MonthInReview,
+  TopicProgress,
 } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
@@ -135,7 +136,11 @@ export class TrainingEngineController {
     @CurrentUser() user: AuthUser,
     @Param('enrollmentId') enrollmentId: string,
     @Body() body?: { mode?: 'full' | 'floor' },
-  ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+  ): Promise<{
+    slug: string;
+    bricks: TutorialBlock[];
+    topicProgress?: TopicProgress[];
+  }> {
     // Story 5: the gym can request the short 'floor' rep. Anything but the
     // explicit 'floor' string plans the full rep.
     const mode = body?.mode === 'floor' ? 'floor' : 'full';

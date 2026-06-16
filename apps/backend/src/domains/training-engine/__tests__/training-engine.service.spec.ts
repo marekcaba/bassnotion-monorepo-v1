@@ -107,6 +107,78 @@ function makeEnrollmentWithBlock(): GoalEnrollment {
   return enrollment;
 }
 
+/** A multi-topic (content-ladder) enrollment: the snapshot carries `topics`,
+ *  each with a stage holding an inline task block. (Build B.) */
+function makeMultiTopicEnrollment(): GoalEnrollment {
+  const enrollment = makeEnrollment({
+    goalSnapshot: {
+      type: 'feel',
+      target: { tempoBpm: 100, tempoNotchBpm: 8 },
+      blockSet: [],
+      topics: [
+        {
+          id: 'hold-the-engine',
+          title: 'Hold the Engine',
+          repQuota: 12,
+          stages: [
+            {
+              level: 1,
+              introduceAfterReps: 0,
+              blocks: [
+                {
+                  blockId: 'hold-1',
+                  ladderPosition: 'L2',
+                  block: {
+                    id: 'hold-1',
+                    type: 'task',
+                    title: 'Hold the pulse',
+                    order: 0,
+                    config: {
+                      instruction: 'Hold the pulse at {tempo} BPM.',
+                      completionCriterion: { type: 'time', target: 2 },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'lock-to-drums',
+          title: 'Lock to the Drums',
+          repQuota: 10,
+          stages: [
+            {
+              level: 1,
+              introduceAfterReps: 0,
+              blocks: [
+                {
+                  blockId: 'lock-1',
+                  ladderPosition: 'L2',
+                  block: {
+                    id: 'lock-1',
+                    type: 'task',
+                    title: 'Lock to the kick',
+                    order: 0,
+                    config: {
+                      instruction: 'Lock to the kick at {tempo} BPM.',
+                      completionCriterion: { type: 'time', target: 2 },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      assessmentConfig: {},
+      day30Milestone: {},
+      forkConfig: {},
+    } as never,
+  });
+  return enrollment;
+}
+
 function makeGoal() {
   return {
     id: 'goal-1',
@@ -358,6 +430,49 @@ describe('TrainingEngineService.getTodayRep', () => {
     await expect(service.getTodayRep(USER, ENROLLMENT)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  // ── Content ladder (Build B): a multi-topic goal serves one topic per rep,
+  //    stamps the topicId on every brick, and returns the per-topic quota bars.
+  it('serves a multi-topic goal: stamps topicId on bricks + returns topicProgress', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { service } = makeService({
+      findEnrollmentById: vi.fn(async () => makeMultiTopicEnrollment()),
+      // Pin lastRepDate so the climb-advance is a no-op (isolate topic logic).
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
+      ),
+      // No reps logged yet → both topics at 0; least-advanced = first ('hold').
+      getRepResultsForEnrollment: vi.fn(async () => []),
+    });
+
+    const { bricks, topicProgress } = await service.getTodayRep(
+      USER,
+      ENROLLMENT,
+    );
+
+    // 3-brick ladder from the chosen topic's stage, every brick topic-stamped.
+    expect(bricks).toHaveLength(3);
+    for (const b of bricks) {
+      expect((b.config as { topicId?: string }).topicId).toBe('hold-the-engine');
+    }
+
+    // The per-topic quota bars come back for the gym path view.
+    expect(topicProgress).toBeDefined();
+    expect(topicProgress).toHaveLength(2);
+    const hold = topicProgress?.find((t) => t.topicId === 'hold-the-engine');
+    expect(hold).toMatchObject({
+      title: 'Hold the Engine',
+      repsLogged: 0,
+      repQuota: 12,
+      isComplete: false,
+    });
+  });
+
+  it('does NOT return topicProgress for a single-focal SPEED goal', async () => {
+    const { service } = makeService(); // default = single-focal block enrollment
+    const { topicProgress } = await service.getTodayRep(USER, ENROLLMENT);
+    expect(topicProgress).toBeUndefined();
   });
 });
 
