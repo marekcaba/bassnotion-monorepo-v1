@@ -103,13 +103,55 @@ describe('AdminTrainingGoalsService.create', () => {
         id: 'hold',
         title: 'Hold the Engine',
         repQuota: 12,
-        stages: [{ level: 1, introduceAfterReps: 0, blocks: [] }],
+        stages: [
+          {
+            level: 1,
+            introduceAfterReps: 0,
+            blocks: [{ blockId: 'b', block: { id: 'b' } }],
+          },
+        ],
       },
     ];
-    await service.create({ type: 'feel', title: 'Lock The Pocket', topics });
+    await service.create({ type: 'feel', title: 'Lock The Pocket', topics } as never);
     const row = (repo.insertGoal as ReturnType<typeof vi.fn>).mock.calls[0][0];
     // topics must land in the topics column — previously dropped silently.
     expect(row.topics).toEqual(topics);
+  });
+
+  it('REJECTS a multi-topic goal with an empty stage (would 500 the gym)', async () => {
+    const { service } = makeService();
+    const topics = [
+      {
+        id: 'hold',
+        title: 'Hold the Engine',
+        repQuota: 12,
+        stages: [{ level: 1, introduceAfterReps: 0, blocks: [] }], // no block
+      },
+    ];
+    await expect(
+      service.create({ type: 'feel', title: 'Lock The Pocket', topics } as never),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('REJECTS a topic with a zero quota', async () => {
+    const { service } = makeService();
+    const topics = [
+      {
+        id: 'hold',
+        title: 'Hold the Engine',
+        repQuota: 0,
+        stages: [
+          {
+            level: 1,
+            introduceAfterReps: 0,
+            blocks: [{ blockId: 'b', block: { id: 'b' } }],
+          },
+        ],
+      },
+    ];
+    await expect(
+      service.create({ type: 'feel', title: 'X', topics } as never),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
 

@@ -68,6 +68,8 @@ export class AdminTrainingGoalsService {
     if (patch.title !== undefined && patch.title.trim().length === 0) {
       throw new BadRequestException('title cannot be empty');
     }
+    // Same playability guard as create: a topics edit can't save empty stages.
+    if (patch.topics !== undefined) this.validateTopics(patch.topics);
     // Map only the supplied camelCase fields to snake_case columns. slug is
     // intentionally NOT re-derived from a title edit — it's a stable key the
     // enrollment's virtual-tutorial path and any references rely on.
@@ -142,6 +144,39 @@ export class AdminTrainingGoalsService {
         `type is required and must be one of: ${VALID_TYPES.join(', ')}`,
       );
     }
+    this.validateTopics(input.topics);
+  }
+
+  /**
+   * Reject a multi-topic goal that can't be played: every topic needs a title +
+   * a positive quota, and EVERY stage needs at least one inline block. Without
+   * this, an empty-stage goal saves fine but 500s the gym at plan time (the
+   * GoalNotReadyError path). Validate at the source so the bad state never lands.
+   * Skipped when there are no topics (single-focal goals).
+   */
+  private validateTopics(topics: CreateGoalInput['topics']): void {
+    if (!topics || topics.length === 0) return;
+    topics.forEach((t, ti) => {
+      const label = t.title?.trim() || `topic ${ti + 1}`;
+      if (!t.title || t.title.trim().length === 0) {
+        throw new BadRequestException(`Topic ${ti + 1} needs a title.`);
+      }
+      if (!(t.repQuota > 0)) {
+        throw new BadRequestException(`"${label}" needs a rep quota > 0.`);
+      }
+      if (!t.stages || t.stages.length === 0) {
+        throw new BadRequestException(`"${label}" needs at least one stage.`);
+      }
+      t.stages.forEach((s) => {
+        const hasBlock = (s.blocks ?? []).some((b) => !!b.block);
+        if (!hasBlock) {
+          throw new BadRequestException(
+            `"${label}" stage ${s.level} has no exercises — add at least one ` +
+              'block, or remove the stage.',
+          );
+        }
+      });
+    });
   }
 
   /** Slugify the title; append -2, -3… on collision. */

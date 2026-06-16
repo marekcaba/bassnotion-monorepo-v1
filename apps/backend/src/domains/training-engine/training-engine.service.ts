@@ -4,10 +4,12 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   createStructuredLogger,
   generateRep,
+  GoalNotReadyError,
   advanceClimb,
   clampRepTempo,
   deriveTopicProgress,
@@ -641,15 +643,31 @@ export class TrainingEngineService {
     // generateRep down the topic-aware path: pick today's topic, climb its
     // stage, stamp the topicId. Absent → the single-focal SPEED path, unchanged.
     const topics = enrollment.goalSnapshot.topics;
-    const bricks = generateRep(climb, pool, student.repHistory, {
-      goalType: student.goal.type,
-      mode,
-      // Admin-authored bracket width (target.tempoNotchBpm); generateRep clamps
-      // + falls back to the default when unset.
-      tempoNotchBpm: student.goal.target?.tempoNotchBpm as number | undefined,
-      topics,
-      topicProgress: student.topicProgress,
-    });
+    let bricks: TutorialBlock[];
+    try {
+      bricks = generateRep(climb, pool, student.repHistory, {
+        goalType: student.goal.type,
+        mode,
+        // Admin-authored bracket width (target.tempoNotchBpm); generateRep clamps
+        // + falls back to the default when unset.
+        tempoNotchBpm: student.goal.target?.tempoNotchBpm as number | undefined,
+        topics,
+        topicProgress: student.topicProgress,
+      });
+    } catch (e) {
+      // A half-authored goal (no playable blocks) throws GoalNotReadyError —
+      // surface a clear 422, NOT a 500. The gym shows a friendly "not ready"
+      // state instead of crashing.
+      if (e instanceof GoalNotReadyError) {
+        logger.warn('Today-rep blocked: goal not ready (no playable content)', {
+          userId,
+          goalEnrollmentId,
+          correlationId,
+        });
+        throw new UnprocessableEntityException(e.message);
+      }
+      throw e;
+    }
 
     const title =
       mode === 'floor'
