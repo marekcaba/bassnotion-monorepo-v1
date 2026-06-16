@@ -291,6 +291,19 @@ export class TrainingEngineRepository {
     return count ?? 0;
   }
 
+  /** Is this user an admin? (profiles.role === 'admin'.) Mirrors
+   *  EntitlementService.isAdmin — admins bypass the gym membership gate, matching
+   *  how the rest of the app treats admins (full entitlement). */
+  async isAdmin(userId: string): Promise<boolean> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+    return !error && (data as { role?: string } | null)?.role === 'admin';
+  }
+
   /** Delete a goal by id. Cascades to goal_enrollments + climb_states +
    *  rep_results via the FKs — the service guards this against accidental data
    *  loss (only on zero enrollments, or an explicit admin force-delete). */

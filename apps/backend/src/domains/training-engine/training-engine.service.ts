@@ -453,6 +453,12 @@ export class TrainingEngineService {
   private async resolveMembershipWindow(
     userId: string,
   ): Promise<{ hasAccess: boolean; periodEnd: string | null }> {
+    // Admins bypass the gate (matching the rest of the app — admins get full
+    // entitlement). No billing period → the normal 30-day goal cycle.
+    if (await this.repository.isAdmin(userId)) {
+      return { hasAccess: true, periodEnd: null };
+    }
+
     const sub = await this.subscriptionRepository.findByUserId(userId);
     const active =
       !!sub && (sub.status === 'active' || sub.status === 'trialing');

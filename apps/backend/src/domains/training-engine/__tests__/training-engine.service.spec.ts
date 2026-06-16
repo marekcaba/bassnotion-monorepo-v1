@@ -221,6 +221,9 @@ function makeService(
     ),
     updateClimbPosition: vi.fn(async () => undefined),
     patchClimbState: vi.fn(async () => undefined),
+    // Default non-admin so gate tests hit the subscription path; admin-bypass
+    // test overrides this.
+    isAdmin: vi.fn(async () => false),
     ...repoOverrides,
   } as unknown as TrainingEngineRepository;
 
@@ -547,6 +550,21 @@ describe('TrainingEngineService.enrollInGoal', () => {
       service.enrollInGoal(USER, 'speed-c-major-scale'),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(repo.createEnrollment).not.toHaveBeenCalled();
+  });
+
+  it('ADMIN bypasses the gate (no subscription) — 30-day window (goalDeadline null)', async () => {
+    const { service, repo } = makeService(
+      {
+        findEnrollmentByGoal: vi.fn(async () => null),
+        isAdmin: vi.fn(async () => true),
+      },
+      { findByUserId: vi.fn(async () => null) }, // admin, NO subscription
+    );
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    expect(repo.createEnrollment).toHaveBeenCalled(); // not blocked
+    const placement = (repo.createEnrollment as ReturnType<typeof vi.fn>).mock
+      .calls[0][3];
+    expect(placement.goalDeadline).toBeNull(); // 30-day fallback (no billing period)
   });
 
   it('GATES enroll on a CANCELED subscription too', async () => {
