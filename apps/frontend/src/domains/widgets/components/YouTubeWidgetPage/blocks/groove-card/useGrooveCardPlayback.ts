@@ -554,13 +554,21 @@ export function useGrooveCardPlayback({
     // generated rep would always begin at the baked tempo and ignore the climb.
     musicalTruth.setBPM?.(clampTempo(startBpm));
     setCurrentBpm(startBpm);
+    // Sync the DISPLAYED bpm to the shared transport ONLY while this card is the
+    // active one. musicalTruth is a PAGE SINGLETON: with multiple drill bricks
+    // mounted (the gym rep's L1/L2/L3), an unguarded subscription makes every
+    // card show whatever the last-active brick set — so all three read e.g. 98
+    // instead of their own 82/90/98 target. An inactive brick keeps showing its
+    // own startBpm (its tempoOverride). (isActiveCard is read at callback time —
+    // current state, no stale closure.)
     const unsub = musicalTruth.subscribe?.((truth) => {
-      setCurrentBpm(truth.bpm);
+      if (activeStore.isActiveCard(cardId)) setCurrentBpm(truth.bpm);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
     };
     // startBpm is stable per card (derived from stable block fields).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startBpm]);
 
   // Loop duration in seconds at the current BPM — used by setKey + setTempo
