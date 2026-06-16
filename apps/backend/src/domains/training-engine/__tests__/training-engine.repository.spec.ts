@@ -13,6 +13,7 @@ const REP_ROW: RepResultRow = {
   block_id: 'block-1',
   ladder_level: 'L2',
   tempo_bpm: 120,
+  topic_id: 'hold-the-engine',
   signal_kind: 'button',
   signal_value: { kind: 'button', value: 1, at: 7 },
   result: 'conquered',
@@ -104,11 +105,47 @@ describe('TrainingEngineRepository.insertRepResult', () => {
       blockId: 'block-1',
       ladderLevel: 'L2',
       tempoBpm: 120,
+      topicId: 'hold-the-engine',
       signal: { kind: 'button', value: 1, at: 7 },
       result: 'conquered',
       achievedTier: 'silver',
       completedAt: '2026-06-10T00:00:00.000Z',
     });
+  });
+
+  it('stamps topic_id when the rep belongs to a content-ladder topic', async () => {
+    const { repo, client } = makeRepo();
+    client.single.mockResolvedValue({ data: REP_ROW, error: null });
+
+    await repo.insertRepResult({
+      userId: 'user-1',
+      goalEnrollmentId: 'enroll-1',
+      blockId: 'block-1',
+      ladderLevel: 'L2',
+      topicId: 'hold-the-engine',
+      signal: null,
+      result: 'completed',
+    });
+
+    expect(client.insert.mock.calls[0][0]).toMatchObject({
+      topic_id: 'hold-the-engine',
+    });
+  });
+
+  it('writes topic_id = null for a single-focal SPEED rep (no topic)', async () => {
+    const { repo, client } = makeRepo();
+    client.single.mockResolvedValue({ data: REP_ROW, error: null });
+
+    await repo.insertRepResult({
+      userId: 'user-1',
+      goalEnrollmentId: 'enroll-1',
+      blockId: 'block-1',
+      ladderLevel: 'L2',
+      signal: null,
+      result: 'completed',
+    });
+
+    expect(client.insert.mock.calls[0][0].topic_id).toBeNull();
   });
 
   it('handles a null signal (floor rep / stub widget) without error', async () => {

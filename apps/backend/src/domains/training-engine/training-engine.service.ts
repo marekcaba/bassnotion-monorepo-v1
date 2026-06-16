@@ -10,6 +10,7 @@ import {
   generateRep,
   advanceClimb,
   clampRepTempo,
+  deriveTopicProgress,
   GRADUATION_DAYS,
 } from '@bassnotion/contracts';
 import type {
@@ -194,6 +195,15 @@ export class TrainingEngineService {
         ? (enrollment.placement.startTempoBpm as number)
         : null;
 
+    // Content-ladder (epic §3 Build A): per-topic quota tallies + current stage,
+    // a pure derivation from the frozen topics + the rep history (topicId). Only
+    // present on a multi-topic goal — single-focal SPEED goals leave it absent.
+    const topics = enrollment.goalSnapshot.topics;
+    const topicProgress =
+      topics && topics.length > 0
+        ? deriveTopicProgress(topics, repHistory)
+        : undefined;
+
     return {
       assembledAt,
       goal: {
@@ -220,6 +230,7 @@ export class TrainingEngineService {
         daysPracticedInWindow,
         windowDays: ATTENDANCE_WINDOW_DAYS,
       },
+      topicProgress,
     };
   }
 
@@ -502,12 +513,19 @@ export class TrainingEngineService {
     );
 
     const pool = this.resolveBlockPool(enrollment);
+    // Content-ladder (epic §3 Build A): a multi-topic goal carries frozen topics
+    // on its snapshot. Passing them (+ the derived per-topic progress) routes
+    // generateRep down the topic-aware path: pick today's topic, climb its
+    // stage, stamp the topicId. Absent → the single-focal SPEED path, unchanged.
+    const topics = enrollment.goalSnapshot.topics;
     const bricks = generateRep(climb, pool, student.repHistory, {
       goalType: student.goal.type,
       mode,
       // Admin-authored bracket width (target.tempoNotchBpm); generateRep clamps
       // + falls back to the default when unset.
       tempoNotchBpm: student.goal.target?.tempoNotchBpm as number | undefined,
+      topics,
+      topicProgress: student.topicProgress,
     });
 
     const title =

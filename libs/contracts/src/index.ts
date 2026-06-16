@@ -82,6 +82,15 @@ export {
 } from './services/advanceClimb.js';
 export type { ClimbAdvance } from './services/advanceClimb.js';
 
+// Bass Gym content ladder — the topic/stage/quota planner (Content Ladder epic,
+// Build A). Pure: derive per-topic progress, pick today's topic, resolve stage.
+export {
+  deriveTopicProgress,
+  selectTopicForRep,
+  resolveStage,
+  isGoalComplete,
+} from './services/topicLadder.js';
+
 // Bass Gym graduation — the day-30 fork window (value export).
 export { GRADUATION_DAYS } from './types/training.js';
 

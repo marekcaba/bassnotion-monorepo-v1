@@ -39,6 +39,9 @@ export interface RepResultRow {
   block_id: string;
   ladder_level: LadderLevel;
   tempo_bpm: number | null;
+  /** Content-ladder topic this rep belonged to (epic §3). null on single-focal
+   *  SPEED reps + legacy rows. */
+  topic_id: string | null;
   signal_kind: string | null;
   signal_value: Record<string, unknown> | null;
   result: RepResultOutcome;
@@ -84,6 +87,8 @@ export interface InsertRepResult {
   blockId: string;
   ladderLevel: LadderLevel;
   tempoBpm?: number | null;
+  /** Content-ladder topic this rep belonged to (epic §3) → the quota tally. */
+  topicId?: string | null;
   signal: ProgressSignal | null;
   result: RepResultOutcome;
   achievedTier?: MasteryTier | null;

@@ -15,6 +15,7 @@ export class RecordRepResultDto implements RecordRepResultData {
   blockId!: RecordRepResultData['blockId'];
   ladderLevel!: RecordRepResultData['ladderLevel'];
   tempoBpm?: RecordRepResultData['tempoBpm'];
+  topicId?: RecordRepResultData['topicId'];
   signal!: RecordRepResultData['signal'];
   result!: RecordRepResultData['result'];
   achievedTier?: RecordRepResultData['achievedTier'];
