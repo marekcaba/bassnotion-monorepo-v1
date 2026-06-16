@@ -301,16 +301,24 @@ export function TopicStageEditor({
 
                       {stageOpen && (
                         <div className="border-t border-gray-100 p-2.5">
-                          <BlockEditor
-                            blocks={blocks}
-                            exercises={[]}
-                            tutorialSlug={tutorialSlug}
-                            onBlocksChange={(next) =>
-                              patchStage(ti, si, {
-                                blocks: blocksToRefs(next),
-                              })
-                            }
-                          />
+                          {/* BlockEditor is built for the DARK admin/tutorials
+                              shell (text-white, bg-white/5…). This page is the
+                              LIGHT admin shell, so embed it on a dark surface —
+                              otherwise its white text is invisible on white.
+                              Wrapping (vs. recoloring BlockEditor) keeps the dark
+                              /admin/tutorials usage untouched. */}
+                          <div className="rounded-lg bg-[#100E0D] p-3 text-white">
+                            <BlockEditor
+                              blocks={blocks}
+                              exercises={[]}
+                              tutorialSlug={tutorialSlug}
+                              onBlocksChange={(next) =>
+                                patchStage(ti, si, {
+                                  blocks: blocksToRefs(next),
+                                })
+                              }
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
