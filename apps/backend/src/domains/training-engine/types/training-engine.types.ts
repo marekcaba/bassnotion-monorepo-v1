@@ -3,6 +3,7 @@ import type {
   GoalType,
   GoalTarget,
   BlockRef,
+  Topic,
   PrereqThreshold,
   EnrollmentStatus,
   LadderLevel,
@@ -22,10 +23,14 @@ export interface GoalRow {
   target: GoalTarget;
   assessment_config: Record<string, unknown>;
   block_set: BlockRef[];
+  /** Content-ladder topics (Topic[]); [] for single-focal SPEED goals. */
+  topics: Topic[] | null;
   prerequisites: PrereqThreshold[];
   day30_milestone: Record<string, unknown>;
   fork_config: Record<string, unknown>;
   is_active: boolean;
+  /** Soft-delete timestamp (goal lifecycle); null = live. */
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }

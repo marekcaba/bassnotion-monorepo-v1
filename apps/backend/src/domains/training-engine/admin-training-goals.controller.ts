@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   HttpCode,
@@ -13,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type {
   Goal,
+  AdminGoalSummary,
   CreateGoalInput,
   UpdateGoalInput,
 } from '@bassnotion/contracts';
@@ -31,10 +33,10 @@ import { AdminTrainingGoalsService } from './admin-training-goals.service.js';
 export class AdminTrainingGoalsController {
   constructor(private readonly service: AdminTrainingGoalsService) {}
 
-  /** List ALL goals (incl. inactive) for the admin table. */
+  /** The admin table — non-archived goals, each with its live enrollment count. */
   @Get()
   @HttpCode(HttpStatus.OK)
-  async list(): Promise<{ goals: Goal[] }> {
+  async list(): Promise<{ goals: AdminGoalSummary[] }> {
     return { goals: await this.service.list() };
   }
 
@@ -62,10 +64,32 @@ export class AdminTrainingGoalsController {
     return { goal: await this.service.update(id, patch) };
   }
 
+  /** Archive a goal (soft-delete): off the list + not enrollable, reversible. */
+  @Post(':id/archive')
+  @HttpCode(HttpStatus.OK)
+  async archive(@Param('id') id: string): Promise<{ goal: Goal }> {
+    return { goal: await this.service.archive(id) };
+  }
+
+  /** Unarchive a goal — bring it back to the list. */
+  @Post(':id/unarchive')
+  @HttpCode(HttpStatus.OK)
+  async unarchive(@Param('id') id: string): Promise<{ goal: Goal }> {
+    return { goal: await this.service.unarchive(id) };
+  }
+
+  /**
+   * Hard-delete a goal. Guarded: refused when enrollments exist unless
+   * `?force=true` (the admin override for test/junk goals — cascades the
+   * enrollments + climbs + reps deliberately).
+   */
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id') id: string): Promise<{ ok: true }> {
-    await this.service.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Query('force') force?: string,
+  ): Promise<{ ok: true }> {
+    await this.service.remove(id, force === 'true');
     return { ok: true };
   }
 }

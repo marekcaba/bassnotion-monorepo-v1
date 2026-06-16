@@ -510,6 +510,35 @@ describe('TrainingEngineService.enrollInGoal', () => {
     );
   });
 
+  it('FREEZES content-ladder topics into the snapshot (Build B persistence fix)', async () => {
+    const topics = [
+      {
+        id: 'hold',
+        title: 'Hold the Engine',
+        repQuota: 12,
+        stages: [{ level: 1, introduceAfterReps: 0, blocks: [] }],
+      },
+    ];
+    const { service, repo } = makeService({
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+      findGoalBySlug: vi.fn(async () => ({
+        ...makeGoal(),
+        type: 'feel' as const,
+        topics,
+      })),
+    });
+    await service.enrollInGoal(USER, 'speed-c-major-scale');
+    // The snapshot (arg 3) must carry the topics — without the fix they'd be
+    // dropped and the engine would never serve them.
+    expect(repo.createEnrollment).toHaveBeenCalledWith(
+      USER,
+      'goal-1',
+      expect.objectContaining({ topics }),
+      expect.anything(),
+    );
+  });
+
   it('is idempotent: returns the existing enrollment without re-creating', async () => {
     const existing = makeEnrollment();
     const { service, repo } = makeService({

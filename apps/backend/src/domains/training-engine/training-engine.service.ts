@@ -367,6 +367,11 @@ export class TrainingEngineService {
       type: goal.type,
       target: goal.target,
       blockSet: goal.blockSet,
+      // Freeze the content-ladder topics too (epic §3) — without this a
+      // multi-topic goal would enroll with no topics and the engine would never
+      // serve them. Frozen here so a later admin edit can't change an in-flight
+      // climb's topics/quotas.
+      topics: goal.topics,
       assessmentConfig: goal.assessmentConfig,
       day30Milestone: goal.day30Milestone,
       forkConfig: goal.forkConfig,

@@ -39,6 +39,9 @@ function makeService(repoOver: Partial<TrainingEngineRepository> = {}) {
     ),
     deleteGoal: vi.fn(async () => undefined),
     countEnrollmentsForGoal: vi.fn(async () => 0),
+    setGoalArchived: vi.fn(async (id: string, archived: boolean) =>
+      makeGoal({ id, archivedAt: archived ? '2026-06-16T00:00:00.000Z' : null }),
+    ),
     ...repoOver,
   } as unknown as TrainingEngineRepository;
   return { service: new AdminTrainingGoalsService(repo), repo };
@@ -91,6 +94,22 @@ describe('AdminTrainingGoalsService.create', () => {
     await expect(
       service.create({ type: 'bogus' as never, title: 'X' }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('PERSISTS content-ladder topics (the Build B persistence gap fix)', async () => {
+    const { service, repo } = makeService();
+    const topics = [
+      {
+        id: 'hold',
+        title: 'Hold the Engine',
+        repQuota: 12,
+        stages: [{ level: 1, introduceAfterReps: 0, blocks: [] }],
+      },
+    ];
+    await service.create({ type: 'feel', title: 'Lock The Pocket', topics });
+    const row = (repo.insertGoal as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    // topics must land in the topics column — previously dropped silently.
+    expect(row.topics).toEqual(topics);
   });
 });
 
@@ -151,5 +170,37 @@ describe('AdminTrainingGoalsService list/get/remove', () => {
       BadRequestException,
     );
     expect(repo.deleteGoal).not.toHaveBeenCalled();
+  });
+
+  it('FORCE-deletes a goal with enrollments (admin override cascades)', async () => {
+    const { service, repo } = makeService({
+      countEnrollmentsForGoal: vi.fn(async () => 3),
+    });
+    await service.remove('goal-1', true); // force = true
+    expect(repo.deleteGoal).toHaveBeenCalledWith('goal-1');
+  });
+});
+
+describe('AdminTrainingGoalsService archive/unarchive', () => {
+  it('archives a goal (sets archived_at) — reversible, never cascades', async () => {
+    const { service, repo } = makeService();
+    const g = await service.archive('goal-1');
+    expect(repo.setGoalArchived).toHaveBeenCalledWith('goal-1', true);
+    expect(g.archivedAt).toBeTruthy();
+    expect(repo.deleteGoal).not.toHaveBeenCalled(); // archive ≠ delete
+  });
+
+  it('unarchives a goal (clears archived_at)', async () => {
+    const { service, repo } = makeService();
+    const g = await service.unarchive('goal-1');
+    expect(repo.setGoalArchived).toHaveBeenCalledWith('goal-1', false);
+    expect(g.archivedAt).toBeNull();
+  });
+
+  it('throws NotFound when archiving a missing goal', async () => {
+    const { service } = makeService({
+      setGoalArchived: vi.fn(async () => null),
+    });
+    await expect(service.archive('missing')).rejects.toThrow();
   });
 });
