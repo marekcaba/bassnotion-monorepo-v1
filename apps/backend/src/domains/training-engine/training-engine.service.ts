@@ -778,9 +778,13 @@ export function deriveStudentSignals(
     }
   }
 
+  // Struggle signal for the back-off ladder (Story 4): the "too hard — lay it
+  // anyway" release valve records 'released' (the only struggle signal the drill
+  // UI actually emits — 'too_hard' is an engine-only enum reserved for a future
+  // explicit signal). Count BOTH so the back-off fires from real play.
   const recentTooHardCount = history
     .slice(0, RECENT_OUTCOME_WINDOW)
-    .filter((r) => r.result === 'too_hard').length;
+    .filter((r) => r.result === 'too_hard' || r.result === 'released').length;
 
   const lastNOutcomes: RepResultOutcome[] = history
     .slice(0, RECENT_OUTCOME_WINDOW)

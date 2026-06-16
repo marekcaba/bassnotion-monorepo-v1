@@ -708,6 +708,16 @@ describe('deriveStudentSignals (pure)', () => {
     expect(s.daysSinceLastConquered).toBe(4); // 06-08 → 06-12
   });
 
+  it('counts "released" toward the back-off (Story 4 — the real UI struggle signal)', () => {
+    // The "too hard — lay it anyway" valve records 'released', not 'too_hard'.
+    const history = [
+      makeRepResult({ id: 'r2', result: 'released' }),
+      makeRepResult({ id: 'r1', result: 'released' }),
+    ];
+    const s = deriveStudentSignals(history, climb, '2026-06-12');
+    expect(s.recentTooHardCount).toBe(2); // both releases counted → back-off fires
+  });
+
   it('returns null days-since-conquered when nothing was ever conquered', () => {
     const history = [makeRepResult({ result: 'released' })];
     const s = deriveStudentSignals(history, climb, '2026-06-12');
