@@ -8,6 +8,7 @@ import {
 import {
   createStructuredLogger,
   generateRep,
+  advanceClimb,
   clampRepTempo,
   GRADUATION_DAYS,
 } from '@bassnotion/contracts';
@@ -219,6 +220,64 @@ export class TrainingEngineService {
     };
   }
 
+  /**
+   * The treadmill step (Story 2): run the pure advanceClimb against the frozen
+   * StudentState, persist the delta, and return the (possibly) advanced climb so
+   * today's rep plans from it. Idempotent per calendar day — guarded on
+   * climb.lastRepDate so re-opening the gym twice today advances once. Returns
+   * the unchanged climb when not due or when the climb didn't move.
+   */
+  private async maybeAdvanceClimb(
+    userId: string,
+    goalEnrollmentId: string,
+    student: StudentState,
+  ): Promise<ClimbState> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    const climb = student.climb;
+    const today = student.assembledAt.slice(0, 10);
+
+    // Already advanced today → don't double-advance (re-open is a no-op).
+    if (climb.lastRepDate === today) return climb;
+
+    const delta = advanceClimb(student, { goalType: student.goal.type });
+
+    // Stamp last_rep_date even on a hold, so a no-op day still closes the window
+    // (a day with no win shouldn't re-trigger advance attempts on every re-open).
+    const patch: Record<string, unknown> = { last_rep_date: today };
+    if (delta.changed) {
+      if (delta.currentPosition) patch.current_position = delta.currentPosition;
+      if (typeof delta.difficultyScalar === 'number') {
+        patch.difficulty_scalar = delta.difficultyScalar;
+      }
+      if (typeof delta.backoffCount === 'number') {
+        patch.backoff_count = delta.backoffCount;
+      }
+    }
+
+    await this.repository.patchClimbState(userId, goalEnrollmentId, patch);
+
+    logger.info('Advanced climb', {
+      userId,
+      goalEnrollmentId,
+      changed: delta.changed,
+      nextTempoBpm: (delta.currentPosition?.tempoBpm as number) ?? null,
+      difficultyScalar: delta.difficultyScalar ?? null,
+      correlationId,
+    });
+
+    // Apply the delta in-memory so the rep plans from the advanced position
+    // without a re-read.
+    return {
+      ...climb,
+      currentPosition: delta.currentPosition ?? climb.currentPosition,
+      difficultyScalar: delta.difficultyScalar ?? climb.difficultyScalar,
+      backoffCount: delta.backoffCount ?? climb.backoffCount,
+      lastRepDate: today,
+    };
+  }
+
   /** All of a user's goal enrollments (the gym's "my goals" list). */
   async listMyEnrollments(userId: string): Promise<GoalEnrollment[]> {
     return this.repository.listEnrollments(userId);
@@ -420,13 +479,24 @@ export class TrainingEngineService {
     }
 
     // The whole-student read-model (Story 1). It freezes `now` once and supplies
-    // the climb + history + goalType the pure planner consumes; future advanceClimb
+    // the climb + history + goalType the pure planner consumes; advanceClimb
     // reads its `derived` signals. generateRep's signature is UNCHANGED — we
     // destructure StudentState into the same args it always took.
     const student = await this.assembleStudentState(userId, goalEnrollmentId);
 
+    // Mat -> treadmill (Story 2): move the climb based on how the LAST rep(s)
+    // landed, BEFORE planning today's. Guarded to once per calendar day via
+    // last_rep_date (the read-time / dayDiff pattern — re-opening the gym twice
+    // a day advances once). The pure advanceClimb decides the delta; we persist
+    // it and apply it in-memory so today's rep plans from the new position.
+    const climb = await this.maybeAdvanceClimb(
+      userId,
+      goalEnrollmentId,
+      student,
+    );
+
     const pool = this.resolveBlockPool(enrollment);
-    const bricks = generateRep(student.climb, pool, student.repHistory, {
+    const bricks = generateRep(climb, pool, student.repHistory, {
       goalType: student.goal.type,
     });
 

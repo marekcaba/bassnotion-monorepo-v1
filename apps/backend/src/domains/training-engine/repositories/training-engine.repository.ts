@@ -523,6 +523,31 @@ export class TrainingEngineRepository {
     }
   }
 
+  /** Patch arbitrary climb_state columns (already snake_cased), user-scoped.
+   *  The advance writer (Story 2) uses this to persist current_position +
+   *  difficulty_scalar + backoff_count + last_rep_date in one write. */
+  async patchClimbState(
+    userId: string,
+    goalEnrollmentId: string,
+    patch: Record<string, unknown>,
+  ): Promise<void> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { error } = await this.supabaseService
+      .getClient()
+      .from('climb_states')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('goal_enrollment_id', goalEnrollmentId)
+      .eq('user_id', userId);
+    if (error) {
+      logger.error('Failed to patch climb state', error as Error, {
+        userId,
+        goalEnrollmentId,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+  }
+
   // ── tutorials (the virtual-tutorial seam, §7a) ──────────────────────────────
 
   /**

@@ -143,6 +143,7 @@ function makeService(repoOverrides: Partial<TrainingEngineRepository> = {}) {
         makeEnrollment({ ...(patch as Partial<GoalEnrollment>) }),
     ),
     updateClimbPosition: vi.fn(async () => undefined),
+    patchClimbState: vi.fn(async () => undefined),
     ...repoOverrides,
   } as unknown as TrainingEngineRepository;
 
@@ -314,7 +315,14 @@ describe('TrainingEngineService.getTodayRep', () => {
   });
 
   it('brackets the climb-state tempo and interpolates it into the task instruction', async () => {
-    const { service } = makeService();
+    // Pin lastRepDate to today so the Story-2 advance is a no-op here — this test
+    // isolates the BRACKETING from the climb position (advance is covered below).
+    const today = new Date().toISOString().slice(0, 10);
+    const { service } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
+      ),
+    });
     const { bricks } = await service.getTodayRep(USER, ENROLLMENT);
     const instr = (b: { config: unknown }) =>
       (b.config as { instruction?: string }).instruction;
@@ -725,5 +733,38 @@ describe('TrainingEngineService.assembleStudentState', () => {
     await expect(
       service.assembleStudentState(USER, ENROLLMENT),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+// ── Story 2: the climb advances (mat -> treadmill) ───────────────────────────
+
+describe('TrainingEngineService.getTodayRep — climb advance', () => {
+  const today = new Date().toISOString().slice(0, 10);
+
+  it('advances the climb (persists a patch) when the last rep was conquered and not yet advanced today', async () => {
+    // default climb has lastRepDate: null; default history is one conquered rep.
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: null }) as never,
+      ),
+    });
+    await service.getTodayRep(USER, ENROLLMENT);
+
+    expect(repo.patchClimbState).toHaveBeenCalledTimes(1);
+    const patch = (repo.patchClimbState as ReturnType<typeof vi.fn>).mock
+      .calls[0][2] as Record<string, unknown>;
+    // a win raises the tempo one notch from 90 → 98 and stamps last_rep_date
+    expect((patch.current_position as { tempoBpm: number }).tempoBpm).toBe(98);
+    expect(patch.last_rep_date).toBe(today);
+  });
+
+  it('does NOT advance twice in one day (idempotent on last_rep_date)', async () => {
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
+      ),
+    });
+    await service.getTodayRep(USER, ENROLLMENT);
+    expect(repo.patchClimbState).not.toHaveBeenCalled();
   });
 });
