@@ -42,6 +42,15 @@ function brickLadder(block: TutorialBlock | undefined): LadderLevel {
   return block?.ladderPosition ?? 'L2';
 }
 
+/** Content-ladder (Build B): the topic this brick belonged to. The engine
+ *  stamps `config.topicId` on every brick of a multi-topic goal's rep; we echo
+ *  it back so the rep counts toward that topic's quota. null on single-focal
+ *  SPEED bricks (no topic). */
+function brickTopicId(block: TutorialBlock | undefined): string | null {
+  const t = (block?.config as { topicId?: string } | undefined)?.topicId;
+  return typeof t === 'string' && t.length > 0 ? t : null;
+}
+
 export function useRepResultSync(opts: {
   slug: string | null;
   enrollmentId: string | null;
@@ -93,6 +102,8 @@ export function useRepResultSync(opts: {
         blockId: entry.blockId,
         ladderLevel: brickLadder(block),
         tempoBpm: brickTempo(block),
+        // Echo the engine-stamped topic so the rep ticks its quota (Build B).
+        topicId: brickTopicId(block),
         signal,
         result, // 'conquered' | 'completed' | 'released'
         achievedTier: data.achievedTier ?? null,

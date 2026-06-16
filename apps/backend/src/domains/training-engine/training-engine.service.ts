@@ -28,6 +28,7 @@ import type {
   MasteryTier,
   StudentState,
   StudentSignals,
+  TopicProgress,
 } from '@bassnotion/contracts';
 
 /** Whole days between two UTC YYYY-MM-DD strings (b − a). Local copy to avoid a
@@ -480,7 +481,15 @@ export class TrainingEngineService {
     /** Rep shape (Story 5): 'full' = the 6-min 2+2+2; 'floor' = the short 3-min
      *  "loop one groove" session. Defaults to 'full'. */
     mode: 'full' | 'floor' = 'full',
-  ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
+  ): Promise<{
+    slug: string;
+    bricks: TutorialBlock[];
+    /** Content-ladder (epic §3 Build B): per-topic quota bars for the gym path
+     *  view. Present only on a multi-topic goal; absent for single-focal SPEED.
+     *  Already assembled on StudentState — surfaced here so the gym gets it in
+     *  the same round-trip it already makes to plan the rep. */
+    topicProgress?: TopicProgress[];
+  }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
@@ -550,7 +559,7 @@ export class TrainingEngineService {
       correlationId,
     });
 
-    return { slug, bricks };
+    return { slug, bricks, topicProgress: student.topicProgress };
   }
 
   /**

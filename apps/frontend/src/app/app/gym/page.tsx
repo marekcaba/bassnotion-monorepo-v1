@@ -5,6 +5,7 @@ import type {
   GraduationSummary,
   GraduationDoor,
   MonthInReview,
+  TopicProgress,
 } from '@bassnotion/contracts';
 import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
@@ -95,6 +96,54 @@ function GymDayCount({
       </span>{' '}
       this cycle.
     </p>
+  );
+}
+
+/**
+ * The content-ladder PATH (epic §3 Build B) — the ~3 TOPIC progress bars the
+ * student fills toward the goal. One bar per topic ("Hold the Engine 3/12"); the
+ * goal is done when every bar is full. Internal "stages" are NEVER surfaced —
+ * the student only sees the quota fill (founder decision §4: the future depends
+ * on their pace, so we show present state, not a future timeline). Rendered
+ * above the drill; absent on single-focal SPEED goals (topicProgress is null).
+ */
+function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
+  const allComplete = topics.every((t) => t.isComplete);
+  return (
+    <div className="mx-auto mb-4 w-full max-w-2xl space-y-2.5">
+      <p className="text-center text-xs uppercase tracking-wide text-white/40">
+        {allComplete ? 'Goal complete — every bar full 🎉' : 'Your path'}
+      </p>
+      {topics.map((t) => {
+        const pct =
+          t.repQuota > 0
+            ? Math.min(100, Math.round((t.repsLogged / t.repQuota) * 100))
+            : 0;
+        return (
+          <div key={t.topicId} className="space-y-1">
+            <div className="flex items-baseline justify-between text-xs">
+              <span
+                className={
+                  t.isComplete ? 'text-[#E8A44A]' : 'font-medium text-white/70'
+                }
+              >
+                {t.isComplete && '✓ '}
+                {t.title}
+              </span>
+              <span className="font-mono text-white/40">
+                {Math.min(t.repsLogged, t.repQuota)}/{t.repQuota}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#E8A44A] transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -340,6 +389,7 @@ export default function GymPage() {
     monthInReview,
     attendance,
     repMode,
+    topicProgress,
     placeAndStart,
     chooseFloor,
     chooseDoor,
@@ -448,6 +498,14 @@ export default function GymPage() {
               </>
             )}
           </p>
+        )}
+        {/* The content-ladder path bars (Build B) — the ~3 topic quotas the
+            student fills toward the goal. Multi-topic goals only; hidden at
+            graduation (the recap/fork own that screen). */}
+        {!graduation && topicProgress && topicProgress.length > 0 && (
+          <div className="px-4">
+            <GymTopicProgress topics={topicProgress} />
+          </div>
         )}
         <DrillSessionFrame
           tutorial={memoizedTutorial}
