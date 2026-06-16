@@ -23,7 +23,7 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { useProgress } from '@/domains/progress/hooks/useProgress';
 import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
 import { useDrillSession } from '@/domains/drill/hooks/useDrillSession';
-import { useRecordSession } from '@/domains/drill/hooks/useStreak';
+import { useRecordSession, useStreak } from '@/domains/drill/hooks/useStreak';
 import { DrillPlanScreen } from './DrillPlanScreen';
 import {
   DrillSummaryScreen,
@@ -78,6 +78,13 @@ export function DrillSessionFrame({
   // duplicate would be harmless anyway. A "run it again" → plan → summary cycle
   // re-arms it, but the same-day server no-op keeps the count correct.
   const recordSession = useRecordSession();
+  // The already-cached streak (the user's streak BEFORE this session). Used as
+  // the summary's immediate fallback so the "🔥 N-day streak" line is present
+  // the instant the summary renders, instead of popping in 1-3s later when the
+  // record mutation's round-trip resolves. The mutation result (the post-record
+  // value) replaces it as soon as it lands — same calendar day, so it differs by
+  // at most the +1 this session earned.
+  const cachedStreak = useStreak();
   const recordedRef = useRef(false);
   useEffect(() => {
     if (phase === 'summary' && !recordedRef.current) {
@@ -114,7 +121,9 @@ export function DrillSessionFrame({
         items={summaryItems}
         onRestart={restart}
         onDone={() => navigateWithTransition('/app')}
-        streak={recordSession.data ?? null}
+        // Post-record value once the mutation lands; until then the cached
+        // pre-session streak so the line never pops in from nothing.
+        streak={recordSession.data ?? cachedStreak.data ?? null}
       />
     );
   }
