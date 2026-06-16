@@ -1,46 +1,43 @@
 import { describe, it, expect } from 'vitest';
 import type { ReferenceDropConfig } from '@bassnotion/contracts';
-import { isDroppedForLoop } from '../useReferenceDrop';
+import { isDroppedForBar } from '../useReferenceDrop';
 
-/** The cadence logic is the heart of the drill — pure + worth proving in
- *  isolation (the gain scheduling rides the already-tested seam clock). */
-function cfg(overrides: Partial<ReferenceDropConfig> = {}): ReferenceDropConfig {
-  return {
-    enabled: true,
-    everyBars: 4,
-    dropForBars: 2,
-    dropTargets: ['drums'],
-    ...overrides,
-  };
+/** The drop pattern is a per-loop MASK (dropBars, 1-based bar numbers). It's
+ *  bound to the loop, so it repeats identically every loop and can't desync.
+ *  isDroppedForBar takes a 0-based bar POSITION within the loop. */
+function cfg(dropBars: number[]): ReferenceDropConfig {
+  return { enabled: true, dropBars, dropTargets: ['drums'] };
 }
 
-describe('isDroppedForLoop — drop cadence', () => {
-  it('drops the first dropForBars of every everyBars cycle', () => {
-    const c = cfg({ everyBars: 4, dropForBars: 2 });
-    // cycle: loops 0,1 dropped | 2,3 present | 4,5 dropped | 6,7 present
-    expect([0, 1, 2, 3, 4, 5, 6, 7].map((i) => isDroppedForLoop(i, c))).toEqual([
+describe('isDroppedForBar — per-loop drop mask', () => {
+  it('drops exactly the masked bars of an 8-bar loop (1,2,5,6)', () => {
+    const c = cfg([1, 2, 5, 6]);
+    // positions 0..7 ↔ bars 1..8
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map((p) => isDroppedForBar(p, c))).toEqual([
       true, true, false, false, true, true, false, false,
     ]);
   });
 
-  it('supports a different cadence (drop 1 every 3)', () => {
-    const c = cfg({ everyBars: 3, dropForBars: 1 });
-    expect([0, 1, 2, 3, 4, 5].map((i) => isDroppedForLoop(i, c))).toEqual([
-      true, false, false, true, false, false,
+  it('supports an arbitrary combination (just bar 4)', () => {
+    const c = cfg([4]);
+    expect([0, 1, 2, 3, 4, 5].map((p) => isDroppedForBar(p, c))).toEqual([
+      false, false, false, true, false, false,
     ]);
   });
 
-  it('clamps dropForBars to at most everyBars (never drops the whole cycle past it)', () => {
-    const c = cfg({ everyBars: 2, dropForBars: 9 });
-    // dropFor clamps to 2 → every loop dropped (a continuous-drop drill)
-    expect([0, 1, 2, 3].map((i) => isDroppedForLoop(i, c))).toEqual([
-      true, true, true, true,
+  it('drops nothing when the mask is empty', () => {
+    const c = cfg([]);
+    expect([0, 1, 2, 3].map((p) => isDroppedForBar(p, c))).toEqual([
+      false, false, false, false,
     ]);
   });
 
-  it('handles negative loop indices safely (wraps)', () => {
-    const c = cfg({ everyBars: 4, dropForBars: 2 });
-    expect(isDroppedForLoop(-1, c)).toBe(false); // -1 → position 3 → present
-    expect(isDroppedForLoop(-4, c)).toBe(true); // -4 → position 0 → dropped
+  it('is bound to loop position — same pattern repeats every loop (no desync)', () => {
+    // The hook keys isDroppedForBar on bar-WITHIN-loop, so bar 1 of loop 2 is
+    // position 0 again → same decision. This is what fixes the loop-2 bug.
+    const c = cfg([1, 2]);
+    expect(isDroppedForBar(0, c)).toBe(true); // bar 1 (any loop)
+    expect(isDroppedForBar(1, c)).toBe(true); // bar 2
+    expect(isDroppedForBar(2, c)).toBe(false); // bar 3
   });
 });

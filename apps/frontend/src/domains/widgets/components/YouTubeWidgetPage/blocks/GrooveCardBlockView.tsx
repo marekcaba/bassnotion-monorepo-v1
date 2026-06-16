@@ -522,9 +522,12 @@ export function GrooveCardBlockView({
   const referenceDrop = useReferenceDrop({
     config: config.referenceDrop,
     isPlaying: playback.isPlaying,
-    isCountingDown: playback.countdownState.isCountingDown,
-    getNextSeamTime: playback.getNextSeamTime,
+    // BAR-level clock: the drill's cadence is in BARS, derived from the real
+    // playhead phase × lengthBars (a groove loop = lengthBars bars).
+    lengthBars: config.lengthBars ?? 4,
     getCurrentTime: playback.getCurrentTime,
+    loopDurationSeconds: playback.loopDurationSeconds,
+    loopStartAudioTime: playback.loopStartAudioTime,
   });
 
   // Next-key preview label for the controls' "current → next" display.
@@ -1082,14 +1085,18 @@ export function GrooveCardBlockView({
               {referenceDrop.isDropped ? (
                 <>
                   🔇 Reference gone — hold the pulse
-                  {referenceDrop.loopsUntilChange != null &&
-                    ` · back in ${referenceDrop.loopsUntilChange}`}
+                  {referenceDrop.barsUntilChange != null &&
+                    ` · back in ${referenceDrop.barsUntilChange} bar${
+                      referenceDrop.barsUntilChange === 1 ? '' : 's'
+                    }`}
                 </>
               ) : (
                 <>
                   🥁 Lock in
-                  {referenceDrop.loopsUntilChange != null &&
-                    ` · reference drops in ${referenceDrop.loopsUntilChange}`}
+                  {referenceDrop.barsUntilChange != null &&
+                    ` · reference drops in ${referenceDrop.barsUntilChange} bar${
+                      referenceDrop.barsUntilChange === 1 ? '' : 's'
+                    }`}
                 </>
               )}
             </div>

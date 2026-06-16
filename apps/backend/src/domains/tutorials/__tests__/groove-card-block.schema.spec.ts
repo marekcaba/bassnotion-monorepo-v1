@@ -133,9 +133,8 @@ describe('grooveCardBlockConfigSchema', () => {
   it('keeps an admin-authored referenceDrop (not stripped on save)', () => {
     const referenceDrop = {
       enabled: true,
-      everyBars: 4,
-      dropForBars: 2,
-      dropTargets: ['drums' as const],
+      dropBars: [1, 2, 5, 6],
+      dropTargets: ['drums' as const, 'harmony' as const, 'bass' as const],
       fadeMs: 80,
     };
     const result = grooveCardBlockConfigSchema.safeParse(
@@ -143,7 +142,7 @@ describe('grooveCardBlockConfigSchema', () => {
     );
     expect(result.success).toBe(true);
     // The whole point: the field SURVIVES validation (non-passthrough schema
-    // would otherwise strip an undeclared key).
+    // would otherwise strip an undeclared key) — incl. the per-loop dropBars mask.
     expect(
       result.success && (result.data as { referenceDrop?: unknown }).referenceDrop,
     ).toEqual(referenceDrop);
@@ -154,8 +153,7 @@ describe('grooveCardBlockConfigSchema', () => {
       validConfig({
         referenceDrop: {
           enabled: true,
-          everyBars: 4,
-          dropForBars: 2,
+          dropBars: [1, 2],
           dropTargets: [],
         },
       }),

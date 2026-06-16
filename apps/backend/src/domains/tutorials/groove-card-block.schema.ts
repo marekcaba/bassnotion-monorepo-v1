@@ -208,9 +208,12 @@ export const grooveCardBlockConfigSchema = z
     referenceDrop: z
       .object({
         enabled: z.boolean(),
-        everyBars: z.number().int().positive(),
-        dropForBars: z.number().int().positive(),
-        dropTargets: z.array(z.enum(['drums', 'click'])).min(1),
+        // 1-based bar numbers within the loop that drop. Bound to the loop, so
+        // the pattern can't desync (replaced the rolling every-N/drop-M rate).
+        dropBars: z.array(z.number().int().positive()),
+        dropTargets: z
+          .array(z.enum(['drums', 'harmony', 'bass', 'click']))
+          .min(1),
         fadeMs: z.number().int().nonnegative().optional(),
       })
       .optional(),

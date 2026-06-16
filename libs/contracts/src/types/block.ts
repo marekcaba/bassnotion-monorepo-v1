@@ -507,13 +507,19 @@ export interface GrooveCardBlockConfig {
 export interface ReferenceDropConfig {
   /** Off unless true — the feature never runs implicitly. */
   enabled: boolean;
-  /** The reference drops once per this many bars (e.g. 4 → every 4th bar window). */
-  everyBars: number;
-  /** How many bars the reference stays dropped before fading back in. */
-  dropForBars: number;
-  /** Which reference stem(s) fade: 'drums' (the harder, musical test) and/or
-   *  'click' (the classic metronome-mute). At least one. */
-  dropTargets: Array<'drums' | 'click'>;
+  /** WHICH bars of the groove's loop the reference is dropped on — 1-based bar
+   *  numbers within the `lengthBars`-bar loop. The pattern IS the loop, so it
+   *  repeats identically every loop and CANNOT desync (unlike a rolling
+   *  every-N/drop-M rate, which mismatches when its cycle doesn't tile the
+   *  loop). e.g. an 8-bar loop with `dropBars: [1, 2, 5, 6]` drops bars 1,2,5,6
+   *  every loop. Empty = nothing drops. Bars outside [1..lengthBars] are
+   *  ignored. */
+  dropBars: number[];
+  /** Which reference stem(s) fade. The whole band can drop so NOTHING keeps the
+   *  time (the real test): 'drums', 'harmony', 'bass', and/or the 'click'
+   *  metronome. At least one. Dropping all of drums+harmony+bass = play to
+   *  silence (hold the pulse alone). */
+  dropTargets: Array<'drums' | 'harmony' | 'bass' | 'click'>;
   /** Gain-ramp duration in ms for the fade out/in. Optional; the hook falls
    *  back to a short default (~80ms) when omitted. */
   fadeMs?: number;
