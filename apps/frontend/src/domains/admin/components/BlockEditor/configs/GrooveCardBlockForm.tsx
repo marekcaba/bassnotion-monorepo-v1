@@ -21,6 +21,7 @@ import { useCallback } from 'react';
 import type {
   GrooveCardBlockConfig,
   GrooveCardStemSet,
+  ReferenceDropConfig,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
@@ -291,6 +292,15 @@ export function GrooveCardBlockForm({
         </p>
       </fieldset>
 
+      {/* Reference-Drop — the pulse-steadiness drill (Lock The Pocket). The
+          chosen reference stem(s) fade out for N bars then back in on a bar
+          boundary; the return reveals tempo drift. All admin-authored here. */}
+      <ReferenceDropFields
+        value={config.referenceDrop}
+        lengthBars={config.lengthBars ?? 4}
+        onChange={(rd) => updateField('referenceDrop', rd)}
+      />
+
       {/* Completion criterion — how this drill brick is "done". */}
       <CompletionCriterionFields
         value={config.completionCriterion}
@@ -376,5 +386,165 @@ export function GrooveCardBlockForm({
           Allow bookmark: contract-only field, no UI surface in v1.
           When the bookmark feature lands, re-expose here. */}
     </div>
+  );
+}
+
+/** Form defaults the admin SEES and can change — NOT engine constants. Enabling
+ *  the drill seeds these; every field is then editable. dropBars empty = the
+ *  admin paints which bars drop on the per-bar row below. */
+const REFERENCE_DROP_DEFAULT: ReferenceDropConfig = {
+  enabled: true,
+  dropBars: [],
+  dropTargets: ['drums'],
+  fadeMs: 80,
+};
+
+/**
+ * Reference-Drop admin control. Enable reveals a per-bar toggle row (which bars
+ * of THIS loop drop), the targets, and the fade. The pattern is bound to the
+ * loop (lengthBars), so it repeats identically every loop and cannot desync —
+ * unlike a rolling every-N/drop-M rate. All values are written straight onto the
+ * block's `referenceDrop` config (nothing hardcoded; the hook reads what's set).
+ */
+function ReferenceDropFields({
+  value,
+  lengthBars,
+  onChange,
+}: {
+  value?: ReferenceDropConfig;
+  /** The loop length — the number of per-bar toggles to render. */
+  lengthBars: number;
+  onChange: (rd: ReferenceDropConfig | undefined) => void;
+}) {
+  const enabled = !!value?.enabled;
+  // Normalize against the DEFAULT so a config saved under the old shape (which
+  // had everyBars/dropForBars, no dropBars) reads safely — dropBars/dropTargets
+  // are always arrays. A migration-on-read; saving re-persists the new shape.
+  const rd: ReferenceDropConfig = {
+    ...REFERENCE_DROP_DEFAULT,
+    ...value,
+    dropBars: value?.dropBars ?? [],
+    dropTargets: value?.dropTargets ?? REFERENCE_DROP_DEFAULT.dropTargets,
+  };
+  const bars = Math.max(1, Math.round(lengthBars));
+
+  const toggle = (on: boolean) =>
+    onChange(on ? { ...REFERENCE_DROP_DEFAULT, ...value, enabled: true } : undefined);
+
+  const set = <K extends keyof ReferenceDropConfig>(
+    key: K,
+    v: ReferenceDropConfig[K],
+  ) => onChange({ ...rd, [key]: v, enabled: true });
+
+  const toggleBar = (bar: number) => {
+    const has = rd.dropBars.includes(bar);
+    const next = (
+      has ? rd.dropBars.filter((b) => b !== bar) : [...rd.dropBars, bar]
+    ).sort((a, b) => a - b);
+    set('dropBars', next);
+  };
+
+  const toggleTarget = (target: 'drums' | 'harmony' | 'bass' | 'click') => {
+    const has = rd.dropTargets.includes(target);
+    const next = has
+      ? rd.dropTargets.filter((t) => t !== target)
+      : [...rd.dropTargets, target];
+    // An enabled drill must fade something — ignore an attempt to clear the last.
+    if (next.length === 0) return;
+    set('dropTargets', next);
+  };
+
+  const TARGET_LABELS: Record<'drums' | 'harmony' | 'bass' | 'click', string> = {
+    drums: 'Drums',
+    harmony: 'Harmony',
+    bass: 'Bass',
+    click: 'Click (metronome)',
+  };
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
+        Reference-Drop (pulse drill) — optional
+      </legend>
+      <label className="flex items-center gap-2 text-xs text-white/60">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        Drop the reference periodically to train pulse-steadiness
+      </label>
+
+      {enabled && (
+        <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          <div className="space-y-1">
+            <span className="text-xs text-white/50">
+              Which bars of the loop DROP ({bars}-bar loop) — click to toggle
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: bars }, (_, i) => i + 1).map((bar) => {
+                const dropped = rd.dropBars.includes(bar);
+                return (
+                  <button
+                    key={bar}
+                    type="button"
+                    onClick={() => toggleBar(bar)}
+                    className={`h-9 w-9 rounded-md border text-sm font-medium ${
+                      dropped
+                        ? 'border-amber-400 bg-amber-500/25 text-amber-200'
+                        : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
+                    }`}
+                    title={dropped ? `Bar ${bar}: reference DROPS` : `Bar ${bar}: plays`}
+                  >
+                    {bar}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-white/40">
+              Amber = the reference drops on that bar. The pattern repeats every
+              loop — e.g. an 8-bar loop with bars 1,2,5,6 dropped plays the
+              reference on 3,4,7,8 and drops on 1,2,5,6, forever in phase.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs text-white/50">
+              Drop which reference (check all to drop the whole band — play to
+              silence)
+            </span>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/70">
+              {(['drums', 'harmony', 'bass', 'click'] as const).map((target) => (
+                <label key={target} className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={rd.dropTargets.includes(target)}
+                    onChange={() => toggleTarget(target)}
+                  />
+                  {TARGET_LABELS[target]}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="space-y-1 block">
+            <span className="text-xs text-white/50">Fade (ms)</span>
+            <input
+              type="number"
+              min={0}
+              value={rd.fadeMs ?? 80}
+              onChange={(e) =>
+                set('fadeMs', Math.max(0, Number(e.target.value)))
+              }
+              className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white"
+            />
+          </label>
+          {enabled && rd.dropBars.length === 0 && (
+            <p className="text-xs text-amber-300/70">
+              No bars selected yet — pick at least one bar above, or the drill
+              won&apos;t drop anything.
+            </p>
+          )}
+        </div>
+      )}
+    </fieldset>
   );
 }

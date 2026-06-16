@@ -493,6 +493,36 @@ export interface GrooveCardBlockConfig {
   /** DRILL: how this brick completes (time/loops/conquer/manual). Presence (or
    *  `role`) makes the card a drill brick. Absent on plain tutorial cards. */
   completionCriterion?: DrillCompletionCriterion;
+  /** DRILL: Reference-Drop pulse-steadiness drill (Lock The Pocket). When
+   *  enabled, the chosen reference stem(s) fade OUT for `dropForBars` and back
+   *  IN on a bar boundary every `everyBars` — the return reveals tempo drift.
+   *  Trains Pulse·Steadiness + Timing·Awareness. ALL behaviour is admin-authored
+   *  here (nothing hardcoded); absent/disabled = the drill doesn't run. */
+  referenceDrop?: ReferenceDropConfig;
+}
+
+/** What a Reference-Drop drill fades, and on what cadence. Admin-authored on the
+ *  groove-card block; the playback hook reads it and schedules the gain ramps on
+ *  bar boundaries (no values are baked into the engine). */
+export interface ReferenceDropConfig {
+  /** Off unless true — the feature never runs implicitly. */
+  enabled: boolean;
+  /** WHICH bars of the groove's loop the reference is dropped on — 1-based bar
+   *  numbers within the `lengthBars`-bar loop. The pattern IS the loop, so it
+   *  repeats identically every loop and CANNOT desync (unlike a rolling
+   *  every-N/drop-M rate, which mismatches when its cycle doesn't tile the
+   *  loop). e.g. an 8-bar loop with `dropBars: [1, 2, 5, 6]` drops bars 1,2,5,6
+   *  every loop. Empty = nothing drops. Bars outside [1..lengthBars] are
+   *  ignored. */
+  dropBars: number[];
+  /** Which reference stem(s) fade. The whole band can drop so NOTHING keeps the
+   *  time (the real test): 'drums', 'harmony', 'bass', and/or the 'click'
+   *  metronome. At least one. Dropping all of drums+harmony+bass = play to
+   *  silence (hold the pulse alone). */
+  dropTargets: Array<'drums' | 'harmony' | 'bass' | 'click'>;
+  /** Gain-ramp duration in ms for the fade out/in. Optional; the hook falls
+   *  back to a short default (~80ms) when omitted. */
+  fadeMs?: number;
 }
 
 /**

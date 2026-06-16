@@ -129,6 +129,37 @@ describe('grooveCardBlockConfigSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('keeps an admin-authored referenceDrop (not stripped on save)', () => {
+    const referenceDrop = {
+      enabled: true,
+      dropBars: [1, 2, 5, 6],
+      dropTargets: ['drums' as const, 'harmony' as const, 'bass' as const],
+      fadeMs: 80,
+    };
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({ referenceDrop }),
+    );
+    expect(result.success).toBe(true);
+    // The whole point: the field SURVIVES validation (non-passthrough schema
+    // would otherwise strip an undeclared key) — incl. the per-loop dropBars mask.
+    expect(
+      result.success && (result.data as { referenceDrop?: unknown }).referenceDrop,
+    ).toEqual(referenceDrop);
+  });
+
+  it('rejects a referenceDrop with no dropTargets (an enabled drill must fade something)', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({
+        referenceDrop: {
+          enabled: true,
+          dropBars: [1, 2],
+          dropTargets: [],
+        },
+      }),
+    );
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('validateGrooveCardBlocks — top-level validator', () => {
