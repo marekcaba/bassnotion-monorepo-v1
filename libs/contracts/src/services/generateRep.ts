@@ -165,6 +165,9 @@ function materializeBrick(
     order: number;
     tempoBpm?: number;
     keyOverride?: number;
+    /** Brick timebox in minutes (default 2, the 2+2+2 shape). The floor rep
+     *  passes 3 (one longer brick). Clamped to the 1–3 bounds. */
+    timeboxMinutes?: number;
   },
 ): TutorialBlock {
   const cfg = { ...(source.config as Record<string, unknown>) };
@@ -177,8 +180,9 @@ function materializeBrick(
   if (typeof opts.keyOverride === 'number') {
     cfg.keyOverride = clampKey(opts.keyOverride);
   }
-  // The brick's timebox: 2 minutes per the 2+2+2 shape (clamped to bounds).
-  cfg.timeboxMinutes = clampMinutes(2);
+  // The brick's timebox: 2 min for a 2+2+2 full rep; the caller can override
+  // (the 3-min floor brick). Clamped to bounds.
+  cfg.timeboxMinutes = clampMinutes(opts.timeboxMinutes ?? 2);
 
   // Interpolate the tempo into a task instruction's {tempo} token, if present.
   // Harmless for any other block type (no token → unchanged).
@@ -215,14 +219,31 @@ function blockById(
 // Phase 0 ships SPEED; the others throw a clear "not yet implemented" so a
 // mis-typed goal fails loudly in tests rather than silently emitting nonsense.
 // ---------------------------------------------------------------------------
+/** The floor rep's single brick is this long (minutes) — the "3-min version". */
+export const FLOOR_BRICK_MINUTES = 3;
+
 function generateSpeedRep(
   state: ClimbState,
   content: BlockPool,
   history: RepResult[],
+  mode: 'full' | 'floor',
 ): TutorialBlock[] {
   const focal = focalBlock(content);
   if (!focal) {
     throw new Error('generateRep(speed): BlockPool.blocks is empty');
+  }
+
+  // FLOOR (Story 5): the short "wrecked after work" session — ONE brick at
+  // today's tempo (L2) for 3 min, "just loop one groove". No ladder, no stretch.
+  if (mode === 'floor') {
+    return [
+      materializeBrick(focal, {
+        level: 'L2',
+        order: 0,
+        tempoBpm: speedTempoForLevel(state, 'L2'),
+        timeboxMinutes: FLOOR_BRICK_MINUTES,
+      }),
+    ];
   }
 
   // L1 = spaced review of a prior conquered block once wins exist; else an
@@ -256,7 +277,7 @@ export function generateRep(
 ): TutorialBlock[] {
   switch (options.goalType) {
     case 'speed':
-      return generateSpeedRep(state, content, history);
+      return generateSpeedRep(state, content, history, options.mode ?? 'full');
     case 'knowledge':
     case 'vocabulary':
     case 'feel':

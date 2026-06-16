@@ -37,12 +37,17 @@ interface DrillSessionFrameProps {
    *  player (which types this as any[]). Drills rarely carry exercises, but a
    *  mixed tutorial might. */
   exercises: unknown[];
+  /** Story 5: this is the short FLOOR session (one 3-min brick). Completing it
+   *  records a FLOOR rep (showed up) — it advances the floor streak but NOT the
+   *  ceiling (which is the full focused rep). Defaults to false (full rep). */
+  isFloor?: boolean;
 }
 
 export function DrillSessionFrame({
   tutorial,
   tutorialSlug,
   exercises,
+  isFloor = false,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -89,14 +94,15 @@ export function DrillSessionFrame({
   useEffect(() => {
     if (phase === 'summary' && !recordedRef.current) {
       recordedRef.current = true;
-      // Reaching the summary = the player completed the FULL focused rep (every
-      // brick), so this is a CEILING rep (advances both floor + ceiling).
-      recordSession.mutate(true);
+      // A FULL rep (all bricks) = a CEILING rep (advances floor + ceiling). A
+      // FLOOR session (Story 5: the short 3-min version) advances the floor
+      // streak only — "showed up", streak safe, but not the full-focus ceiling.
+      recordSession.mutate(!isFloor);
     }
     if (phase === 'plan') {
       recordedRef.current = false; // re-arm for a fresh run
     }
-  }, [phase, recordSession]);
+  }, [phase, recordSession, isFloor]);
 
   const summaryItems = useMemo<DrillSummaryItem[]>(() => {
     const dataById = new Map(

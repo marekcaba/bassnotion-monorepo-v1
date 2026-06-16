@@ -466,6 +466,9 @@ export class TrainingEngineService {
   async getTodayRep(
     userId: string,
     goalEnrollmentId: string,
+    /** Rep shape (Story 5): 'full' = the 6-min 2+2+2; 'floor' = the short 3-min
+     *  "loop one groove" session. Defaults to 'full'. */
+    mode: 'full' | 'floor' = 'full',
   ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -501,11 +504,15 @@ export class TrainingEngineService {
     const pool = this.resolveBlockPool(enrollment);
     const bricks = generateRep(climb, pool, student.repHistory, {
       goalType: student.goal.type,
+      mode,
     });
 
-    const title = student.goal.target?.tempoBpm
-      ? `Daily Rep — target ${student.goal.target.tempoBpm} BPM`
-      : 'Daily Rep';
+    const title =
+      mode === 'floor'
+        ? 'Daily Rep — floor (short session)'
+        : student.goal.target?.tempoBpm
+          ? `Daily Rep — target ${student.goal.target.tempoBpm} BPM`
+          : 'Daily Rep';
 
     const slug = await this.mintVirtualTutorial(
       userId,

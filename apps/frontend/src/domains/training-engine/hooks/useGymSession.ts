@@ -58,8 +58,12 @@ export interface GymSession {
    *  (graduation is null until day 30; this isn't). null if the summary lacked
    *  the count. */
   attendance: { daysPracticed: number; windowDays: number } | null;
+  /** The current rep shape (Story 5). 'floor' = the short 3-min session. */
+  repMode: 'full' | 'floor';
   /** status 'placement' → enroll with a chosen starting tempo, then plan. */
   placeAndStart: (startTempoBpm: number) => void;
+  /** Re-plan today's rep as the short 'floor' session (one 3-min brick). */
+  chooseFloor: () => void;
   /** Walk through a graduation door, then re-load (re-plan / re-place). */
   chooseDoor: (door: GraduationDoor) => void;
   /** Re-plan today's rep (e.g. after finishing a session). */
@@ -83,13 +87,19 @@ export function useGymSession(
     windowDays: number;
   } | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [repMode, setRepMode] = useState<'full' | 'floor'>('full');
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
   /** Plan + mint today's rep for an enrollment and go 'ready'. Also checks the
    *  day-30 fork (surfaced alongside the rep, never blocking it). */
-  const planFor = useCallback(async (active: GoalEnrollment) => {
-    const { slug: repSlug, bricks: repBricks } = await planTodayRep(active.id);
+  const planFor = useCallback(
+    async (active: GoalEnrollment, mode: 'full' | 'floor' = 'full') => {
+    setRepMode(mode);
+    const { slug: repSlug, bricks: repBricks } = await planTodayRep(
+      active.id,
+      mode,
+    );
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
@@ -170,6 +180,24 @@ export function useGymSession(
     [goalSlug, planFor],
   );
 
+  /** Re-plan the active enrollment's rep as the short 'floor' session (Story 5).
+   *  Available once an enrollment is ready; a no-op if there's none yet. */
+  const chooseFloor = useCallback(async () => {
+    const active = enrollment;
+    if (!active || runningRef.current) return;
+    runningRef.current = true;
+    setStatus('loading');
+    setError(null);
+    try {
+      await planFor(active, 'floor');
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+      setStatus('error');
+    } finally {
+      runningRef.current = false;
+    }
+  }, [enrollment, planFor]);
+
   const chooseDoor = useCallback(
     async (door: GraduationDoor) => {
       const active = enrollment;
@@ -218,7 +246,9 @@ export function useGymSession(
     graduation,
     monthInReview,
     attendance,
+    repMode,
     placeAndStart,
+    chooseFloor,
     chooseDoor,
     refresh: run,
   };

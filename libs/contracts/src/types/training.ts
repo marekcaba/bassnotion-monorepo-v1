@@ -435,6 +435,11 @@ export interface BlockPool {
  */
 export interface GenerateRepOptions {
   goalType: GoalType;
+  /** Rep shape (Treadmill epic Story 5). 'full' = the 3-brick 2+2+2 (6-min)
+   *  rep. 'floor' = the short "wrecked after work" session: ONE brick at today's
+   *  tempo for 3 min ("just loop one groove") — protects the floor streak, not
+   *  the ceiling. Defaults to 'full' when omitted. */
+  mode?: 'full' | 'floor';
 }
 
 /**

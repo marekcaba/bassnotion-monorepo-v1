@@ -63,13 +63,15 @@ export async function enrollInGoal(
  */
 export async function planTodayRep(
   enrollmentId: string,
+  /** Story 5: 'floor' plans the short 3-min session; default 'full'. */
+  mode: 'full' | 'floor' = 'full',
 ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
   await ensureAuthToken();
   return apiClient.post<{ slug: string; bricks: TutorialBlock[] }>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,
     )}/today-rep`,
-    {},
+    { mode },
   );
 }
 

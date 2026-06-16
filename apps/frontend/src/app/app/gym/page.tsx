@@ -339,7 +339,9 @@ export default function GymPage() {
     graduation,
     monthInReview,
     attendance,
+    repMode,
     placeAndStart,
+    chooseFloor,
     chooseDoor,
     refresh,
   } = useGymSession();
@@ -416,10 +418,42 @@ export default function GymPage() {
             </div>
           )
         )}
+        {/* Floor toggle (Story 5): wrecked / short on time → the 3-min version.
+            Hidden at graduation (the fork/recap own that screen). */}
+        {!graduation && (
+          <p className="mx-auto -mt-1 mb-3 w-full max-w-2xl px-4 text-center text-xs text-white/40">
+            {repMode === 'floor' ? (
+              <>
+                Short session today — just loop one groove (3 min). Streak stays
+                safe.{' '}
+                <button
+                  type="button"
+                  onClick={refresh}
+                  className="underline underline-offset-2 hover:text-white/70"
+                >
+                  Do the full rep instead
+                </button>
+              </>
+            ) : (
+              <>
+                Wrecked or short on time?{' '}
+                <button
+                  type="button"
+                  onClick={chooseFloor}
+                  className="underline underline-offset-2 hover:text-white/70"
+                >
+                  Do the 3-minute version
+                </button>{' '}
+                — your streak stays safe.
+              </>
+            )}
+          </p>
+        )}
         <DrillSessionFrame
           tutorial={memoizedTutorial}
           tutorialSlug={slug}
           exercises={memoizedExercises ?? []}
+          isFloor={repMode === 'floor'}
         />
       </PageErrorBoundary>
     </>

@@ -133,8 +133,12 @@ export class TrainingEngineController {
   async getTodayRep(
     @CurrentUser() user: AuthUser,
     @Param('enrollmentId') enrollmentId: string,
+    @Body() body?: { mode?: 'full' | 'floor' },
   ): Promise<{ slug: string; bricks: TutorialBlock[] }> {
-    return this.trainingEngineService.getTodayRep(user.id, enrollmentId);
+    // Story 5: the gym can request the short 'floor' rep. Anything but the
+    // explicit 'floor' string plans the full rep.
+    const mode = body?.mode === 'floor' ? 'floor' : 'full';
+    return this.trainingEngineService.getTodayRep(user.id, enrollmentId, mode);
   }
 
   /**
