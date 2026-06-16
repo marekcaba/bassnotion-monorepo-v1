@@ -178,8 +178,23 @@ export interface Goal {
   day30Milestone: Record<string, unknown>;
   forkConfig: Record<string, unknown>;
   isActive: boolean;
+  /** Soft-delete timestamp (goal lifecycle). null = live; non-null = ARCHIVED:
+   *  hidden from admin lists + not enrollable, reversible, never cascades.
+   *  Distinct from isActive (inactive = hidden from new enrollments only). */
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * A goal as the ADMIN list sees it — the Goal plus its live enrollment count.
+ * The count drives the lifecycle UI: the edit "blast radius" banner ("N students
+ * on the current version"), and which delete affordance to show (normal delete
+ * vs force-delete). enrollmentCount counts ALL enrollments referencing the goal
+ * (any status), since any of them FK-cascades on a hard delete.
+ */
+export interface AdminGoalSummary extends Goal {
+  enrollmentCount: number;
 }
 
 /**

@@ -42,10 +42,29 @@ export function useUpdateTrainingGoal() {
   });
 }
 
+/** Hard-delete. Pass `force: true` (the admin override) to cascade a test
+ *  goal's enrollments; without it the backend refuses when enrollments exist. */
 export function useDeleteTrainingGoal() {
   const qc = useQueryClient();
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => adminTrainingGoalsApi.delete(id),
+  return useMutation<void, Error, { id: string; force?: boolean }>({
+    mutationFn: ({ id, force }) => adminTrainingGoalsApi.delete(id, force),
+    onSuccess: () => qc.invalidateQueries({ queryKey: goalKeys.all }),
+  });
+}
+
+/** Archive (soft-delete) — off the list + not enrollable, reversible. */
+export function useArchiveTrainingGoal() {
+  const qc = useQueryClient();
+  return useMutation<Goal, Error, string>({
+    mutationFn: (id) => adminTrainingGoalsApi.archive(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: goalKeys.all }),
+  });
+}
+
+export function useUnarchiveTrainingGoal() {
+  const qc = useQueryClient();
+  return useMutation<Goal, Error, string>({
+    mutationFn: (id) => adminTrainingGoalsApi.unarchive(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: goalKeys.all }),
   });
 }

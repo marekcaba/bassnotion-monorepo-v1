@@ -1,20 +1,22 @@
 'use client';
 
 /**
- * Admin Training Goals — /admin/training-goals (Phase 5a).
+ * Admin Training Goals — /admin/training-goals.
  *
- * Author the goals the Bass Gym engine plans from, no seed SQL: pick a type,
- * name it, set the target + the focal task, and the page assembles the
- * block_set the engine reads (a single task block embedded inline — the shape
- * the seed used). Mirrors the admin products/grooves house style (plain
- * useState form + list, amber accent). Editing never disturbs an in-flight
- * climb — enrollments hold a frozen snapshot.
+ * Author + manage the goals the Bass Gym engine plans from, no seed SQL.
+ * Lifecycle: CREATE / EDIT (pre-filled, edits hit NEW enrollments only —
+ * in-flight climbs keep their frozen snapshot) / ACTIVATE-DEACTIVATE (hide from
+ * new enrollments) / ARCHIVE (soft-delete: off the list + not enrollable,
+ * reversible) / DELETE (guarded; force-delete behind a typed-title confirm for
+ * test goals). Single-focal SPEED goals (one inline task block) and content-
+ * ladder goals (~3 topics × stages) are both authored here.
  */
 
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Archive, Pencil, X } from 'lucide-react';
 import type {
   Goal,
+  AdminGoalSummary,
   GoalType,
   CreateGoalInput,
   Topic,
@@ -25,6 +27,7 @@ import {
   useCreateTrainingGoal,
   useDeleteTrainingGoal,
   useUpdateTrainingGoal,
+  useArchiveTrainingGoal,
 } from '@/domains/admin/hooks/useAdminTrainingGoals';
 import { TopicStageEditor } from '@/domains/admin/components/TopicStageEditor';
 import { Button } from '@/shared/components/ui/button';
@@ -39,9 +42,8 @@ interface Draft {
   /** BPM step between rep levels (L1=today−notch … L3=today+notch). */
   tempoNotch: number;
   instruction: string;
-  /** Content-ladder (Build B): when true, the goal is MULTI-TOPIC — it ships
-   *  `topics` (one quota bar per topic, stages authored inline) instead of the
-   *  single focal task block. When false, the existing single-focal SPEED shape. */
+  /** Content-ladder: when true the goal is MULTI-TOPIC (ships `topics`); else
+   *  the single-focal SPEED shape (one inline task block). */
   multiTopic: boolean;
   topics: Topic[];
 }
@@ -57,10 +59,30 @@ const EMPTY_DRAFT: Draft = {
   topics: [],
 };
 
-/** Assemble a CreateGoalInput from the draft. Two shapes (mutually exclusive):
- *  - MULTI-TOPIC (content ladder): ships `topics`; the engine serves one topic
- *    per rep, climbs its stages, counts quotas. No single focal block.
- *  - SINGLE-FOCAL SPEED (the original): one inline task block in `blockSet`. */
+/** Hydrate the form from an existing goal (the EDIT path). Detects multi-topic
+ *  from `topics`; pulls the focal instruction back out of the single task block. */
+function goalToDraft(g: Goal): Draft {
+  const multiTopic = !!g.topics && g.topics.length > 0;
+  const focalInstruction =
+    (g.blockSet?.[0]?.block?.config as { instruction?: string } | undefined)
+      ?.instruction ?? EMPTY_DRAFT.instruction;
+  return {
+    type: g.type,
+    title: g.title,
+    description: g.description ?? '',
+    targetTempo:
+      typeof g.target?.tempoBpm === 'number' ? g.target.tempoBpm : 120,
+    tempoNotch:
+      typeof g.target?.tempoNotchBpm === 'number' ? g.target.tempoNotchBpm : 8,
+    instruction: focalInstruction,
+    multiTopic,
+    topics: multiTopic ? (g.topics ?? []) : [],
+  };
+}
+
+/** Assemble a CreateGoalInput from the draft (also the UpdateGoalInput shape).
+ *  Two mutually-exclusive content shapes: multi-topic `topics`, or the single
+ *  focal task `blockSet`. */
 function draftToInput(d: Draft): CreateGoalInput {
   const base = {
     type: d.type,
@@ -75,18 +97,19 @@ function draftToInput(d: Draft): CreateGoalInput {
   } satisfies Partial<CreateGoalInput>;
 
   if (d.multiTopic) {
-    return { ...base, topics: d.topics };
+    // Multi-topic: ship topics, and clear blockSet so a goal switched FROM
+    // single-focal doesn't keep a stale focal block.
+    return { ...base, topics: d.topics, blockSet: [] };
   }
 
   const focalId = `${slugify(d.title) || 'goal'}-focal`;
   return {
     ...base,
+    topics: [], // clear topics if switched away from multi-topic
     blockSet: [
       {
         blockId: focalId,
         ladderPosition: 'L2',
-        // Embed the full task block inline — the shape the engine resolves
-        // (no audio / library dependency, works everywhere).
         block: {
           id: focalId,
           type: 'task',
@@ -95,7 +118,6 @@ function draftToInput(d: Draft): CreateGoalInput {
           tempoRange: { min: 50, max: 180 },
           config: {
             heading: d.title.trim(),
-            // The engine interpolates {tempo} per ladder level at plan time.
             instruction: d.instruction.trim(),
             completionCriterion: { type: 'time', target: 2 },
           },
@@ -117,9 +139,12 @@ export default function AdminTrainingGoalsPage() {
   const createGoal = useCreateTrainingGoal();
   const updateGoal = useUpdateTrainingGoal();
   const deleteGoal = useDeleteTrainingGoal();
+  const archiveGoal = useArchiveTrainingGoal();
 
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
+  // null = creating; a goal = editing that goal (form is pre-filled).
+  const [editing, setEditing] = useState<AdminGoalSummary | null>(null);
   // Which topic/stage panels in the TopicStageEditor are open (parent-owned).
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -134,8 +159,12 @@ export default function AdminTrainingGoalsPage() {
       return next;
     });
 
-  // Multi-topic goals need ≥1 topic, each with a title + quota; single-focal
-  // goals need the focal instruction. Title is always required.
+  const resetForm = () => {
+    setDraft(EMPTY_DRAFT);
+    setEditing(null);
+    setExpanded(new Set());
+  };
+
   const topicsValid =
     draft.topics.length > 0 &&
     draft.topics.every((t) => t.title.trim().length > 0 && t.repQuota > 0);
@@ -143,38 +172,90 @@ export default function AdminTrainingGoalsPage() {
     draft.title.trim().length > 0 &&
     (draft.multiTopic ? topicsValid : !!draft.instruction.trim());
 
-  const handleCreate = async () => {
+  const startEdit = (g: AdminGoalSummary) => {
+    setEditing(g);
+    setDraft(goalToDraft(g));
+    setExpanded(new Set());
+    setError(null);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+  };
+
+  const handleSubmit = async () => {
     setError(null);
     try {
-      await createGoal.mutateAsync(draftToInput(draft));
-      setDraft(EMPTY_DRAFT);
-      setExpanded(new Set());
+      if (editing) {
+        await updateGoal.mutateAsync({ id: editing.id, patch: draftToInput(draft) });
+      } else {
+        await createGoal.mutateAsync(draftToInput(draft));
+      }
+      resetForm();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create goal');
+      setError(e instanceof Error ? e.message : 'Failed to save goal');
     }
   };
 
   const handleToggleActive = async (g: Goal) => {
     setError(null);
     try {
-      await updateGoal.mutateAsync({
-        id: g.id,
-        patch: { isActive: !g.isActive },
-      });
+      await updateGoal.mutateAsync({ id: g.id, patch: { isActive: !g.isActive } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to update goal');
     }
   };
 
-  const handleDelete = async (g: Goal) => {
-    if (!confirm(`Delete "${g.title}"? This cannot be undone.`)) return;
+  const handleArchive = async (g: AdminGoalSummary) => {
+    if (
+      !confirm(
+        `Archive "${g.title}"? It disappears from this list and can't be ` +
+          'enrolled in. Existing climbs keep running. You can unarchive later.',
+      )
+    )
+      return;
     setError(null);
     try {
-      await deleteGoal.mutateAsync(g.id);
+      await archiveGoal.mutateAsync(g.id);
+      if (editing?.id === g.id) resetForm();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to archive goal');
+    }
+  };
+
+  const handleDelete = async (g: AdminGoalSummary) => {
+    // No enrollments → a plain confirm is enough.
+    if (g.enrollmentCount === 0) {
+      if (!confirm(`Delete "${g.title}"? This cannot be undone.`)) return;
+      setError(null);
+      try {
+        await deleteGoal.mutateAsync({ id: g.id });
+        if (editing?.id === g.id) resetForm();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to delete goal');
+      }
+      return;
+    }
+    // Enrollments exist → force-delete behind a typed-title confirmation. This
+    // CASCADES (destroys those enrollments' climbs + rep history) — for test
+    // goals only; archive is the safe path for real ones.
+    const typed = prompt(
+      `"${g.title}" has ${g.enrollmentCount} enrollment(s). Deleting it will ` +
+        `PERMANENTLY destroy their climbs + rep history (this is for test goals — ` +
+        `use Archive for a real one).\n\nType the goal's title to confirm:`,
+    );
+    if (typed === null) return; // cancelled
+    if (typed.trim() !== g.title.trim()) {
+      setError('Title did not match — delete cancelled.');
+      return;
+    }
+    setError(null);
+    try {
+      await deleteGoal.mutateAsync({ id: g.id, force: true });
+      if (editing?.id === g.id) resetForm();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to delete goal');
     }
   };
+
+  const saving = createGoal.isPending || updateGoal.isPending;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6 text-gray-900">
@@ -188,11 +269,34 @@ export default function AdminTrainingGoalsPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* ── New goal ─────────────────────────────────────────────────────── */}
+      {/* ── New / Edit goal ──────────────────────────────────────────────── */}
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-[#B97216]">
-          New goal
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[#B97216]">
+            {editing ? `Edit: ${editing.title}` : 'New goal'}
+          </h2>
+          {editing && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancel edit
+            </button>
+          )}
+        </div>
+
+        {/* Blast-radius banner — edits never touch in-flight climbs (frozen
+            snapshot), but the admin should SEE how many students are on the
+            current version before they change it. */}
+        {editing && editing.enrollmentCount > 0 && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {editing.enrollmentCount} student(s) are enrolled in the current
+            version. Your changes apply to <strong>new enrollments only</strong>
+            {' '}— their in-flight climbs keep the version they started.
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1 text-xs font-medium text-gray-600">
@@ -255,7 +359,7 @@ export default function AdminTrainingGoalsPage() {
           />
         </label>
 
-        {/* ── Goal structure: single-focal vs content-ladder (Build B) ─────── */}
+        {/* ── Goal structure: single-focal vs content-ladder ──────────────── */}
         <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/60 p-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -324,12 +428,16 @@ export default function AdminTrainingGoalsPage() {
         )}
 
         <Button
-          onClick={handleCreate}
-          disabled={!canSave || createGoal.isPending}
+          onClick={handleSubmit}
+          disabled={!canSave || saving}
           className="bg-[#E8A44A] text-black hover:bg-[#E8A44A]/90"
         >
           <Plus className="mr-1 h-4 w-4" />
-          {createGoal.isPending ? 'Creating…' : 'Create goal'}
+          {saving
+            ? 'Saving…'
+            : editing
+              ? 'Save changes'
+              : 'Create goal'}
         </Button>
       </section>
 
@@ -347,7 +455,11 @@ export default function AdminTrainingGoalsPage() {
             {goals.map((g) => (
               <li
                 key={g.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm"
+                className={`flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm ${
+                  editing?.id === g.id
+                    ? 'border-[#E8A44A] ring-1 ring-[#E8A44A]'
+                    : 'border-gray-200'
+                }`}
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-gray-900">
@@ -356,6 +468,11 @@ export default function AdminTrainingGoalsPage() {
                     {!g.isActive && (
                       <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase text-gray-500">
                         inactive
+                      </span>
+                    )}
+                    {g.enrollmentCount > 0 && (
+                      <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] uppercase text-blue-600">
+                        {g.enrollmentCount} enrolled
                       </span>
                     )}
                   </p>
@@ -370,7 +487,15 @@ export default function AdminTrainingGoalsPage() {
                         ` · target ${g.target.tempoBpm} BPM`}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => startEdit(g)}
+                    className="rounded-md border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
+                    aria-label="Edit goal"
+                    title="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleToggleActive(g)}
                     className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
@@ -378,9 +503,22 @@ export default function AdminTrainingGoalsPage() {
                     {g.isActive ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
+                    onClick={() => handleArchive(g)}
+                    className="rounded-md border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
+                    aria-label="Archive goal"
+                    title="Archive (reversible — keeps climbs)"
+                  >
+                    <Archive className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => handleDelete(g)}
                     className="rounded-md border border-red-300 p-1.5 text-red-600 hover:bg-red-50"
                     aria-label="Delete goal"
+                    title={
+                      g.enrollmentCount > 0
+                        ? 'Force-delete (destroys enrollments — test goals only)'
+                        : 'Delete'
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

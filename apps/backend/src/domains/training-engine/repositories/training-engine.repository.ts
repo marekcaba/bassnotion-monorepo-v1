@@ -5,6 +5,7 @@ import type {
   GoalEnrollment,
   ClimbState,
   Goal,
+  AdminGoalSummary,
   GoalSnapshot,
 } from '@bassnotion/contracts';
 import { SupabaseService } from '../../../infrastructure/supabase/supabase.service.js';
@@ -110,7 +111,9 @@ export class TrainingEngineRepository {
 
   // ── training_goals ──────────────────────────────────────────────────────────
 
-  /** Fetch an active goal template by slug, or null. */
+  /** Fetch an ENROLLABLE goal template by slug, or null: active AND not
+   *  archived. An archived goal is never enrollable (the soft-delete contract),
+   *  so a new enroll on an archived slug returns null → 404 upstream. */
   async findGoalBySlug(slug: string): Promise<Goal | null> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -121,6 +124,7 @@ export class TrainingEngineRepository {
       .select('*')
       .eq('slug', slug)
       .eq('is_active', true)
+      .is('archived_at', null)
       .maybeSingle();
 
     if (error) {
@@ -136,21 +140,57 @@ export class TrainingEngineRepository {
 
   // ── training_goals admin CRUD (Phase 5a) ────────────────────────────────────
 
-  /** All goals incl. inactive, newest first (the admin table). */
-  async listAllGoals(): Promise<Goal[]> {
+  /** All goals incl. inactive, newest first (the admin table), each with its
+   *  live enrollment count. EXCLUDES archived goals unless `includeArchived`
+   *  (the soft-delete contract — archived goals drop off the admin list). The
+   *  count drives the lifecycle UI (edit blast-radius banner + which delete
+   *  affordance to show). */
+  async listAllGoals(
+    includeArchived = false,
+  ): Promise<AdminGoalSummary[]> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
-    const { data, error } = await this.supabaseService
+    let query = this.supabaseService
       .getClient()
       .from('training_goals')
       .select('*')
       .order('created_at', { ascending: false });
+    if (!includeArchived) query = query.is('archived_at', null);
+    const { data, error } = await query;
     if (error) {
       logger.error('Failed to list training goals', error as Error, {
         correlationId: this.requestContext?.getCorrelationId(),
       });
       throw error;
     }
-    return (data ?? []).map((r) => this.mapGoalRow(r as GoalRow));
+    const goals = (data ?? []).map((r) => this.mapGoalRow(r as GoalRow));
+    const counts = await this.enrollmentCountsByGoal(goals.map((g) => g.id));
+    return goals.map((g) => ({ ...g, enrollmentCount: counts.get(g.id) ?? 0 }));
+  }
+
+  /** Enrollment count per goal id, for the admin list (batched — one read for
+   *  all goals, not N). Any-status enrollments count (all FK-cascade on delete). */
+  private async enrollmentCountsByGoal(
+    goalIds: string[],
+  ): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    if (goalIds.length === 0) return counts;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('goal_enrollments')
+      .select('goal_id')
+      .in('goal_id', goalIds);
+    if (error) {
+      const logger = this.requestContext?.getLogger() || this.staticLogger;
+      logger.error('Failed to count enrollments by goal', error as Error, {
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    for (const row of data ?? []) {
+      const id = (row as { goal_id: string }).goal_id;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return counts;
   }
 
   /** Whether ANY goal (active or not) owns this slug — for admin slug collision. */
@@ -251,7 +291,9 @@ export class TrainingEngineRepository {
     return count ?? 0;
   }
 
-  /** Delete a goal by id. Returns true if a row was removed. */
+  /** Delete a goal by id. Cascades to goal_enrollments + climb_states +
+   *  rep_results via the FKs — the service guards this against accidental data
+   *  loss (only on zero enrollments, or an explicit admin force-delete). */
   async deleteGoal(id: string): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const { error } = await this.supabaseService
@@ -266,6 +308,31 @@ export class TrainingEngineRepository {
       });
       throw error;
     }
+  }
+
+  /** Archive / unarchive a goal (soft-delete). Sets archived_at to now / null.
+   *  Reversible, never cascades — the safe "take it off the shelf" action. */
+  async setGoalArchived(id: string, archived: boolean): Promise<Goal | null> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('training_goals')
+      .update({
+        archived_at: archived ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) {
+      logger.error('Failed to set goal archived', error as Error, {
+        id,
+        archived,
+        correlationId: this.requestContext?.getCorrelationId(),
+      });
+      throw error;
+    }
+    return data ? this.mapGoalRow(data as GoalRow) : null;
   }
 
   // ── goal_enrollments ────────────────────────────────────────────────────────
@@ -618,10 +685,12 @@ export class TrainingEngineRepository {
       target: row.target ?? {},
       assessmentConfig: row.assessment_config ?? {},
       blockSet: row.block_set ?? [],
+      topics: row.topics ?? [],
       prerequisites: row.prerequisites ?? [],
       day30Milestone: row.day30_milestone ?? {},
       forkConfig: row.fork_config ?? {},
       isActive: row.is_active,
+      archivedAt: row.archived_at ?? null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };

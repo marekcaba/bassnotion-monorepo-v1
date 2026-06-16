@@ -550,6 +550,7 @@ export type {
   Topic,
   TopicProgress,
   Goal,
+  AdminGoalSummary,
   CreateGoalInput,
   UpdateGoalInput,
   GoalSnapshot,

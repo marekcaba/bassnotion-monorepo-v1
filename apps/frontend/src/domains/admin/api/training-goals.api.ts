@@ -4,28 +4,20 @@
  * admin-gated on the backend.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type {
   Goal,
+  AdminGoalSummary,
   CreateGoalInput,
   UpdateGoalInput,
 } from '@bassnotion/contracts';
+// Reuse the app's SINGLE Supabase client — calling createClient() here spins up
+// a second GoTrueClient on the same storage key (the "Multiple GoTrueClient
+// instances" warning + two-clients-fighting auth bugs). Mirrors training-engine.api.
+import { supabase } from '@/infrastructure/supabase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-let supabaseClient: SupabaseClient | null = null;
-function getSupabaseClient(): SupabaseClient {
-  if (!supabaseClient) {
-    supabaseClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-  }
-  return supabaseClient;
-}
-
 async function authHeaders(): Promise<Record<string, string>> {
-  const supabase = getSupabaseClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -46,10 +38,10 @@ async function parseError(res: Response, fallback: string): Promise<never> {
 }
 
 export const adminTrainingGoalsApi = {
-  async list(): Promise<Goal[]> {
+  async list(): Promise<AdminGoalSummary[]> {
     const res = await fetch(BASE, { headers: await authHeaders() });
     if (!res.ok) await parseError(res, 'Failed to list training goals');
-    const { goals } = (await res.json()) as { goals: Goal[] };
+    const { goals } = (await res.json()) as { goals: AdminGoalSummary[] };
     return goals;
   },
 
@@ -82,12 +74,36 @@ export const adminTrainingGoalsApi = {
     return goal;
   },
 
-  async delete(id: string): Promise<void> {
+  /** Archive (soft-delete): off the list + not enrollable, reversible. */
+  async archive(id: string): Promise<Goal> {
+    const res = await fetch(`${BASE}/${id}/archive`, {
+      method: 'POST',
+      headers: await authHeaders(),
+    });
+    if (!res.ok) await parseError(res, 'Failed to archive training goal');
+    const { goal } = (await res.json()) as { goal: Goal };
+    return goal;
+  },
+
+  async unarchive(id: string): Promise<Goal> {
+    const res = await fetch(`${BASE}/${id}/unarchive`, {
+      method: 'POST',
+      headers: await authHeaders(),
+    });
+    if (!res.ok) await parseError(res, 'Failed to unarchive training goal');
+    const { goal } = (await res.json()) as { goal: Goal };
+    return goal;
+  },
+
+  /** Hard-delete. `force` (admin override) cascades a test goal's enrollments;
+   *  without it the backend refuses when any enrollment exists. */
+  async delete(id: string, force = false): Promise<void> {
     // Strip Content-Type so Fastify's JSON parser doesn't 400 on the empty
     // DELETE body (same gotcha as products.api.ts).
     const headers = await authHeaders();
     delete headers['Content-Type'];
-    const res = await fetch(`${BASE}/${id}`, { method: 'DELETE', headers });
+    const url = force ? `${BASE}/${id}?force=true` : `${BASE}/${id}`;
+    const res = await fetch(url, { method: 'DELETE', headers });
     if (!res.ok) await parseError(res, 'Failed to delete training goal');
   },
 };

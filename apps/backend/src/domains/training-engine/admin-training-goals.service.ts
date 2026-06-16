@@ -1,6 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   Goal,
+  AdminGoalSummary,
   GoalType,
   CreateGoalInput,
   UpdateGoalInput,
@@ -25,7 +30,8 @@ const VALID_TYPES: GoalType[] = ['speed', 'knowledge', 'vocabulary', 'feel'];
 export class AdminTrainingGoalsService {
   constructor(private readonly repository: TrainingEngineRepository) {}
 
-  list(): Promise<Goal[]> {
+  /** The admin list — non-archived goals, each with its live enrollment count. */
+  list(): Promise<AdminGoalSummary[]> {
     return this.repository.listAllGoals();
   }
 
@@ -45,6 +51,7 @@ export class AdminTrainingGoalsService {
       target: input.target ?? {},
       assessment_config: input.assessmentConfig ?? {},
       block_set: input.blockSet ?? [],
+      topics: input.topics ?? [],
       prerequisites: input.prerequisites ?? [],
       day30_milestone: input.day30Milestone ?? {},
       fork_config: input.forkConfig ?? {},
@@ -72,6 +79,7 @@ export class AdminTrainingGoalsService {
     if (patch.assessmentConfig !== undefined)
       row.assessment_config = patch.assessmentConfig;
     if (patch.blockSet !== undefined) row.block_set = patch.blockSet;
+    if (patch.topics !== undefined) row.topics = patch.topics;
     if (patch.prerequisites !== undefined)
       row.prerequisites = patch.prerequisites;
     if (patch.day30Milestone !== undefined)
@@ -84,20 +92,45 @@ export class AdminTrainingGoalsService {
     return updated;
   }
 
-  async remove(id: string): Promise<void> {
-    // Guard against silent data loss: goal_enrollments FK-cascades on goal
-    // delete, so deleting a goal with enrollments would wipe those players'
-    // climbs + rep history. Refuse; deactivate (is_active=false) instead to
-    // retire a goal without destroying in-flight data.
+  /**
+   * Hard-delete a goal. By default this is GUARDED against silent data loss:
+   * goal_enrollments FK-cascades on goal delete, so deleting a goal with
+   * enrollments would wipe those players' climbs + rep history. Refuse; archive
+   * or deactivate instead.
+   *
+   * `force` is the admin override (typed-title confirmation on the client) for
+   * deleting a TEST/JUNK goal you don't care about — it cascades deliberately.
+   * Pre-production this is how you clean up your own test goals; once real
+   * students exist, prefer archive.
+   */
+  async remove(id: string, force = false): Promise<void> {
     const enrolled = await this.repository.countEnrollmentsForGoal(id);
-    if (enrolled > 0) {
+    if (enrolled > 0 && !force) {
       throw new BadRequestException(
         `Cannot delete: ${enrolled} enrollment(s) reference this goal. ` +
-          'Deactivate it instead (it stays out of new enrollments but keeps ' +
-          'existing climbs intact).',
+          'Archive it instead (it disappears from the list but keeps existing ' +
+          'climbs intact), or force-delete to discard a test goal + its ' +
+          'enrollments.',
       );
     }
     await this.repository.deleteGoal(id);
+  }
+
+  /** Archive a goal (soft-delete): off the admin list + not enrollable,
+   *  reversible, never cascades. The safe way to retire a goal with real
+   *  enrollees without destroying their data. */
+  async archive(id: string): Promise<Goal> {
+    const goal = await this.repository.setGoalArchived(id, true);
+    if (!goal) throw new NotFoundException('Training goal not found');
+    return goal;
+  }
+
+  /** Unarchive a goal — bring it back to the list (still inactive/active per
+   *  its is_active flag). */
+  async unarchive(id: string): Promise<Goal> {
+    const goal = await this.repository.setGoalArchived(id, false);
+    if (!goal) throw new NotFoundException('Training goal not found');
+    return goal;
   }
 
   private validate(input: CreateGoalInput): void {
