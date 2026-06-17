@@ -199,6 +199,7 @@ export class TrainingEngineController {
   ): Promise<{
     slug: string;
     bricks: TutorialBlock[];
+    goalTitle?: string | null;
     topicProgress?: TopicProgress[];
   }> {
     // Story 5: the gym can request the short 'floor' rep. Anything but the

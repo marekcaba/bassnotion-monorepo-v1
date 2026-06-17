@@ -92,6 +92,8 @@ export async function planTodayRep(
 ): Promise<{
   slug: string;
   bricks: TutorialBlock[];
+  /** The goal's user-facing title (coach header names the goal). */
+  goalTitle?: string | null;
   /** Content-ladder (Build B): per-topic quota bars for the gym path view.
    *  Present only on a multi-topic goal; absent for single-focal SPEED. */
   topicProgress?: TopicProgress[];
@@ -100,6 +102,7 @@ export async function planTodayRep(
   return apiClient.post<{
     slug: string;
     bricks: TutorialBlock[];
+    goalTitle?: string | null;
     topicProgress?: TopicProgress[];
   }>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(

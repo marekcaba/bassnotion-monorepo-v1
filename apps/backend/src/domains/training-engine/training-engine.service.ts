@@ -398,6 +398,9 @@ export class TrainingEngineService {
 
     const snapshot: GoalSnapshot = {
       type: goal.type,
+      // Freeze the user-facing title so the gym can NAME the goal (coach voice)
+      // without a second lookup; a later admin rename won't change this climb.
+      title: goal.title,
       target: goal.target,
       blockSet: goal.blockSet,
       // Freeze the content-ladder topics too (epic §3) — without this a
@@ -706,6 +709,9 @@ export class TrainingEngineService {
   ): Promise<{
     slug: string;
     bricks: TutorialBlock[];
+    /** The goal's user-facing title (from the frozen snapshot) — the gym names
+     *  the goal in the coach header without a second lookup. */
+    goalTitle?: string | null;
     /** Content-ladder (epic §3 Build B): per-topic quota bars for the gym path
      *  view. Present only on a multi-topic goal; absent for single-focal SPEED.
      *  Already assembled on StudentState — surfaced here so the gym gets it in
@@ -809,7 +815,12 @@ export class TrainingEngineService {
       correlationId,
     });
 
-    return { slug, bricks, topicProgress: student.topicProgress };
+    return {
+      slug,
+      bricks,
+      goalTitle: enrollment.goalSnapshot.title ?? null,
+      topicProgress: student.topicProgress,
+    };
   }
 
   /**

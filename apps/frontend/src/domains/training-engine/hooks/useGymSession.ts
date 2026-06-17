@@ -72,6 +72,9 @@ export interface GymSession {
    *  Present only on a multi-topic goal (rides the today-rep response); null for
    *  single-focal SPEED. The student sees ~3 bars; "stages" are never surfaced. */
   topicProgress: TopicProgress[] | null;
+  /** The goal's user-facing title (coach header names the goal); null until the
+   *  rep is planned, or for goals that predate the title snapshot. */
+  goalTitle: string | null;
   /** status 'choosing' → the enrollable goals to pick from (the goal picker). */
   goals: EnrollableGoal[];
   /** The goal the student picked (set by chooseGoal), shown on the placement
@@ -118,6 +121,7 @@ export function useGymSession(
   const [topicProgress, setTopicProgress] = useState<TopicProgress[] | null>(
     null,
   );
+  const [goalTitle, setGoalTitle] = useState<string | null>(null);
   // Goal picker (the "set up your goal for the month" step).
   const [goals, setGoals] = useState<EnrollableGoal[]>([]);
   const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
@@ -136,11 +140,13 @@ export function useGymSession(
     const {
       slug: repSlug,
       bricks: repBricks,
+      goalTitle: repGoalTitle,
       topicProgress: repTopicProgress,
     } = await planTodayRep(active.id, mode);
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
+    setGoalTitle(repGoalTitle ?? null);
     // Content-ladder (Build B): the path bars ride the today-rep response.
     setTopicProgress(repTopicProgress ?? null);
     // Best-effort: a graduation-check failure must not block the rep.
@@ -332,6 +338,7 @@ export function useGymSession(
     attendance,
     repMode,
     topicProgress,
+    goalTitle,
     goals,
     chosenGoal,
     chooseGoal,

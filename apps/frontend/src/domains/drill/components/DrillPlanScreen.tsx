@@ -74,14 +74,15 @@ export function DrillPlanScreen({
           <header className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="mb-2 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
-                Today&apos;s drill
+                Today&apos;s rep
               </p>
               <h2 className="font-serif text-[22px] leading-tight text-[#E8E4DD]">
-                {title || 'Practice session'}
+                {title || "Today's rep"}
               </h2>
+              {/* Value line, not an internal count (P1.4). No "bricks". */}
               <p className="mt-0.5 font-mono text-[11px] text-[#5A5660]">
-                {bricks.length} {bricks.length === 1 ? 'brick' : 'bricks'}
-                {minutes > 0 ? ` · ~${minutes} min` : ''}
+                {minutes > 0 ? `~${minutes} min` : 'A few minutes'} · focused
+                practice
               </p>
             </div>
           </header>
@@ -138,7 +139,7 @@ export function DrillPlanScreen({
             className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
           >
             <Play className="size-4" fill="currentColor" />
-            Start the drill
+            Start today&apos;s rep
           </button>
         ) : (
           <Button onClick={onStart} className="w-full text-white" size="lg">

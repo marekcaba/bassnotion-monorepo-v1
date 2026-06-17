@@ -252,6 +252,10 @@ export type UpdateGoalInput = Partial<CreateGoalInput>;
  */
 export interface GoalSnapshot {
   type: GoalType;
+  /** The goal's user-facing title, frozen at enrollment — so the gym can name
+   *  the goal ("Faster Right Hand") without a second lookup, and an admin's
+   *  later rename doesn't change an in-flight climb's identity. */
+  title?: string;
   target: GoalTarget;
   blockSet: BlockRef[];
   /** Frozen content-ladder topics (epic §3). Like blockSet, snapshotted at
