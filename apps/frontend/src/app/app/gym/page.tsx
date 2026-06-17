@@ -510,6 +510,7 @@ export default function GymPage() {
     placeAndStart,
     chooseFloor,
     chooseDoor,
+    startSwitch,
     refresh,
   } = useGymSession(undefined, { enabled: isMember });
 
@@ -641,6 +642,20 @@ export default function GymPage() {
           <div className="px-4">
             <GymTopicProgress topics={topicProgress} />
           </div>
+        )}
+        {/* Switch goal — change what you're training mid-cycle (gated to once
+            per month server-side). Quiet link; hidden at graduation. */}
+        {!graduation && (
+          <p className="mx-auto mb-3 w-full max-w-2xl px-4 text-center text-xs text-white/30">
+            Not the right goal?{' '}
+            <button
+              type="button"
+              onClick={startSwitch}
+              className="underline underline-offset-2 hover:text-white/60"
+            >
+              Switch goal
+            </button>
+          </p>
         )}
         <DrillSessionFrame
           tutorial={memoizedTutorial}

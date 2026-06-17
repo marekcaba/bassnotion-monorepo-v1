@@ -263,6 +263,7 @@ function makeService(
   const subscriptionRepository = {
     findByUserId: vi.fn(async () => ({
       status: 'active',
+      currentPeriodStart: new Date('2026-06-16T00:00:00.000Z'),
       currentPeriodEnd: new Date('2026-07-16T00:00:00.000Z'),
     })),
     hasActiveSubscription: vi.fn(async () => true),
@@ -760,6 +761,98 @@ describe('TrainingEngineService.enrollInGoal', () => {
       'goal-1',
       expect.anything(),
       expect.objectContaining({ startTempoBpm: 120, placed: false }),
+    );
+  });
+});
+
+describe('TrainingEngineService.switchGoal', () => {
+  // A goal with a DIFFERENT id than the active enrollment's, so switching
+  // creates/abandons rather than no-ops.
+  const otherGoal = () => ({ ...makeGoal(), id: 'goal-2', slug: 'other-goal' });
+
+  it('abandons the active enrollment then enrolls in the new goal', async () => {
+    const active = makeEnrollment({ id: 'enr-active', status: 'active' });
+    const { service, repo } = makeService({
+      listEnrollments: vi.fn(async () => [active]),
+      findGoalBySlug: vi.fn(async () => otherGoal()),
+      // new goal not yet enrolled
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.switchGoal(USER, 'other-goal');
+    // current abandoned (history kept)…
+    expect(repo.updateEnrollment).toHaveBeenCalledWith(
+      USER,
+      'enr-active',
+      expect.objectContaining({ status: 'abandoned' }),
+    );
+    // …then enrolled in the new goal.
+    expect(repo.createEnrollment).toHaveBeenCalled();
+  });
+
+  it('BLOCKS a student 2nd switch in the same billing period', async () => {
+    const active = makeEnrollment({ id: 'enr-active', status: 'active' });
+    // One already-abandoned enrollment THIS period (updatedAt after periodStart).
+    const abandoned = makeEnrollment({
+      id: 'enr-old',
+      status: 'abandoned',
+      updatedAt: '2026-06-20T00:00:00.000Z', // after periodStart 06-16
+    });
+    const { service } = makeService({
+      listEnrollments: vi.fn(async () => [active, abandoned]),
+      findGoalBySlug: vi.fn(async () => otherGoal()),
+    });
+    await expect(service.switchGoal(USER, 'other-goal')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('ADMIN bypass switches even after a prior switch this period', async () => {
+    const active = makeEnrollment({ id: 'enr-active', status: 'active' });
+    const abandoned = makeEnrollment({
+      id: 'enr-old',
+      status: 'abandoned',
+      updatedAt: '2026-06-20T00:00:00.000Z',
+    });
+    const { service, repo } = makeService({
+      listEnrollments: vi.fn(async () => [active, abandoned]),
+      findGoalBySlug: vi.fn(async () => otherGoal()),
+      findEnrollmentByGoal: vi.fn(async () => null),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.switchGoal(USER, 'other-goal', { bypassLimit: true });
+    expect(repo.createEnrollment).toHaveBeenCalled(); // not blocked
+  });
+
+  it('REACTIVATES a prior abandoned enrollment when switching back to that goal', async () => {
+    // Switching back into goal-1, which the user previously abandoned.
+    const abandonedSame = makeEnrollment({
+      id: 'enr-same',
+      status: 'abandoned',
+    });
+    const { service, repo } = makeService({
+      listEnrollments: vi.fn(async () => [abandonedSame]),
+      findGoalBySlug: vi.fn(async () => makeGoal()), // goal-1
+      findEnrollmentByGoal: vi.fn(async () => abandonedSame),
+      findClimbState: vi.fn(async () => null),
+    });
+    await service.switchGoal(USER, 'speed-c-major-scale');
+    // Reactivated (status active), NOT a new createEnrollment (UNIQUE constraint).
+    expect(repo.updateEnrollment).toHaveBeenCalledWith(
+      USER,
+      'enr-same',
+      expect.objectContaining({ status: 'active' }),
+    );
+    expect(repo.createEnrollment).not.toHaveBeenCalled();
+  });
+
+  it('GATES on an active subscription (non-member is Forbidden)', async () => {
+    const { service } = makeService(
+      { listEnrollments: vi.fn(async () => []) },
+      { findByUserId: vi.fn(async () => null) },
+    );
+    await expect(service.switchGoal(USER, 'other-goal')).rejects.toBeInstanceOf(
+      ForbiddenException,
     );
   });
 });

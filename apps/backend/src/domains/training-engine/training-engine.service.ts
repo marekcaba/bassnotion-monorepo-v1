@@ -396,11 +396,25 @@ export class TrainingEngineService {
       goalDeadline: window.periodEnd, // ISO string or null
     };
 
+    const snapshot: GoalSnapshot = {
+      type: goal.type,
+      target: goal.target,
+      blockSet: goal.blockSet,
+      // Freeze the content-ladder topics too (epic §3) — without this a
+      // multi-topic goal would enroll with no topics and the engine would never
+      // serve them. Frozen here so a later admin edit can't change an in-flight
+      // climb's topics/quotas.
+      topics: goal.topics,
+      assessmentConfig: goal.assessmentConfig,
+      day30Milestone: goal.day30Milestone,
+      forkConfig: goal.forkConfig,
+    };
+
     const existing = await this.repository.findEnrollmentByGoal(
       userId,
       goal.id,
     );
-    if (existing) {
+    if (existing && existing.status === 'active') {
       // SELF-HEAL: createEnrollment + createClimbState are two writes (no cross-
       // table transaction in the JS client). If a prior call died between them,
       // the enrollment exists but its climb_state is missing — which would make
@@ -421,20 +435,31 @@ export class TrainingEngineService {
       });
       return existing;
     }
-
-    const snapshot: GoalSnapshot = {
-      type: goal.type,
-      target: goal.target,
-      blockSet: goal.blockSet,
-      // Freeze the content-ladder topics too (epic §3) — without this a
-      // multi-topic goal would enroll with no topics and the engine would never
-      // serve them. Frozen here so a later admin edit can't change an in-flight
-      // climb's topics/quotas.
-      topics: goal.topics,
-      assessmentConfig: goal.assessmentConfig,
-      day30Milestone: goal.day30Milestone,
-      forkConfig: goal.forkConfig,
-    };
+    if (existing) {
+      // A non-active enrollment in this goal (abandoned/completed/graduated):
+      // UNIQUE(user_id, goal_id) means we can't insert a new row, so REACTIVATE
+      // it — refresh the snapshot + the period deadline + reset started_at so
+      // the new cycle's clock is correct. (Switching back to a goal you left.)
+      const reactivated = await this.repository.updateEnrollment(
+        userId,
+        existing.id,
+        {
+          status: 'active',
+          started_at: new Date().toISOString(),
+          goal_snapshot: snapshot,
+          placement: placementRecord,
+          graduated_at: null,
+        },
+      );
+      await this.ensureClimbState(userId, existing.id, startTempoBpm);
+      logger.info('Reactivated a prior enrollment in this goal', {
+        userId,
+        goalSlug,
+        enrollmentId: existing.id,
+        correlationId,
+      });
+      return reactivated ?? existing;
+    }
 
     const enrollment = await this.repository.createEnrollment(
       userId,
@@ -457,6 +482,89 @@ export class TrainingEngineService {
   }
 
   /**
+   * Switch the user's active goal mid-cycle: abandon the current enrollment
+   * (status 'abandoned' — its rep history is kept, never cascade-deleted) and
+   * enroll in the new goal. The new goal inherits the SAME billing period
+   * (enrollInGoal resolves the same currentPeriodEnd), so the month's clock
+   * doesn't reset — you committed to the month, just changed what you train.
+   *
+   * STUDENT gate: once per billing period (founder decision — preserves the
+   * "commit to a goal for the month" model). A 2nd student switch in the same
+   * period is rejected. ADMIN reassign passes `bypassLimit` (support fixing a
+   * wrong pick shouldn't burn the student's one switch).
+   */
+  async switchGoal(
+    userId: string,
+    newGoalSlug: string,
+    opts: { bypassLimit?: boolean; startTempoBpm?: number } = {},
+  ): Promise<GoalEnrollment> {
+    const logger = this.requestContext?.getLogger() || this.staticLogger;
+    const correlationId = this.requestContext?.getCorrelationId();
+
+    // Membership gate (+ the period window for the switch-limit check).
+    const window = await this.resolveMembershipWindow(userId);
+    if (!window.hasAccess) {
+      throw new ForbiddenException(
+        'The Bass Gym is part of the membership — an active subscription is ' +
+          'required to change your goal.',
+      );
+    }
+
+    const enrollments = await this.repository.listEnrollments(userId);
+    const active = enrollments.find((e) => e.status === 'active');
+
+    // STUDENT once-per-period gate (admin bypasses). Count enrollments the
+    // student already ABANDONED since the current period began — one prior
+    // switch this period blocks a second.
+    if (!opts.bypassLimit && window.periodStart) {
+      const switchesThisPeriod = enrollments.filter(
+        (e) =>
+          e.status === 'abandoned' &&
+          e.updatedAt >= (window.periodStart as string),
+      ).length;
+      if (switchesThisPeriod >= 1) {
+        throw new BadRequestException(
+          'You’ve already switched your goal this month. You can change it ' +
+            'again when your membership renews.',
+        );
+      }
+    }
+
+    // If they're already on the requested goal, it's a no-op (return it).
+    const target = await this.repository.findGoalBySlug(newGoalSlug);
+    if (!target) {
+      throw new NotFoundException(`Training goal "${newGoalSlug}" not found`);
+    }
+    if (active && active.goalSnapshot && active.goalId === target.id) {
+      return active;
+    }
+
+    // Abandon the current active enrollment (keeps its history). Skipped if
+    // there's none (then this is just a fresh enroll).
+    if (active) {
+      await this.repository.updateEnrollment(userId, active.id, {
+        status: 'abandoned',
+      });
+      logger.info('Abandoned current goal for a switch', {
+        userId,
+        fromEnrollmentId: active.id,
+        toGoalSlug: newGoalSlug,
+        admin: !!opts.bypassLimit,
+        correlationId,
+      });
+    }
+
+    // Enroll in the new goal (inherits the same billing period via enrollInGoal).
+    return this.enrollInGoal(
+      userId,
+      newGoalSlug,
+      typeof opts.startTempoBpm === 'number'
+        ? { startTempoBpm: opts.startTempoBpm }
+        : undefined,
+    );
+  }
+
+  /**
    * Resolve the caller's membership window — the gym IS the monthly membership
    * product's entitlement (founder: the membership is the first product, the
    * goal lives inside it).
@@ -474,17 +582,22 @@ export class TrainingEngineService {
    */
   private async resolveMembershipWindow(
     userId: string,
-  ): Promise<{ hasAccess: boolean; periodEnd: string | null }> {
+  ): Promise<{
+    hasAccess: boolean;
+    periodEnd: string | null;
+    periodStart: string | null;
+  }> {
     // Admins bypass the gate (matching the rest of the app — admins get full
     // entitlement). No billing period → the normal 30-day goal cycle.
     if (await this.repository.isAdmin(userId)) {
-      return { hasAccess: true, periodEnd: null };
+      return { hasAccess: true, periodEnd: null, periodStart: null };
     }
 
     const sub = await this.subscriptionRepository.findByUserId(userId);
     const active =
       !!sub && (sub.status === 'active' || sub.status === 'trialing');
-    if (!active) return { hasAccess: false, periodEnd: null };
+    if (!active)
+      return { hasAccess: false, periodEnd: null, periodStart: null };
 
     // A lifetime/founder grant carries a synthetic far-future period end; a goal
     // can't span ~73 years, so treat it as no period → the 30-day cycle.
@@ -493,7 +606,12 @@ export class TrainingEngineService {
       end && end.getTime() < LIFETIME_PERIOD_CUTOFF_MS
         ? end.toISOString()
         : null;
-    return { hasAccess: true, periodEnd };
+    // periodStart bounds the once-per-period switch gate (count switches since
+    // the current period began).
+    const periodStart = sub.currentPeriodStart
+      ? sub.currentPeriodStart.toISOString()
+      : null;
+    return { hasAccess: true, periodEnd, periodStart };
   }
 
   /** Create the enrollment's climb_state only if it doesn't already exist. */
