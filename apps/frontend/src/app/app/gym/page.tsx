@@ -325,11 +325,12 @@ function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {topics.map((t) => {
+        {topics.map((t, i) => {
           const shown = Math.min(t.repsLogged, t.repQuota);
-          // Each topic takes a skill color by its current stage level — the same
-          // palette as the /app SessionCard tags.
-          const c = colorForLevel(t.currentStageLevel ?? 1);
+          // Each topic gets a DISTINCT skill color by its position (the /app
+          // SessionCard palette), so the 3–4 topics are always visually distinct
+          // — like the home tags — not all the same (they'd share stage-1 color).
+          const c = colorForLevel(i + 1);
           return (
             <div key={t.topicId} className="flex flex-col gap-1.5">
               <div className="flex items-baseline justify-between gap-3">
