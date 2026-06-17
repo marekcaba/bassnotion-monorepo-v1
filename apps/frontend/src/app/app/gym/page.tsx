@@ -241,77 +241,79 @@ function GymMembershipWall() {
  * on their pace, so we show present state, not a future timeline). Rendered
  * above the drill; absent on single-focal SPEED goals (topicProgress is null).
  */
-/** One dot PER REP — filled (amber) up to repsLogged, hollow after. Never wraps:
- *  the dots are a flex row that shrinks each dot as the quota grows, so even a
- *  12-rep quota stays on one line (a 10-quota reads comfortably). */
-function QuotaDots({
+/** A topic's quota as a VERTICAL column of big dots — one per rep, fills from the
+ *  BOTTOM up (like filling a tank). Filled = solid amber; empty = dark disc.
+ *  Bottom-aligned so columns of different quotas line up at their base. */
+function QuotaColumn({
   logged,
   quota,
-  done,
 }: {
   logged: number;
   quota: number;
-  done: boolean;
 }) {
   const filled = Math.min(logged, quota);
+  const n = Math.max(1, quota);
   return (
-    <div
-      className="flex w-full min-w-0 items-center gap-[clamp(2px,1.4%,6px)]"
-      aria-hidden
-    >
-      {Array.from({ length: Math.max(1, quota) }).map((_, i) => (
-        <span
-          key={i}
-          className={`aspect-square min-w-0 flex-1 rounded-full transition-colors duration-500 ${
-            i < filled
-              ? 'bg-[#E8A44A]'
-              : 'border border-white/[0.08] bg-white/[0.02]'
-          } ${i < filled && done ? 'shadow-[0_0_5px_rgba(232,164,74,0.45)]' : ''}`}
-          style={{ transitionDelay: `${i * 30}ms`, maxWidth: 13 }}
-        />
-      ))}
+    <div className="flex flex-col items-center gap-[5px]" aria-hidden>
+      {Array.from({ length: n }).map((_, i) => {
+        // i counts from the TOP; fill the bottom `filled` dots.
+        const fromBottom = n - 1 - i;
+        const isOn = fromBottom < filled;
+        return (
+          <span
+            key={i}
+            className={`size-[18px] shrink-0 rounded-full transition-colors duration-500 ${
+              isOn ? 'bg-[#E8A44A]' : 'bg-white/[0.05]'
+            }`}
+            // stagger the fill from the bottom up
+            style={{ transitionDelay: `${fromBottom * 35}ms` }}
+          />
+        );
+      })}
     </div>
   );
 }
 
-/** The per-topic path rows — list-row vocabulary from the /app ProgressCard:
- *  serif title, mono NN/NN readout, dots. NO card chrome of its own (it's
+/** The path — each topic a VERTICAL column of dots, columns side by side
+ *  (bottom-aligned). Title + NN/NN above each. NO card chrome of its own (it's
  *  rendered inside the merged console card). */
 function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
   return (
-    <div className="flex flex-col gap-1.5 px-[22px] pb-[18px]">
-      {topics.map((t) => (
-        <div
-          key={t.topicId}
-          className="space-y-2 rounded-[7px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
-        >
-          <div className="flex items-baseline justify-between gap-3">
-            <span
-              className={`truncate font-serif text-[15px] ${
+    <div className="px-[22px] pb-[22px] pt-1">
+      {/* Dot columns — bottom-aligned as a group (items-end), so different
+          quotas (12/10/8) line up at the base. */}
+      <div className="flex items-end justify-around gap-3">
+        {topics.map((t) => (
+          <div key={t.topicId} className="flex min-w-0 flex-1 justify-center">
+            <QuotaColumn logged={t.repsLogged} quota={t.repQuota} />
+          </div>
+        ))}
+      </div>
+      {/* Labels row — one cell per column, aligned under each. */}
+      <div className="mt-3 flex justify-around gap-3">
+        {topics.map((t) => (
+          <div key={t.topicId} className="min-w-0 flex-1 text-center">
+            <div
+              className={`truncate font-serif text-[13px] leading-tight ${
                 t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
               }`}
+              title={t.title}
             >
               {t.title}
-            </span>
-            <span className="shrink-0 font-mono text-[11px] tabular-nums">
+            </div>
+            <div className="mt-0.5 font-mono text-[11px] tabular-nums">
               <span
                 className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
               >
                 {String(Math.min(t.repsLogged, t.repQuota)).padStart(2, '0')}
               </span>
               <span className="text-[#5A5660]">
-                {' / '}
-                {String(t.repQuota).padStart(2, '0')}
+                /{String(t.repQuota).padStart(2, '0')}
               </span>
-            </span>
+            </div>
           </div>
-          <QuotaDots
-            logged={t.repsLogged}
-            quota={t.repQuota}
-            done={t.isComplete}
-          />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
