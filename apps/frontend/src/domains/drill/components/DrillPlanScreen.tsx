@@ -26,6 +26,10 @@ interface DrillPlanScreenProps {
    *  so the card flows in a parent column (the gym stacks a status strip above
    *  it). Default false keeps the standalone drill-tutorial behavior. */
   inline?: boolean;
+  /** Bare mode: drop this component's OWN card chrome (border/bg/rounded/padding)
+   *  so it nests inside a parent panel — the gym merges stats + path + drill into
+   *  one console card. Implies inline. Default false. */
+  bare?: boolean;
 }
 
 /** Rough total minutes, summing each brick's time target / timebox. */
@@ -43,30 +47,58 @@ export function DrillPlanScreen({
   bricks,
   onStart,
   inline = false,
+  bare = false,
 }: DrillPlanScreenProps) {
   const minutes = estimateMinutes(bricks);
 
   return (
     <div
       className={
-        inline
-          ? 'flex w-full justify-center px-4'
-          : 'flex min-h-[70vh] w-full items-center justify-center px-4 py-10'
+        bare
+          ? 'w-full text-white'
+          : inline
+            ? 'flex w-full justify-center px-4'
+            : 'flex min-h-[70vh] w-full items-center justify-center px-4 py-10'
       }
     >
-      <div className="w-full max-w-lg space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-white">
-        <header className="space-y-1 text-center">
-          <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
-            Today&apos;s drill
-          </p>
-          <h1 className="text-2xl font-semibold">
-            {title || 'Practice session'}
-          </h1>
-          <p className="text-sm text-white/50">
-            {bricks.length} {bricks.length === 1 ? 'brick' : 'bricks'}
-            {minutes > 0 ? ` · ~${minutes} min` : ''}
-          </p>
-        </header>
+      <div
+        className={
+          bare
+            ? 'w-full space-y-6 text-white'
+            : 'w-full max-w-lg space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-white'
+        }
+      >
+        {bare ? (
+          // Embedded in the gym console — match the /app SessionCard vocabulary
+          // (left-aligned, mono micro-label, serif title, muted #5A5660 meta).
+          <header className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
+                Today&apos;s drill
+              </p>
+              <h2 className="font-serif text-[22px] leading-tight text-[#E8E4DD]">
+                {title || 'Practice session'}
+              </h2>
+              <p className="mt-0.5 font-mono text-[11px] text-[#5A5660]">
+                {bricks.length} {bricks.length === 1 ? 'brick' : 'bricks'}
+                {minutes > 0 ? ` · ~${minutes} min` : ''}
+              </p>
+            </div>
+          </header>
+        ) : (
+          <header className="space-y-1 text-center">
+            <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
+              Today&apos;s drill
+            </p>
+            <h1 className="text-2xl font-semibold">
+              {title || 'Practice session'}
+            </h1>
+            <p className="text-sm text-white/50">
+              {bricks.length} {bricks.length === 1 ? 'brick' : 'bricks'}
+              {minutes > 0 ? ` · ~${minutes} min` : ''}
+            </p>
+          </header>
+        )}
 
         <ol className="space-y-2">
           {bricks.map((brick, i) => (

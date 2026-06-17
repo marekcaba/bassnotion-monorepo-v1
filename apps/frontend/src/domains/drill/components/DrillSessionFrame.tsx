@@ -44,6 +44,9 @@ interface DrillSessionFrameProps {
   /** Inline the plan screen (no full-height self-centering) so it flows in a
    *  parent column — the gym stacks its status/path strip above the drill. */
   inline?: boolean;
+  /** Bare plan screen (no card chrome) so it nests inside a parent panel — the
+   *  gym merges stats + path + drill into one console card. */
+  bare?: boolean;
 }
 
 export function DrillSessionFrame({
@@ -52,6 +55,7 @@ export function DrillSessionFrame({
   exercises,
   isFloor = false,
   inline = false,
+  bare = false,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -125,6 +129,7 @@ export function DrillSessionFrame({
         bricks={bricks}
         onStart={start}
         inline={inline}
+        bare={bare}
       />
     );
   }

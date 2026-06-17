@@ -240,10 +240,10 @@ function GymMembershipWall() {
  * on their pace, so we show present state, not a future timeline). Rendered
  * above the drill; absent on single-focal SPEED goals (topicProgress is null).
  */
-/** A segmented quota meter — N ticks, filled-amber up to repsLogged. Reads like
- *  a piece of gear (a tape counter / amp meter), not a generic progress bar.
- *  Caps the segment count so a big quota stays legible. */
-function QuotaMeter({
+/** One dot PER REP — filled (amber) up to repsLogged, hollow after. Never wraps:
+ *  the dots are a flex row that shrinks each dot as the quota grows, so even a
+ *  12-rep quota stays on one line (a 10-quota reads comfortably). */
+function QuotaDots({
   logged,
   quota,
   done,
@@ -252,74 +252,66 @@ function QuotaMeter({
   quota: number;
   done: boolean;
 }) {
-  const segments = Math.min(quota, 24);
-  // Map logged reps onto the (possibly capped) segment count.
-  const filled = quota > 0 ? Math.round((Math.min(logged, quota) / quota) * segments) : 0;
+  const filled = Math.min(logged, quota);
   return (
-    <div className="flex gap-[3px]" aria-hidden>
-      {Array.from({ length: segments }).map((_, i) => (
+    <div
+      className="flex w-full min-w-0 items-center gap-[clamp(2px,1.4%,6px)]"
+      aria-hidden
+    >
+      {Array.from({ length: Math.max(1, quota) }).map((_, i) => (
         <span
           key={i}
-          className={`h-2.5 flex-1 rounded-[1px] transition-colors duration-500 ${
+          className={`aspect-square min-w-0 flex-1 rounded-full transition-colors duration-500 ${
             i < filled
-              ? done
-                ? 'bg-[#E8A44A] shadow-[0_0_6px_rgba(232,164,74,0.55)]'
-                : 'bg-[#E8A44A]'
-              : 'bg-white/[0.07]'
-          }`}
-          style={{ transitionDelay: `${i * 28}ms` }}
+              ? 'bg-[#E8A44A]'
+              : 'border border-white/[0.08] bg-white/[0.02]'
+          } ${i < filled && done ? 'shadow-[0_0_5px_rgba(232,164,74,0.45)]' : ''}`}
+          style={{ transitionDelay: `${i * 30}ms`, maxWidth: 13 }}
         />
       ))}
     </div>
   );
 }
 
+/** The per-topic path rows — list-row vocabulary from the /app ProgressCard:
+ *  serif title, mono NN/NN readout, dots. NO card chrome of its own (it's
+ *  rendered inside the merged console card). */
 function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
-  const allComplete = topics.every((t) => t.isComplete);
   return (
-    <section className="gym-rise gym-d2 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
-      {/* Console header strip */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
-        <span className="font-heading text-sm uppercase tracking-[0.2em] text-[#8A8690]">
-          {allComplete ? 'Goal — complete' : 'Your path'}
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A8690]/70">
-          {topics.filter((t) => t.isComplete).length}/{topics.length} topics
-        </span>
-      </div>
-
-      <div className="divide-y divide-white/[0.05]">
-        {topics.map((t) => (
-          <div key={t.topicId} className="space-y-2 px-5 py-3.5">
-            <div className="flex items-baseline justify-between gap-3">
+    <div className="flex flex-col gap-1.5 px-[22px] pb-[18px]">
+      {topics.map((t) => (
+        <div
+          key={t.topicId}
+          className="space-y-2 rounded-[7px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <span
+              className={`truncate font-serif text-[15px] ${
+                t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
+              }`}
+            >
+              {t.title}
+            </span>
+            <span className="shrink-0 font-mono text-[11px] tabular-nums">
               <span
-                className={`font-heading text-lg uppercase leading-none tracking-[0.04em] ${
-                  t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
-                }`}
+                className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
               >
-                {t.title}
+                {String(Math.min(t.repsLogged, t.repQuota)).padStart(2, '0')}
               </span>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-[#8A8690]">
-                <span
-                  className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
-                >
-                  {String(Math.min(t.repsLogged, t.repQuota)).padStart(2, '0')}
-                </span>
-                <span className="text-[#8A8690]/60">
-                  {' '}
-                  / {String(t.repQuota).padStart(2, '0')}
-                </span>
+              <span className="text-[#5A5660]">
+                {' / '}
+                {String(t.repQuota).padStart(2, '0')}
               </span>
-            </div>
-            <QuotaMeter
-              logged={t.repsLogged}
-              quota={t.repQuota}
-              done={t.isComplete}
-            />
+            </span>
           </div>
-        ))}
-      </div>
-    </section>
+          <QuotaDots
+            logged={t.repsLogged}
+            quota={t.repQuota}
+            done={t.isComplete}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -679,53 +671,63 @@ export default function GymPage() {
     <>
       <PageErrorBoundary pageName="Bass Gym">
         <GymStyles />
-        <div className="mx-auto w-full max-w-2xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
-          {/* Masthead — gym-signage scale, with an amber tick + a day readout. */}
-          <header className="gym-rise gym-d1 mb-7">
-            <div className="flex items-end justify-between gap-4">
+        <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
+          {/* ONE console card — built in the /app SessionCard vocabulary:
+              #141318 surface, top amber accent hairline, mono micro-labels,
+              serif titles. Holds: stat header → path dots → drill. */}
+          <div className="gym-rise gym-d1 relative mb-5 overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
+            {/* Top accent line — the SessionCard signature. */}
+            <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
+
+            {/* Header: section label + the day readout. */}
+            <div className="flex items-start justify-between gap-4 px-[22px] pb-3.5 pt-[22px]">
               <div className="min-w-0">
-                <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
-                  Daily rep
-                </p>
-                <h1 className="mt-1 font-heading text-5xl uppercase leading-[0.92] tracking-[0.02em] text-[#E8E4DD] md:text-6xl">
-                  The Bass{' '}
-                  <span className="text-[#E8A44A]">Gym</span>
-                </h1>
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
+                  {topicProgress && topicProgress.every((t) => t.isComplete)
+                    ? 'Goal — complete'
+                    : 'Your path'}
+                </div>
+                <div className="font-serif text-[22px] leading-tight text-[#E8E4DD]">
+                  The Bass Gym
+                </div>
+                {topicProgress && topicProgress.length > 0 && (
+                  <div className="mt-0.5 font-mono text-[11px] text-[#5A5660]">
+                    {topicProgress.filter((t) => t.isComplete).length}/
+                    {topicProgress.length} topics complete
+                  </div>
+                )}
               </div>
               {attendance && (
-                <div className="shrink-0 text-right">
-                  <div className="font-mono text-3xl tabular-nums leading-none text-[#E8E4DD] md:text-4xl">
+                <div className="shrink-0 whitespace-nowrap text-right">
+                  <div className="font-mono text-[22px] font-light text-[#E8E4DD]">
                     {attendance.daysPracticed}
-                    <span className="text-base text-[#8A8690]">
+                    <span className="text-[#5A5660]">
                       /{attendance.windowDays}
                     </span>
                   </div>
-                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#8A8690]">
-                    days this cycle
-                  </p>
+                  <div className="font-mono text-[11px] text-[#5A5660]">
+                    days
+                  </div>
                 </div>
               )}
             </div>
-            {/* hairline amber rule under the masthead */}
-            <div className="mt-4 h-px w-full bg-gradient-to-r from-[#E8A44A]/60 via-[#E8A44A]/15 to-transparent" />
-          </header>
 
-          {/* Path (content-ladder topics) — the console/scoreboard. */}
-          {topicProgress && topicProgress.length > 0 && (
-            <div className="mb-6">
+            {/* Path (content-ladder topics) — dot rows. */}
+            {topicProgress && topicProgress.length > 0 && (
               <GymTopicProgress topics={topicProgress} />
-            </div>
-          )}
+            )}
 
-          {/* Today's drill — flows inline (no full-height self-centering). */}
-          <div className="gym-rise gym-d3 mb-5">
-            <DrillSessionFrame
-              tutorial={memoizedTutorial}
-              tutorialSlug={slug}
-              exercises={memoizedExercises ?? []}
-              isFloor={repMode === 'floor'}
-              inline
-            />
+            {/* Drill — bare (no card chrome), divided from the header/path. */}
+            <div className="border-t border-white/[0.06] p-[22px]">
+              <DrillSessionFrame
+                tutorial={memoizedTutorial}
+                tutorialSlug={slug}
+                exercises={memoizedExercises ?? []}
+                isFloor={repMode === 'floor'}
+                inline
+                bare
+              />
+            </div>
           </div>
 
           {/* Quiet options under the rep: floor toggle + switch goal. */}
