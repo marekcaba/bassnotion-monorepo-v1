@@ -609,7 +609,6 @@ export default function GymPage() {
     placeAndStart,
     chooseFloor,
     chooseDoor,
-    startSwitch,
     refresh,
   } = useGymSession(undefined, { enabled: isMember });
 
@@ -733,7 +732,8 @@ export default function GymPage() {
 
             {/* Drill — bare (no card chrome of its own). It brings its own
                 "Today's drill" micro-label, serif title, brick list, and the
-                amber CTA. This is the primary action. */}
+                amber CTA. This is the primary action. The floor toggle sits
+                directly UNDER the main CTA, dimmed + subordinate. */}
             <div className="p-[22px]">
               <DrillSessionFrame
                 tutorial={memoizedTutorial}
@@ -743,6 +743,16 @@ export default function GymPage() {
                 inline
                 bare
               />
+              {/* Secondary CTA — dimmed, clearly beneath "Start the drill". */}
+              <button
+                type="button"
+                onClick={repMode === 'floor' ? refresh : chooseFloor}
+                className="mt-2.5 w-full rounded-[9px] border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 text-xs text-[#8A8690] transition-colors hover:border-white/10 hover:bg-white/[0.04] hover:text-[#E8E4DD]"
+              >
+                {repMode === 'floor'
+                  ? 'Do the full rep instead'
+                  : 'Short on time? Do the 3-minute version — streak stays safe'}
+              </button>
             </div>
 
             {/* Path (content-ladder topics) — quota meters as CONTEXT below the
@@ -795,46 +805,6 @@ export default function GymPage() {
             </div>
           )}
 
-          {/* Quiet options under the rep: floor toggle + switch goal. */}
-          <div className="gym-rise gym-d4 space-y-1 text-center text-xs text-[#8A8690]">
-            <p>
-              {repMode === 'floor' ? (
-                <>
-                  Short session today — just loop one groove (3 min). Streak
-                  stays safe.{' '}
-                  <button
-                    type="button"
-                    onClick={refresh}
-                    className="underline underline-offset-2 hover:text-[#E8E4DD]"
-                  >
-                    Do the full rep instead
-                  </button>
-                </>
-              ) : (
-                <>
-                  Wrecked or short on time?{' '}
-                  <button
-                    type="button"
-                    onClick={chooseFloor}
-                    className="underline underline-offset-2 hover:text-[#E8E4DD]"
-                  >
-                    Do the 3-minute version
-                  </button>{' '}
-                  — your streak stays safe.
-                </>
-              )}
-            </p>
-            <p>
-              Not the right goal?{' '}
-              <button
-                type="button"
-                onClick={startSwitch}
-                className="underline underline-offset-2 hover:text-[#E8E4DD]"
-              >
-                Switch goal
-              </button>
-            </p>
-          </div>
         </div>
       </PageErrorBoundary>
     </>
