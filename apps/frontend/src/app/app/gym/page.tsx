@@ -708,9 +708,12 @@ export default function GymPage() {
     <>
       <PageErrorBoundary pageName="Bass Gym">
         <GymStyles />
-        <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
-          {/* Tiny gym wordmark above the console — orients the screen without
-              competing with the drill's own "Today's drill" title below. */}
+        {/* Center the dashboard in the main content area — vertically too, while
+            still scrolling if the console is taller than the viewport. */}
+        <div className="flex min-h-full w-full items-center justify-center">
+          <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
+            {/* Tiny gym wordmark above the console — orients the screen without
+                competing with the drill's own "Today's drill" title below. */}
           <div className="gym-rise gym-d1 mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <span className="size-1.5 rounded-full bg-[#E8A44A] shadow-[0_0_8px_rgba(232,164,74,0.6)]" />
@@ -804,7 +807,7 @@ export default function GymPage() {
               )}
             </div>
           )}
-
+          </div>
         </div>
       </PageErrorBoundary>
     </>
