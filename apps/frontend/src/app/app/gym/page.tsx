@@ -61,6 +61,22 @@ function GymStyles() {
 }
 
 /**
+ * Per-level skill colors — the SAME palette as the /app SessionCard tags
+ * (NodeMatrix LEVEL_COLORS). Each gym topic is colored by its current stage
+ * level, so the path reads with the app's colorful skill-tag identity.
+ */
+const LEVEL_COLORS: Record<number, { base: string; glow: string }> = {
+  1: { base: '#E8A44A', glow: 'rgba(232,164,74,0.25)' }, // orange
+  2: { base: '#5B8DEF', glow: 'rgba(91,141,239,0.25)' }, // blue
+  3: { base: '#6BCF8E', glow: 'rgba(107,207,142,0.25)' }, // green
+  4: { base: '#C77DFF', glow: 'rgba(199,125,255,0.25)' }, // purple
+  5: { base: '#FF7EB3', glow: 'rgba(255,126,179,0.25)' }, // pink
+};
+function colorForLevel(level: number): { base: string; glow: string } {
+  return LEVEL_COLORS[Math.min(Math.max(1, level), 5)] ?? LEVEL_COLORS[1];
+}
+
+/**
  * /app/gym — the daily-rep entry point (Bass Gym Training Engine, Phase 3).
  *
  * Flow: useGymSession lists/enrolls + plans today's rep → returns the reserved
@@ -252,7 +268,16 @@ function GymMembershipWall() {
  *  Filled = solid amber; empty = dark disc. Flex row with a capped dot size so a
  *  quota of 4 shows fat dots and 12 shows smaller ones, both on one line.
  *  Staggered fill, left to right. */
-function QuotaMeter({ logged, quota }: { logged: number; quota: number }) {
+function QuotaMeter({
+  logged,
+  quota,
+  color,
+}: {
+  logged: number;
+  quota: number;
+  /** The topic's skill color (filled dots + glow). */
+  color: { base: string; glow: string };
+}) {
   const filled = Math.min(logged, quota);
   const n = Math.max(1, quota);
   return (
@@ -262,12 +287,13 @@ function QuotaMeter({ logged, quota }: { logged: number; quota: number }) {
         return (
           <span
             key={i}
-            className={`aspect-square min-w-0 flex-1 rounded-full transition-all duration-500 ${
-              isOn
-                ? 'bg-[#E8A44A] shadow-[0_0_6px_rgba(232,164,74,0.35)]'
-                : 'bg-white/[0.06]'
-            }`}
-            style={{ transitionDelay: `${i * 45}ms`, maxWidth: 16 }}
+            className="aspect-square min-w-0 flex-1 rounded-full transition-all duration-500"
+            style={{
+              transitionDelay: `${i * 45}ms`,
+              maxWidth: 16,
+              background: isOn ? color.base : 'rgba(255,255,255,0.06)',
+              boxShadow: isOn ? `0 0 6px ${color.glow}` : 'none',
+            }}
           />
         );
       })}
@@ -301,36 +327,39 @@ function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
       <div className="flex flex-col gap-2.5">
         {topics.map((t) => {
           const shown = Math.min(t.repsLogged, t.repQuota);
+          // Each topic takes a skill color by its current stage level — the same
+          // palette as the /app SessionCard tags.
+          const c = colorForLevel(t.currentStageLevel ?? 1);
           return (
             <div key={t.topicId} className="flex flex-col gap-1.5">
               <div className="flex items-baseline justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  {/* Status marker: amber check when full, hollow ring while
-                      climbing. */}
-                  {t.isComplete ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="size-3 shrink-0 fill-none stroke-[#E8A44A] stroke-[3]"
-                      aria-hidden
-                    >
-                      <polyline points="4,12 10,18 20,6" />
-                    </svg>
-                  ) : (
-                    <span className="size-[7px] shrink-0 rounded-full border border-[#5A5660]" />
-                  )}
+                  {/* Colored tag pill — the SessionCard tag treatment, tinted to
+                      the topic's skill color. */}
                   <span
-                    className={`truncate font-serif text-[15px] leading-tight ${
-                      t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
-                    }`}
+                    className="shrink-0 rounded-full border px-2 py-[2px] font-mono text-[9px] uppercase tracking-[0.5px]"
+                    style={{
+                      color: c.base,
+                      borderColor: c.glow,
+                      background: `${c.base}14`,
+                    }}
                     title={t.title}
                   >
                     {t.title}
                   </span>
+                  {t.isComplete && (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="size-3 shrink-0 fill-none stroke-[3]"
+                      style={{ stroke: c.base }}
+                      aria-hidden
+                    >
+                      <polyline points="4,12 10,18 20,6" />
+                    </svg>
+                  )}
                 </div>
                 <span className="shrink-0 font-mono text-[11px] tabular-nums">
-                  <span
-                    className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
-                  >
+                  <span style={{ color: t.isComplete ? c.base : '#E8E4DD' }}>
                     {String(shown).padStart(2, '0')}
                   </span>
                   <span className="text-[#5A5660]">
@@ -338,7 +367,11 @@ function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
                   </span>
                 </span>
               </div>
-              <QuotaMeter logged={t.repsLogged} quota={t.repQuota} />
+              <QuotaMeter
+                logged={t.repsLogged}
+                quota={t.repQuota}
+                color={c}
+              />
             </div>
           );
         })}
