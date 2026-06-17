@@ -83,14 +83,14 @@ function GymPlacement({
   return (
     <div className="flex min-h-[70vh] w-full items-center justify-center px-4">
       <GymStyles />
-      <div className="gym-rise gym-d1 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] text-center">
+      <div className="gym-rise gym-d1 relative w-full max-w-md overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] text-center">
+        <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
         <div className="space-y-6 p-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+          <p className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
             Find your start
           </p>
-          <h1 className="font-heading text-4xl uppercase leading-[0.95] tracking-[0.02em] text-[#E8E4DD]">
-            What tempo can you play{' '}
-            <span className="text-[#E8A44A]">clean?</span>
+          <h1 className="font-serif text-[26px] leading-tight text-[#E8E4DD]">
+            What tempo can you play clean?
           </h1>
           <p className="text-sm leading-relaxed text-[#8A8690]">
             Push it to the fastest you can hold relaxed and clean. The coach
@@ -118,7 +118,7 @@ function GymPlacement({
           <button
             type="button"
             onClick={() => onStart(tempo)}
-            className="w-full rounded-lg bg-[#E8A44A] px-4 py-3 font-heading text-base uppercase tracking-[0.1em] text-black transition-all hover:bg-[#f0b35e] hover:shadow-[0_0_24px_rgba(232,164,74,0.35)]"
+            className="w-full rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
           >
             Start at {tempo} BPM
           </button>
@@ -144,21 +144,21 @@ function GymGoalPicker({
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-10 md:py-12">
       <GymStyles />
-      <div className="gym-rise gym-d1 mb-7 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+      <div className="gym-rise gym-d1 mb-6">
+        <p className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
           Set up your month
         </p>
-        <h1 className="mt-1 font-heading text-5xl uppercase leading-[0.92] tracking-[0.02em] text-[#E8E4DD]">
-          Choose your <span className="text-[#E8A44A]">goal</span>
+        <h1 className="mt-1.5 font-serif text-[28px] leading-tight text-[#E8E4DD]">
+          Choose your goal
         </h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#8A8690]">
+        <p className="mt-1 max-w-sm text-sm leading-relaxed text-[#8A8690]">
           Pick what you’ll climb this month. The coach builds your daily rep
           around it.
         </p>
       </div>
 
       {goals.length === 0 ? (
-        <p className="gym-rise gym-d2 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-8 text-center text-sm text-[#8A8690]">
+        <p className="gym-rise gym-d2 rounded-[14px] border border-white/[0.06] bg-[#141318] p-8 text-center text-sm text-[#8A8690]">
           No goals are available yet. Check back soon.
         </p>
       ) : (
@@ -168,14 +168,15 @@ function GymGoalPicker({
               key={g.slug}
               type="button"
               onClick={() => onChoose(g.slug)}
-              className="gym-rise group block w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-[#E8A44A]/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+              className="gym-rise group relative block w-full overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] p-[22px] text-left transition-all hover:-translate-y-0.5 hover:border-[#E8A44A]/40 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
               style={{ animationDelay: `${0.1 + i * 0.07}s` }}
             >
+              <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-0 transition-opacity group-hover:opacity-40" />
               <div className="flex items-baseline justify-between gap-3">
-                <h2 className="font-heading text-2xl uppercase leading-none tracking-[0.03em] text-[#E8E4DD] transition-colors group-hover:text-[#E8A44A]">
+                <h2 className="font-serif text-[20px] leading-tight text-[#E8E4DD] transition-colors group-hover:text-[#E8A44A]">
                   {g.title}
                 </h2>
-                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A8690]/70">
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[1px] text-[#5A5660]">
                   {g.topicCount > 0
                     ? `${g.topicCount} topics · ${g.totalQuota} reps`
                     : g.targetTempoBpm
@@ -184,7 +185,7 @@ function GymGoalPicker({
                 </span>
               </div>
               {g.description && (
-                <p className="mt-2 text-sm leading-relaxed text-[#8A8690]">
+                <p className="mt-2 text-sm leading-[1.45] text-[#8A8690]">
                   {g.description}
                 </p>
               )}
@@ -206,14 +207,14 @@ function GymMembershipWall() {
   return (
     <div className="flex min-h-[70vh] w-full items-center justify-center px-4">
       <GymStyles />
-      <div className="gym-rise gym-d1 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] text-center">
+      <div className="gym-rise gym-d1 relative w-full max-w-md overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] text-center">
+        <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
         <div className="space-y-5 p-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+          <p className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
             The Bass Gym
           </p>
-          <h1 className="font-heading text-4xl uppercase leading-[0.95] tracking-[0.02em] text-[#E8E4DD]">
-            Your goal for the month{' '}
-            <span className="text-[#E8A44A]">lives in the membership</span>
+          <h1 className="font-serif text-[26px] leading-tight text-[#E8E4DD]">
+            Your goal for the month lives in the membership
           </h1>
           <p className="text-sm leading-relaxed text-[#8A8690]">
             Membership gives you a coach-built daily rep — a 6-minute goal that
@@ -221,7 +222,7 @@ function GymMembershipWall() {
           </p>
           <Link
             href="/pricing"
-            className="inline-flex w-full items-center justify-center rounded-lg bg-[#E8A44A] px-4 py-3 font-heading text-base uppercase tracking-[0.1em] text-black transition-all hover:bg-[#f0b35e] hover:shadow-[0_0_24px_rgba(232,164,74,0.35)]"
+            className="inline-flex w-full items-center justify-center rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
           >
             See membership
           </Link>
@@ -664,9 +665,10 @@ export default function GymPage() {
     );
   }
 
-  // The daily-rep view — "the training apparatus": condensed athletic display
-  // type (Bebas/Podium via font-heading), mono stat readouts, amber-on-leather,
-  // one staggered entrance. The app shell paints the leather/gradient base.
+  // The daily-rep view — built in the /app SessionCard/ProgressCard vocabulary:
+  // #141318 card + top amber accent hairline, serif titles, mono #5A5660 micro-
+  // labels, amber gradient CTA. One console panel; staggered entrance. The app
+  // shell paints the leather/gradient base.
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">

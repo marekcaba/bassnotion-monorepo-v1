@@ -129,9 +129,22 @@ export function DrillPlanScreen({
           ))}
         </ol>
 
-        <Button onClick={onStart} className="w-full text-white" size="lg">
-          <Play className="mr-1.5 h-4 w-4" /> Start the drill
-        </Button>
+        {bare ? (
+          // The amber gradient CTA from the /app SessionCard — solid amber,
+          // near-black text, hover lift + glow.
+          <button
+            type="button"
+            onClick={onStart}
+            className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
+          >
+            <Play className="size-4" fill="currentColor" />
+            Start the drill
+          </button>
+        ) : (
+          <Button onClick={onStart} className="w-full text-white" size="lg">
+            <Play className="mr-1.5 h-4 w-4" /> Start the drill
+          </Button>
+        )}
       </div>
     </div>
   );
