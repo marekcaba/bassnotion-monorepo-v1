@@ -178,27 +178,6 @@ function GymMembershipWall() {
   );
 }
 
-/**
- * "Showed up X of N days" (Treadmill epic Story 7) — the attendance proof,
- * shown every day above the rep. A quiet strip, not a banner.
- */
-function GymDayCount({
-  daysPracticed,
-  windowDays,
-}: {
-  daysPracticed: number;
-  windowDays: number;
-}) {
-  return (
-    <p className="mx-auto mb-3 w-full max-w-2xl text-center text-xs text-white/45">
-      🔥 You showed up{' '}
-      <span className="font-semibold text-white/70">
-        {daysPracticed} of {windowDays} days
-      </span>{' '}
-      this cycle.
-    </p>
-  );
-}
 
 /**
  * The content-ladder PATH (epic §3 Build B) — the ~3 TOPIC progress bars the
@@ -211,8 +190,8 @@ function GymDayCount({
 function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
   const allComplete = topics.every((t) => t.isComplete);
   return (
-    <div className="mx-auto mb-4 w-full max-w-2xl space-y-2.5">
-      <p className="text-center text-xs uppercase tracking-wide text-white/40">
+    <section className="space-y-3 rounded-2xl border border-white/5 bg-white/[0.03] p-5">
+      <p className="text-xs uppercase tracking-wide text-[#8A8690]">
         {allComplete ? 'Goal complete — every bar full 🎉' : 'Your path'}
       </p>
       {topics.map((t) => {
@@ -221,21 +200,23 @@ function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
             ? Math.min(100, Math.round((t.repsLogged / t.repQuota) * 100))
             : 0;
         return (
-          <div key={t.topicId} className="space-y-1">
-            <div className="flex items-baseline justify-between text-xs">
+          <div key={t.topicId} className="space-y-1.5">
+            <div className="flex items-baseline justify-between text-sm">
               <span
                 className={
-                  t.isComplete ? 'text-[#E8A44A]' : 'font-medium text-white/70'
+                  t.isComplete
+                    ? 'text-[#E8A44A]'
+                    : 'font-medium text-[#E8E4DD]'
                 }
               >
                 {t.isComplete && '✓ '}
                 {t.title}
               </span>
-              <span className="font-mono text-white/40">
+              <span className="font-mono text-xs text-[#8A8690]">
                 {Math.min(t.repsLogged, t.repQuota)}/{t.repQuota}
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
               <div
                 className="h-full rounded-full bg-[#E8A44A] transition-all duration-500"
                 style={{ width: `${pct}%` }}
@@ -244,7 +225,7 @@ function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
           </div>
         );
       })}
-    </div>
+    </section>
   );
 }
 
@@ -583,86 +564,94 @@ export default function GymPage() {
     return <TutorialPageSkeleton />;
   }
 
+  // Graduation owns the whole screen (recap + fork) — render it standalone.
+  if (graduation) {
+    return (
+      <>
+        <PageErrorBoundary pageName="Bass Gym">
+          <div className="mx-auto w-full max-w-2xl p-4 md:p-6 lg:p-8">
+            {monthInReview && <GymMonthInReview review={monthInReview} />}
+            <GymGraduation graduation={graduation} onChoose={chooseDoor} />
+          </div>
+        </PageErrorBoundary>
+      </>
+    );
+  }
+
+  // The daily-rep view: one centered column in the /app/bassment design language
+  // (serif header on the app's warm palette, content panes, responsive padding —
+  // the app shell paints the leather background, so no full-bleed surface here).
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
-        {graduation ? (
-          <div className="px-4 pt-4">
-            {/* The month-in-review recap (Story 6) above the fork — the journey
-                screen the player sees at graduation. */}
-            {monthInReview && <GymMonthInReview review={monthInReview} />}
-            {/* Graduation banner carries the day-count itself — don't double it. */}
-            <GymGraduation graduation={graduation} onChoose={chooseDoor} />
-          </div>
-        ) : (
-          attendance && (
-            <div className="px-4 pt-4">
-              <GymDayCount
-                daysPracticed={attendance.daysPracticed}
-                windowDays={attendance.windowDays}
-              />
-            </div>
-          )
-        )}
-        {/* Floor toggle (Story 5): wrecked / short on time → the 3-min version.
-            Hidden at graduation (the fork/recap own that screen). */}
-        {!graduation && (
-          <p className="mx-auto -mt-1 mb-3 w-full max-w-2xl px-4 text-center text-xs text-white/40">
-            {repMode === 'floor' ? (
-              <>
-                Short session today — just loop one groove (3 min). Streak stays
-                safe.{' '}
-                <button
-                  type="button"
-                  onClick={refresh}
-                  className="underline underline-offset-2 hover:text-white/70"
-                >
-                  Do the full rep instead
-                </button>
-              </>
-            ) : (
-              <>
-                Wrecked or short on time?{' '}
-                <button
-                  type="button"
-                  onClick={chooseFloor}
-                  className="underline underline-offset-2 hover:text-white/70"
-                >
-                  Do the 3-minute version
-                </button>{' '}
-                — your streak stays safe.
-              </>
-            )}
-          </p>
-        )}
-        {/* The content-ladder path bars (Build B) — the ~3 topic quotas the
-            student fills toward the goal. Multi-topic goals only; hidden at
-            graduation (the recap/fork own that screen). */}
-        {!graduation && topicProgress && topicProgress.length > 0 && (
-          <div className="px-4">
+        <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6 lg:p-8">
+          {/* Header — matches the bassment "Practice Overview" pattern. */}
+          <header>
+            <h1 className="font-serif text-[22px] text-[#E8E4DD]">
+              The Bass Gym
+            </h1>
+            <p className="mt-1 text-sm text-[#8A8690]">
+              {attendance
+                ? `Your daily rep · showed up ${attendance.daysPracticed} of ${attendance.windowDays} days this cycle`
+                : 'Your daily rep'}
+            </p>
+          </header>
+
+          {/* Path bars (content-ladder topics) — a subtle pane. */}
+          {topicProgress && topicProgress.length > 0 && (
             <GymTopicProgress topics={topicProgress} />
+          )}
+
+          {/* Today's drill — flows inline (no full-height self-centering). */}
+          <DrillSessionFrame
+            tutorial={memoizedTutorial}
+            tutorialSlug={slug}
+            exercises={memoizedExercises ?? []}
+            isFloor={repMode === 'floor'}
+            inline
+          />
+
+          {/* Quiet options under the rep: floor toggle + switch goal. */}
+          <div className="space-y-1 text-center text-xs text-[#8A8690]">
+            <p>
+              {repMode === 'floor' ? (
+                <>
+                  Short session today — just loop one groove (3 min). Streak
+                  stays safe.{' '}
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    className="underline underline-offset-2 hover:text-[#E8E4DD]"
+                  >
+                    Do the full rep instead
+                  </button>
+                </>
+              ) : (
+                <>
+                  Wrecked or short on time?{' '}
+                  <button
+                    type="button"
+                    onClick={chooseFloor}
+                    className="underline underline-offset-2 hover:text-[#E8E4DD]"
+                  >
+                    Do the 3-minute version
+                  </button>{' '}
+                  — your streak stays safe.
+                </>
+              )}
+            </p>
+            <p>
+              Not the right goal?{' '}
+              <button
+                type="button"
+                onClick={startSwitch}
+                className="underline underline-offset-2 hover:text-[#E8E4DD]"
+              >
+                Switch goal
+              </button>
+            </p>
           </div>
-        )}
-        {/* Switch goal — change what you're training mid-cycle (gated to once
-            per month server-side). Quiet link; hidden at graduation. */}
-        {!graduation && (
-          <p className="mx-auto mb-3 w-full max-w-2xl px-4 text-center text-xs text-white/30">
-            Not the right goal?{' '}
-            <button
-              type="button"
-              onClick={startSwitch}
-              className="underline underline-offset-2 hover:text-white/60"
-            >
-              Switch goal
-            </button>
-          </p>
-        )}
-        <DrillSessionFrame
-          tutorial={memoizedTutorial}
-          tutorialSlug={slug}
-          exercises={memoizedExercises ?? []}
-          isFloor={repMode === 'floor'}
-        />
+        </div>
       </PageErrorBoundary>
     </>
   );

@@ -1,6 +1,7 @@
 import {
   Home,
   GraduationCap,
+  Dumbbell,
   Headphones,
   Play,
   Martini,
@@ -26,6 +27,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     url: '/app/bassment',
     icon: GraduationCap,
     activePatterns: ['/app/bassment', '/app/tutorials'],
+  },
+  {
+    title: 'Gym',
+    url: '/app/gym',
+    icon: Dumbbell,
+    activePatterns: ['/app/gym'],
   },
   // The 3 items below are MVP placeholders (the underlying pages
   // just render "coming soon"). Marked disabled until they're

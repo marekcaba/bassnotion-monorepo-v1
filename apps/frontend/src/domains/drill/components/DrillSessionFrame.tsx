@@ -41,6 +41,9 @@ interface DrillSessionFrameProps {
    *  records a FLOOR rep (showed up) — it advances the floor streak but NOT the
    *  ceiling (which is the full focused rep). Defaults to false (full rep). */
   isFloor?: boolean;
+  /** Inline the plan screen (no full-height self-centering) so it flows in a
+   *  parent column — the gym stacks its status/path strip above the drill. */
+  inline?: boolean;
 }
 
 export function DrillSessionFrame({
@@ -48,6 +51,7 @@ export function DrillSessionFrame({
   tutorialSlug,
   exercises,
   isFloor = false,
+  inline = false,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -116,7 +120,12 @@ export function DrillSessionFrame({
 
   if (phase === 'plan') {
     return (
-      <DrillPlanScreen title={tutorial.title} bricks={bricks} onStart={start} />
+      <DrillPlanScreen
+        title={tutorial.title}
+        bricks={bricks}
+        onStart={start}
+        inline={inline}
+      />
     );
   }
 

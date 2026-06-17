@@ -22,6 +22,10 @@ interface DrillPlanScreenProps {
   title?: string;
   bricks: DrillBrick[];
   onStart: () => void;
+  /** Inline mode: drop the full-height self-centering (min-h-[70vh] + center)
+   *  so the card flows in a parent column (the gym stacks a status strip above
+   *  it). Default false keeps the standalone drill-tutorial behavior. */
+  inline?: boolean;
 }
 
 /** Rough total minutes, summing each brick's time target / timebox. */
@@ -38,11 +42,18 @@ export function DrillPlanScreen({
   title,
   bricks,
   onStart,
+  inline = false,
 }: DrillPlanScreenProps) {
   const minutes = estimateMinutes(bricks);
 
   return (
-    <div className="flex min-h-[70vh] w-full items-center justify-center px-4 py-10">
+    <div
+      className={
+        inline
+          ? 'flex w-full justify-center px-4'
+          : 'flex min-h-[70vh] w-full items-center justify-center px-4 py-10'
+      }
+    >
       <div className="w-full max-w-lg space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-white">
         <header className="space-y-1 text-center">
           <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
