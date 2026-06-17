@@ -234,39 +234,40 @@ function GymMembershipWall() {
 
 
 /**
- * The content-ladder PATH (epic §3 Build B) — the ~3 TOPIC progress bars the
- * student fills toward the goal. One bar per topic ("Hold the Engine 3/12"); the
- * goal is done when every bar is full. Internal "stages" are NEVER surfaced —
+ * The content-ladder PATH (epic §3 Build B) — the ~3-4 TOPIC quota meters the
+ * student fills toward the goal. One row per topic ("Hold the Engine 3/12"); the
+ * goal is done when every row is full. Internal "stages" are NEVER surfaced —
  * the student only sees the quota fill (founder decision §4: the future depends
- * on their pace, so we show present state, not a future timeline). Rendered
- * above the drill; absent on single-focal SPEED goals (topicProgress is null).
+ * on their pace, so we show present state, not a future timeline). Rendered as
+ * CONTEXT below the drill hero; absent on single-focal SPEED goals
+ * (topicProgress is null).
+ *
+ * Viz: a horizontal row of DOTS — one bold dot per rep, filled left→right.
+ * Filled = solid amber; empty = dark disc. The dots size down as the quota grows
+ * (a flex row, capped diameter) so 4–12 reps all sit on one line and topics line
+ * up. A done topic's title + count go amber with a check.
  */
-/** A topic's quota as a VERTICAL column of big dots — one per rep, fills from the
- *  BOTTOM up (like filling a tank). Filled = solid amber; empty = dark disc.
- *  Bottom-aligned so columns of different quotas line up at their base. */
-function QuotaColumn({
-  logged,
-  quota,
-}: {
-  logged: number;
-  quota: number;
-}) {
+
+/** A single topic's quota as a row of dots — one per rep, filling left→right.
+ *  Filled = solid amber; empty = dark disc. Flex row with a capped dot size so a
+ *  quota of 4 shows fat dots and 12 shows smaller ones, both on one line.
+ *  Staggered fill, left to right. */
+function QuotaMeter({ logged, quota }: { logged: number; quota: number }) {
   const filled = Math.min(logged, quota);
   const n = Math.max(1, quota);
   return (
-    <div className="flex flex-col items-center gap-[5px]" aria-hidden>
+    <div className="flex w-full items-center gap-[clamp(3px,1.5%,7px)]" aria-hidden>
       {Array.from({ length: n }).map((_, i) => {
-        // i counts from the TOP; fill the bottom `filled` dots.
-        const fromBottom = n - 1 - i;
-        const isOn = fromBottom < filled;
+        const isOn = i < filled;
         return (
           <span
             key={i}
-            className={`size-[18px] shrink-0 rounded-full transition-colors duration-500 ${
-              isOn ? 'bg-[#E8A44A]' : 'bg-white/[0.05]'
+            className={`aspect-square min-w-0 flex-1 rounded-full transition-all duration-500 ${
+              isOn
+                ? 'bg-[#E8A44A] shadow-[0_0_6px_rgba(232,164,74,0.35)]'
+                : 'bg-white/[0.06]'
             }`}
-            // stagger the fill from the bottom up
-            style={{ transitionDelay: `${fromBottom * 35}ms` }}
+            style={{ transitionDelay: `${i * 45}ms`, maxWidth: 16 }}
           />
         );
       })}
@@ -274,45 +275,73 @@ function QuotaColumn({
   );
 }
 
-/** The path — each topic a VERTICAL column of dots, columns side by side
- *  (bottom-aligned). Title + NN/NN above each. NO card chrome of its own (it's
- *  rendered inside the merged console card). */
+/** The path — a clean list of per-topic quota meters with a leading status dot,
+ *  topic title, and an NN/NN mono count. NO card chrome of its own (it nests
+ *  inside the console card, divided from the drill above by a hairline). */
 function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
+  const done = topics.filter((t) => t.isComplete).length;
+  const allDone = done === topics.length && topics.length > 0;
+
   return (
-    <div className="px-[22px] pb-[22px] pt-1">
-      {/* Dot columns — bottom-aligned as a group (items-end), so different
-          quotas (12/10/8) line up at the base. */}
-      <div className="flex items-end justify-around gap-3">
-        {topics.map((t) => (
-          <div key={t.topicId} className="flex min-w-0 flex-1 justify-center">
-            <QuotaColumn logged={t.repsLogged} quota={t.repQuota} />
-          </div>
-        ))}
+    <div className="px-[22px] pb-[22px] pt-[18px]">
+      {/* Section header: micro-label + a tiny "N/N topics" readout, mirroring
+          the SessionCard label vocabulary. */}
+      <div className="mb-3.5 flex items-baseline justify-between gap-3">
+        <p className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
+          {allDone ? 'Goal — complete' : 'Your path'}
+        </p>
+        <p className="font-mono text-[10px] tabular-nums tracking-[1px] text-[#5A5660]">
+          <span className={allDone ? 'text-[#E8A44A]' : 'text-[#8A8690]'}>
+            {done}
+          </span>
+          <span> / {topics.length} topics</span>
+        </p>
       </div>
-      {/* Labels row — one cell per column, aligned under each. */}
-      <div className="mt-3 flex justify-around gap-3">
-        {topics.map((t) => (
-          <div key={t.topicId} className="min-w-0 flex-1 text-center">
-            <div
-              className={`truncate font-serif text-[13px] leading-tight ${
-                t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
-              }`}
-              title={t.title}
-            >
-              {t.title}
+
+      <div className="flex flex-col gap-2.5">
+        {topics.map((t) => {
+          const shown = Math.min(t.repsLogged, t.repQuota);
+          return (
+            <div key={t.topicId} className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  {/* Status marker: amber check when full, hollow ring while
+                      climbing. */}
+                  {t.isComplete ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="size-3 shrink-0 fill-none stroke-[#E8A44A] stroke-[3]"
+                      aria-hidden
+                    >
+                      <polyline points="4,12 10,18 20,6" />
+                    </svg>
+                  ) : (
+                    <span className="size-[7px] shrink-0 rounded-full border border-[#5A5660]" />
+                  )}
+                  <span
+                    className={`truncate font-serif text-[15px] leading-tight ${
+                      t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
+                    }`}
+                    title={t.title}
+                  >
+                    {t.title}
+                  </span>
+                </div>
+                <span className="shrink-0 font-mono text-[11px] tabular-nums">
+                  <span
+                    className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
+                  >
+                    {String(shown).padStart(2, '0')}
+                  </span>
+                  <span className="text-[#5A5660]">
+                    /{String(t.repQuota).padStart(2, '0')}
+                  </span>
+                </span>
+              </div>
+              <QuotaMeter logged={t.repsLogged} quota={t.repQuota} />
             </div>
-            <div className="mt-0.5 font-mono text-[11px] tabular-nums">
-              <span
-                className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
-              >
-                {String(Math.min(t.repsLogged, t.repQuota)).padStart(2, '0')}
-              </span>
-              <span className="text-[#5A5660]">
-                /{String(t.repQuota).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -669,60 +698,43 @@ export default function GymPage() {
 
   // The daily-rep view — built in the /app SessionCard/ProgressCard vocabulary:
   // #141318 card + top amber accent hairline, serif titles, mono #5A5660 micro-
-  // labels, amber gradient CTA. One console panel; staggered entrance. The app
-  // shell paints the leather/gradient base.
+  // labels, amber gradient CTA. The leather/gradient base is painted by the app
+  // shell. HIERARCHY: the DRILL is the hero (the daily action) — it leads the
+  // console card. The PATH (per-topic quota meters) + the attendance/goal RAIL
+  // are context, sitting below the rep. Staggered one-shot entrance.
+  const topicsDone = topicProgress?.filter((t) => t.isComplete).length ?? 0;
+  const topicsTotal = topicProgress?.length ?? 0;
+
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
         <GymStyles />
         <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
-          {/* ONE console card — built in the /app SessionCard vocabulary:
-              #141318 surface, top amber accent hairline, mono micro-labels,
-              serif titles. Holds: stat header → path dots → drill. */}
-          <div className="gym-rise gym-d1 relative mb-5 overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
+          {/* Tiny gym wordmark above the console — orients the screen without
+              competing with the drill's own "Today's drill" title below. */}
+          <div className="gym-rise gym-d1 mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="size-1.5 rounded-full bg-[#E8A44A] shadow-[0_0_8px_rgba(232,164,74,0.6)]" />
+              <span className="font-mono text-[10px] uppercase tracking-[2.5px] text-[#8A8690]">
+                The Bass Gym
+              </span>
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
+              {repMode === 'floor' ? 'Floor · 3 min' : 'Daily rep'}
+            </span>
+          </div>
+
+          {/* THE HERO — one console card in the SessionCard vocabulary: #141318
+              surface, top amber accent hairline. The drill (bare DrillSessionFrame)
+              leads; the path is divided below it by a hairline. */}
+          <div className="gym-rise gym-d2 relative mb-4 overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
             {/* Top accent line — the SessionCard signature. */}
             <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
 
-            {/* Header: section label + the day readout. */}
-            <div className="flex items-start justify-between gap-4 px-[22px] pb-3.5 pt-[22px]">
-              <div className="min-w-0">
-                <div className="mb-2 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
-                  {topicProgress && topicProgress.every((t) => t.isComplete)
-                    ? 'Goal — complete'
-                    : 'Your path'}
-                </div>
-                <div className="font-serif text-[22px] leading-tight text-[#E8E4DD]">
-                  The Bass Gym
-                </div>
-                {topicProgress && topicProgress.length > 0 && (
-                  <div className="mt-0.5 font-mono text-[11px] text-[#5A5660]">
-                    {topicProgress.filter((t) => t.isComplete).length}/
-                    {topicProgress.length} topics complete
-                  </div>
-                )}
-              </div>
-              {attendance && (
-                <div className="shrink-0 whitespace-nowrap text-right">
-                  <div className="font-mono text-[22px] font-light text-[#E8E4DD]">
-                    {attendance.daysPracticed}
-                    <span className="text-[#5A5660]">
-                      /{attendance.windowDays}
-                    </span>
-                  </div>
-                  <div className="font-mono text-[11px] text-[#5A5660]">
-                    days
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Path (content-ladder topics) — dot rows. */}
-            {topicProgress && topicProgress.length > 0 && (
-              <GymTopicProgress topics={topicProgress} />
-            )}
-
-            {/* Drill — bare (no card chrome), divided from the header/path. */}
-            <div className="border-t border-white/[0.06] p-[22px]">
+            {/* Drill — bare (no card chrome of its own). It brings its own
+                "Today's drill" micro-label, serif title, brick list, and the
+                amber CTA. This is the primary action. */}
+            <div className="p-[22px]">
               <DrillSessionFrame
                 tutorial={memoizedTutorial}
                 tutorialSlug={slug}
@@ -732,7 +744,56 @@ export default function GymPage() {
                 bare
               />
             </div>
+
+            {/* Path (content-ladder topics) — quota meters as CONTEXT below the
+                rep. Absent on single-focal SPEED goals. */}
+            {topicProgress && topicProgress.length > 0 && (
+              <>
+                <div className="border-t border-white/[0.06]" />
+                <GymTopicProgress topics={topicProgress} />
+              </>
+            )}
           </div>
+
+          {/* Instrument readout rail — the SessionCard stat-tile token. Gives the
+              attendance count a home and balances the composition. Each tile is
+              shown only when its data exists (no fabricated stats). */}
+          {(attendance || topicsTotal > 0) && (
+            <div className="gym-rise gym-d3 mb-4 grid grid-cols-2 gap-2.5">
+              {attendance && (
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                  <div className="font-mono text-lg font-medium text-[#E8E4DD] tabular-nums">
+                    {attendance.daysPracticed}
+                    <span className="text-[#5A5660]">
+                      /{attendance.windowDays}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                    Days shown up
+                  </div>
+                </div>
+              )}
+              {topicsTotal > 0 && (
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                  <div className="font-mono text-lg font-medium tabular-nums">
+                    <span
+                      className={
+                        topicsDone === topicsTotal
+                          ? 'text-[#E8A44A]'
+                          : 'text-[#E8E4DD]'
+                      }
+                    >
+                      {topicsDone}
+                    </span>
+                    <span className="text-[#5A5660]">/{topicsTotal}</span>
+                  </div>
+                  <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                    Topics complete
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Quiet options under the rep: floor toggle + switch goal. */}
           <div className="gym-rise gym-d4 space-y-1 text-center text-xs text-[#8A8690]">
