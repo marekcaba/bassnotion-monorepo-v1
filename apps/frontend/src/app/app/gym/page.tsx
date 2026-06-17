@@ -19,6 +19,48 @@ import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 
 /**
+ * Scoped keyframes for the gym's one-shot staggered entrance (CSS-only — no
+ * motion lib). `gym-rise` fades+lifts; `gym-dN` stagger the masthead → path →
+ * drill → options. Respects prefers-reduced-motion.
+ */
+function GymStyles() {
+  return (
+    <style jsx global>{`
+      @keyframes gymRise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .gym-rise {
+        animation: gymRise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      }
+      .gym-d1 {
+        animation-delay: 0.04s;
+      }
+      .gym-d2 {
+        animation-delay: 0.12s;
+      }
+      .gym-d3 {
+        animation-delay: 0.2s;
+      }
+      .gym-d4 {
+        animation-delay: 0.28s;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gym-rise {
+          animation: none;
+        }
+      }
+    `}</style>
+  );
+}
+
+/**
  * /app/gym — the daily-rep entry point (Bass Gym Training Engine, Phase 3).
  *
  * Flow: useGymSession lists/enrolls + plans today's rep → returns the reserved
@@ -39,43 +81,48 @@ function GymPlacement({
 }) {
   const [tempo, setTempo] = React.useState(80);
   return (
-    <div className="flex min-h-[60vh] w-full items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-center text-white">
-        <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
-          Find your start
-        </p>
-        <h1 className="text-2xl font-semibold">
-          What tempo can you play this cleanly?
-        </h1>
-        <p className="text-sm text-white/50">
-          Push it to the fastest you can hold relaxed and clean. The coach
-          brackets each day’s rep around this — you can always ease off.
-        </p>
-        <div className="space-y-2">
-          <div className="font-mono text-4xl font-semibold text-[#E8A44A]">
-            {tempo} <span className="text-base text-white/40">BPM</span>
+    <div className="flex min-h-[70vh] w-full items-center justify-center px-4">
+      <GymStyles />
+      <div className="gym-rise gym-d1 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] text-center">
+        <div className="space-y-6 p-8">
+          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+            Find your start
+          </p>
+          <h1 className="font-heading text-4xl uppercase leading-[0.95] tracking-[0.02em] text-[#E8E4DD]">
+            What tempo can you play{' '}
+            <span className="text-[#E8A44A]">clean?</span>
+          </h1>
+          <p className="text-sm leading-relaxed text-[#8A8690]">
+            Push it to the fastest you can hold relaxed and clean. The coach
+            brackets each day’s rep around this — you can always ease off.
+          </p>
+          <div className="space-y-3">
+            <div className="font-mono text-6xl tabular-nums leading-none text-[#E8A44A] [text-shadow:0_0_28px_rgba(232,164,74,0.35)]">
+              {tempo}
+              <span className="ml-1 align-top text-lg text-[#8A8690]">BPM</span>
+            </div>
+            <input
+              type="range"
+              min={50}
+              max={180}
+              step={2}
+              value={tempo}
+              onChange={(e) => setTempo(Number(e.target.value))}
+              className="w-full accent-[#E8A44A]"
+            />
+            <div className="flex justify-between font-mono text-[10px] tracking-widest text-[#8A8690]/60">
+              <span>50</span>
+              <span>180</span>
+            </div>
           </div>
-          <input
-            type="range"
-            min={50}
-            max={180}
-            step={2}
-            value={tempo}
-            onChange={(e) => setTempo(Number(e.target.value))}
-            className="w-full accent-[#E8A44A]"
-          />
-          <div className="flex justify-between text-[10px] text-white/30">
-            <span>50</span>
-            <span>180</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => onStart(tempo)}
+            className="w-full rounded-lg bg-[#E8A44A] px-4 py-3 font-heading text-base uppercase tracking-[0.1em] text-black transition-all hover:bg-[#f0b35e] hover:shadow-[0_0_24px_rgba(232,164,74,0.35)]"
+          >
+            Start at {tempo} BPM
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => onStart(tempo)}
-          className="w-full rounded-md bg-[#E8A44A] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[#E8A44A]/90"
-        >
-          Start at {tempo} BPM
-        </button>
       </div>
     </div>
   );
@@ -95,54 +142,56 @@ function GymGoalPicker({
   onChoose: (slug: string) => void;
 }) {
   return (
-    <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-5 text-white">
-        <div className="text-center">
-          <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
-            Set up your month
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold">Choose your goal</h1>
-          <p className="mt-1 text-sm text-white/50">
-            Pick what you’ll climb this month. The coach builds your daily rep
-            around it.
-          </p>
-        </div>
-
-        {goals.length === 0 ? (
-          <p className="rounded-xl border border-white/5 bg-[#100E0D] p-6 text-center text-sm text-white/50">
-            No goals are available yet. Check back soon.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {goals.map((g) => (
-              <button
-                key={g.slug}
-                type="button"
-                onClick={() => onChoose(g.slug)}
-                className="block w-full rounded-xl border border-white/10 bg-[#100E0D] p-5 text-left transition-colors hover:border-[#E8A44A]/60"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-white">
-                    {g.title}
-                  </h2>
-                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-white/30">
-                    {g.topicCount > 0
-                      ? `${g.topicCount} topics · ${g.totalQuota} reps`
-                      : g.targetTempoBpm
-                        ? `${g.targetTempoBpm} BPM`
-                        : g.type}
-                  </span>
-                </div>
-                {g.description && (
-                  <p className="mt-1.5 text-sm text-white/50">
-                    {g.description}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+    <div className="mx-auto w-full max-w-lg px-4 py-10 md:py-12">
+      <GymStyles />
+      <div className="gym-rise gym-d1 mb-7 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+          Set up your month
+        </p>
+        <h1 className="mt-1 font-heading text-5xl uppercase leading-[0.92] tracking-[0.02em] text-[#E8E4DD]">
+          Choose your <span className="text-[#E8A44A]">goal</span>
+        </h1>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#8A8690]">
+          Pick what you’ll climb this month. The coach builds your daily rep
+          around it.
+        </p>
       </div>
+
+      {goals.length === 0 ? (
+        <p className="gym-rise gym-d2 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-8 text-center text-sm text-[#8A8690]">
+          No goals are available yet. Check back soon.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {goals.map((g, i) => (
+            <button
+              key={g.slug}
+              type="button"
+              onClick={() => onChoose(g.slug)}
+              className="gym-rise group block w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-[#E8A44A]/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
+              style={{ animationDelay: `${0.1 + i * 0.07}s` }}
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-heading text-2xl uppercase leading-none tracking-[0.03em] text-[#E8E4DD] transition-colors group-hover:text-[#E8A44A]">
+                  {g.title}
+                </h2>
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A8690]/70">
+                  {g.topicCount > 0
+                    ? `${g.topicCount} topics · ${g.totalQuota} reps`
+                    : g.targetTempoBpm
+                      ? `${g.targetTempoBpm} BPM`
+                      : g.type}
+                </span>
+              </div>
+              {g.description && (
+                <p className="mt-2 text-sm leading-relaxed text-[#8A8690]">
+                  {g.description}
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -155,24 +204,28 @@ function GymGoalPicker({
  */
 function GymMembershipWall() {
   return (
-    <div className="flex min-h-[60vh] w-full items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/5 bg-[#100E0D] p-8 text-center text-white">
-        <p className="font-mono text-xs uppercase tracking-[2px] text-[#E8A44A]">
-          The Bass Gym
-        </p>
-        <h1 className="text-2xl font-semibold">
-          Your goal for the month lives in the membership
-        </h1>
-        <p className="text-sm text-white/50">
-          Membership gives you a coach-built daily rep — a 6-minute goal that
-          climbs with you for the month, then resets fresh. Join to set yours.
-        </p>
-        <Link
-          href="/pricing"
-          className="inline-block w-full rounded-md bg-[#E8A44A] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[#E8A44A]/90"
-        >
-          See membership
-        </Link>
+    <div className="flex min-h-[70vh] w-full items-center justify-center px-4">
+      <GymStyles />
+      <div className="gym-rise gym-d1 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.05] to-white/[0.01] text-center">
+        <div className="space-y-5 p-8">
+          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+            The Bass Gym
+          </p>
+          <h1 className="font-heading text-4xl uppercase leading-[0.95] tracking-[0.02em] text-[#E8E4DD]">
+            Your goal for the month{' '}
+            <span className="text-[#E8A44A]">lives in the membership</span>
+          </h1>
+          <p className="text-sm leading-relaxed text-[#8A8690]">
+            Membership gives you a coach-built daily rep — a 6-minute goal that
+            climbs with you for the month, then resets fresh.
+          </p>
+          <Link
+            href="/pricing"
+            className="inline-flex w-full items-center justify-center rounded-lg bg-[#E8A44A] px-4 py-3 font-heading text-base uppercase tracking-[0.1em] text-black transition-all hover:bg-[#f0b35e] hover:shadow-[0_0_24px_rgba(232,164,74,0.35)]"
+          >
+            See membership
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -187,44 +240,85 @@ function GymMembershipWall() {
  * on their pace, so we show present state, not a future timeline). Rendered
  * above the drill; absent on single-focal SPEED goals (topicProgress is null).
  */
+/** A segmented quota meter — N ticks, filled-amber up to repsLogged. Reads like
+ *  a piece of gear (a tape counter / amp meter), not a generic progress bar.
+ *  Caps the segment count so a big quota stays legible. */
+function QuotaMeter({
+  logged,
+  quota,
+  done,
+}: {
+  logged: number;
+  quota: number;
+  done: boolean;
+}) {
+  const segments = Math.min(quota, 24);
+  // Map logged reps onto the (possibly capped) segment count.
+  const filled = quota > 0 ? Math.round((Math.min(logged, quota) / quota) * segments) : 0;
+  return (
+    <div className="flex gap-[3px]" aria-hidden>
+      {Array.from({ length: segments }).map((_, i) => (
+        <span
+          key={i}
+          className={`h-2.5 flex-1 rounded-[1px] transition-colors duration-500 ${
+            i < filled
+              ? done
+                ? 'bg-[#E8A44A] shadow-[0_0_6px_rgba(232,164,74,0.55)]'
+                : 'bg-[#E8A44A]'
+              : 'bg-white/[0.07]'
+          }`}
+          style={{ transitionDelay: `${i * 28}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
   const allComplete = topics.every((t) => t.isComplete);
   return (
-    <section className="space-y-3 rounded-2xl border border-white/5 bg-white/[0.03] p-5">
-      <p className="text-xs uppercase tracking-wide text-[#8A8690]">
-        {allComplete ? 'Goal complete — every bar full 🎉' : 'Your path'}
-      </p>
-      {topics.map((t) => {
-        const pct =
-          t.repQuota > 0
-            ? Math.min(100, Math.round((t.repsLogged / t.repQuota) * 100))
-            : 0;
-        return (
-          <div key={t.topicId} className="space-y-1.5">
-            <div className="flex items-baseline justify-between text-sm">
+    <section className="gym-rise gym-d2 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.015] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
+      {/* Console header strip */}
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+        <span className="font-heading text-sm uppercase tracking-[0.2em] text-[#8A8690]">
+          {allComplete ? 'Goal — complete' : 'Your path'}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#8A8690]/70">
+          {topics.filter((t) => t.isComplete).length}/{topics.length} topics
+        </span>
+      </div>
+
+      <div className="divide-y divide-white/[0.05]">
+        {topics.map((t) => (
+          <div key={t.topicId} className="space-y-2 px-5 py-3.5">
+            <div className="flex items-baseline justify-between gap-3">
               <span
-                className={
-                  t.isComplete
-                    ? 'text-[#E8A44A]'
-                    : 'font-medium text-[#E8E4DD]'
-                }
+                className={`font-heading text-lg uppercase leading-none tracking-[0.04em] ${
+                  t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'
+                }`}
               >
-                {t.isComplete && '✓ '}
                 {t.title}
               </span>
-              <span className="font-mono text-xs text-[#8A8690]">
-                {Math.min(t.repsLogged, t.repQuota)}/{t.repQuota}
+              <span className="shrink-0 font-mono text-sm tabular-nums text-[#8A8690]">
+                <span
+                  className={t.isComplete ? 'text-[#E8A44A]' : 'text-[#E8E4DD]'}
+                >
+                  {String(Math.min(t.repsLogged, t.repQuota)).padStart(2, '0')}
+                </span>
+                <span className="text-[#8A8690]/60">
+                  {' '}
+                  / {String(t.repQuota).padStart(2, '0')}
+                </span>
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
-              <div
-                className="h-full rounded-full bg-[#E8A44A] transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+            <QuotaMeter
+              logged={t.repsLogged}
+              quota={t.repQuota}
+              done={t.isComplete}
+            />
           </div>
-        );
-      })}
+        ))}
+      </div>
     </section>
   );
 }
@@ -578,41 +672,64 @@ export default function GymPage() {
     );
   }
 
-  // The daily-rep view: one centered column in the /app/bassment design language
-  // (serif header on the app's warm palette, content panes, responsive padding —
-  // the app shell paints the leather background, so no full-bleed surface here).
+  // The daily-rep view — "the training apparatus": condensed athletic display
+  // type (Bebas/Podium via font-heading), mono stat readouts, amber-on-leather,
+  // one staggered entrance. The app shell paints the leather/gradient base.
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
-        <div className="mx-auto w-full max-w-2xl space-y-6 p-4 md:p-6 lg:p-8">
-          {/* Header — matches the bassment "Practice Overview" pattern. */}
-          <header>
-            <h1 className="font-serif text-[22px] text-[#E8E4DD]">
-              The Bass Gym
-            </h1>
-            <p className="mt-1 text-sm text-[#8A8690]">
-              {attendance
-                ? `Your daily rep · showed up ${attendance.daysPracticed} of ${attendance.windowDays} days this cycle`
-                : 'Your daily rep'}
-            </p>
+        <GymStyles />
+        <div className="mx-auto w-full max-w-2xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
+          {/* Masthead — gym-signage scale, with an amber tick + a day readout. */}
+          <header className="gym-rise gym-d1 mb-7">
+            <div className="flex items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#E8A44A]">
+                  Daily rep
+                </p>
+                <h1 className="mt-1 font-heading text-5xl uppercase leading-[0.92] tracking-[0.02em] text-[#E8E4DD] md:text-6xl">
+                  The Bass{' '}
+                  <span className="text-[#E8A44A]">Gym</span>
+                </h1>
+              </div>
+              {attendance && (
+                <div className="shrink-0 text-right">
+                  <div className="font-mono text-3xl tabular-nums leading-none text-[#E8E4DD] md:text-4xl">
+                    {attendance.daysPracticed}
+                    <span className="text-base text-[#8A8690]">
+                      /{attendance.windowDays}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#8A8690]">
+                    days this cycle
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* hairline amber rule under the masthead */}
+            <div className="mt-4 h-px w-full bg-gradient-to-r from-[#E8A44A]/60 via-[#E8A44A]/15 to-transparent" />
           </header>
 
-          {/* Path bars (content-ladder topics) — a subtle pane. */}
+          {/* Path (content-ladder topics) — the console/scoreboard. */}
           {topicProgress && topicProgress.length > 0 && (
-            <GymTopicProgress topics={topicProgress} />
+            <div className="mb-6">
+              <GymTopicProgress topics={topicProgress} />
+            </div>
           )}
 
           {/* Today's drill — flows inline (no full-height self-centering). */}
-          <DrillSessionFrame
-            tutorial={memoizedTutorial}
-            tutorialSlug={slug}
-            exercises={memoizedExercises ?? []}
-            isFloor={repMode === 'floor'}
-            inline
-          />
+          <div className="gym-rise gym-d3 mb-5">
+            <DrillSessionFrame
+              tutorial={memoizedTutorial}
+              tutorialSlug={slug}
+              exercises={memoizedExercises ?? []}
+              isFloor={repMode === 'floor'}
+              inline
+            />
+          </div>
 
           {/* Quiet options under the rep: floor toggle + switch goal. */}
-          <div className="space-y-1 text-center text-xs text-[#8A8690]">
+          <div className="gym-rise gym-d4 space-y-1 text-center text-xs text-[#8A8690]">
             <p>
               {repMode === 'floor' ? (
                 <>
