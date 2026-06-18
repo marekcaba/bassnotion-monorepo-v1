@@ -24,7 +24,7 @@ import { useProgress } from '@/domains/progress/hooks/useProgress';
 import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
 import { useDrillSession } from '@/domains/drill/hooks/useDrillSession';
 import { useRecordSession, useStreak } from '@/domains/drill/hooks/useStreak';
-import { DrillPlanScreen } from './DrillPlanScreen';
+import { DrillPlanScreen, type FrontDoor } from './DrillPlanScreen';
 import {
   DrillSummaryScreen,
   type DrillSummaryItem,
@@ -47,6 +47,9 @@ interface DrillSessionFrameProps {
   /** Bare plan screen (no card chrome) so it nests inside a parent panel — the
    *  gym merges stats + path + drill into one console card. */
   bare?: boolean;
+  /** Front-door plan screen (the gym): the centered "Six minutes." invitation
+   *  with the giant CTA, no brick list. Only affects the 'plan' phase. */
+  frontDoor?: FrontDoor;
 }
 
 export function DrillSessionFrame({
@@ -56,6 +59,7 @@ export function DrillSessionFrame({
   isFloor = false,
   inline = false,
   bare = false,
+  frontDoor,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -130,6 +134,7 @@ export function DrillSessionFrame({
         onStart={start}
         inline={inline}
         bare={bare}
+        frontDoor={frontDoor}
       />
     );
   }

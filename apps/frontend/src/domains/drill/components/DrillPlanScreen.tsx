@@ -17,6 +17,25 @@ import {
   type DrillBrick,
 } from '@/domains/drill/utils/drillBricks';
 
+/** The gym's front-door copy (the centered "Six minutes." invitation). When
+ *  present, DrillPlanScreen renders the front-door layout instead of the brick
+ *  list: a quiet eyebrow, a giant serif headline, a coach line, the big amber
+ *  CTA, a dimension caption, and (optional) a dimmed floor link beneath. The
+ *  brick breakdown is intentionally HIDDEN — opening the gym shows only the
+ *  rep, as loud as it can be (founder direction). */
+export interface FrontDoor {
+  /** Small mono eyebrow above the headline, e.g. "TODAY · STRING CROSSING". */
+  eyebrow: string;
+  /** The giant serif headline, e.g. "Six minutes." */
+  headline: string;
+  /** One coach sentence below the headline (italic). */
+  coachLine?: string;
+  /** Mono caption under the CTA, e.g. "2 + 2 + 2 MIN". */
+  caption?: string;
+  /** Optional dimmed floor link under the CTA (the 3-minute version). */
+  floor?: { label: string; onClick: () => void };
+}
+
 interface DrillPlanScreenProps {
   /** Drill title (the tutorial title), e.g. "Today's drill". */
   title?: string;
@@ -30,6 +49,9 @@ interface DrillPlanScreenProps {
    *  so it nests inside a parent panel — the gym merges stats + path + drill into
    *  one console card. Implies inline. Default false. */
   bare?: boolean;
+  /** Front-door mode (the gym): render the centered "Six minutes." invitation
+   *  (no brick list) instead of the plan card. Implies bare + inline. */
+  frontDoor?: FrontDoor;
 }
 
 /** Rough total minutes, summing each brick's time target / timebox. */
@@ -48,8 +70,53 @@ export function DrillPlanScreen({
   onStart,
   inline = false,
   bare = false,
+  frontDoor,
 }: DrillPlanScreenProps) {
   const minutes = estimateMinutes(bricks);
+
+  // FRONT DOOR (the gym) — the rep, alone, as loud as it can be. Eyebrow +
+  // giant serif headline + coach line + the big amber CTA + a dimension caption,
+  // with an optional dimmed floor link. No brick breakdown (that lived in the
+  // old plan card; the front door hides it — founder direction).
+  if (frontDoor) {
+    return (
+      <div className="flex w-full flex-col items-center text-center">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[3px] text-[#7d786d]">
+          {frontDoor.eyebrow}
+        </p>
+        <h1 className="mb-5 font-serif text-[clamp(38px,9vw,56px)] font-normal leading-none text-[#f5f2ea]">
+          {frontDoor.headline}
+        </h1>
+        {frontDoor.coachLine && (
+          <p className="mb-11 max-w-[26rem] text-[16px] italic leading-relaxed text-[#9a9488]">
+            {frontDoor.coachLine}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onStart}
+          className="flex w-full max-w-[26rem] items-center justify-center gap-3 rounded-[14px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-6 py-6 text-[20px] font-semibold text-[#3a2606] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(232,164,74,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-white"
+        >
+          <Play className="size-5" fill="currentColor" />
+          Start today&apos;s rep
+        </button>
+        {frontDoor.caption && (
+          <p className="mt-4 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52]">
+            {frontDoor.caption}
+          </p>
+        )}
+        {frontDoor.floor && (
+          <button
+            type="button"
+            onClick={frontDoor.floor.onClick}
+            className="mt-6 border-b border-transparent pb-0.5 text-sm text-[#7d786d] transition-colors hover:border-[#605b52] hover:text-[#9a9488]"
+          >
+            {frontDoor.floor.label}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

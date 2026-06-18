@@ -734,12 +734,12 @@ export default function GymPage() {
     );
   }
 
-  // The daily-rep view — built in the /app SessionCard/ProgressCard vocabulary:
-  // #141318 card + top amber accent hairline, serif titles, mono #5A5660 micro-
-  // labels, amber gradient CTA. The leather/gradient base is painted by the app
-  // shell. HIERARCHY: the DRILL is the hero (the daily action) — it leads the
-  // console card. The PATH (per-topic quota meters) + the attendance/goal RAIL
-  // are context, sitting below the rep. Staggered one-shot entrance.
+  // The daily-rep view — THE FRONT DOOR. When a student opens /app/gym they see
+  // ONLY the rep: a quiet eyebrow naming today's topic, the giant "Six minutes."
+  // headline, a coach line, and the big amber CTA. Nothing else (founder
+  // direction: "it should only say Start today's rep — as loud as it can").
+  // The stats + the topic PATH are tucked behind a quiet footer toggle ("YOUR
+  // CLIMB & TAKES ›"), so the climb is one tap away but never crowds the door.
   const topicsDone = topicProgress?.filter((t) => t.isComplete).length ?? 0;
   const topicsTotal = topicProgress?.length ?? 0;
 
@@ -749,14 +749,11 @@ export default function GymPage() {
   const repsBanked =
     topicProgress?.reduce((n, t) => n + Math.min(t.repsLogged, t.repQuota), 0) ??
     0;
-  const repsTotal =
-    topicProgress?.reduce((n, t) => n + t.repQuota, 0) ?? 0;
+  const repsTotal = topicProgress?.reduce((n, t) => n + t.repQuota, 0) ?? 0;
   const repsToGo = Math.max(0, repsTotal - repsBanked);
   const goalDone = repsTotal > 0 && repsBanked >= repsTotal;
   // The goal's name (real, frozen at enrollment) — fall back gracefully.
   const goalName = goalTitle?.trim() || 'Your goal';
-  // Day N of the cycle, from attendance window vs. real reps banked. We don't
-  // have a precise "day index", so frame by reps banked (the hero) — honest.
   const targetBpm =
     typeof enrollment?.goalSnapshot?.target?.tempoBpm === 'number'
       ? enrollment.goalSnapshot.target.tempoBpm
@@ -765,69 +762,64 @@ export default function GymPage() {
   const streakDays = streak?.current ?? 0;
   const freezeTokens = streak?.freezeTokens ?? 0;
 
+  // ── TODAY'S TOPIC (real) ── Each rep targets ONE topic, and banking it fills
+  // one DOT in that topic's quota (founder model). The planner stamps the chosen
+  // topic on the rep's bricks (config.topicId); reading it back here matches the
+  // server's pick EXACTLY (no re-derivation drift). Match it to topicProgress for
+  // the title + this topic's quota fill. Absent on single-focal SPEED goals.
+  const todayTopicId =
+    (bricks
+      .map((b) => (b.config as { topicId?: string } | undefined)?.topicId)
+      .find(Boolean) as string | undefined) ?? null;
+  const todayTopic =
+    (todayTopicId &&
+      topicProgress?.find((t) => t.topicId === todayTopicId)) ||
+    null;
+  // The eyebrow: TODAY · <topic name>. Falls back to the goal name on a SPEED
+  // goal (no topics), then to a bare "TODAY".
+  const eyebrow = `TODAY · ${(todayTopic?.title || goalName || 'THE GRID').toUpperCase()}`;
+  // The coach line — real state only. Names this topic's progress when we have
+  // it; otherwise the goal-level reps banked. No invented numbers.
+  const coachLine = goalDone
+    ? 'Every rep banked — you finished the goal. Nice work.'
+    : todayTopic
+      ? todayTopic.repsLogged === 0
+        ? `First rep on ${todayTopic.title.toLowerCase()}. One dot at a time.`
+        : `${todayTopic.repsLogged} of ${todayTopic.repQuota} on ${todayTopic.title.toLowerCase()} — keep stacking dots.`
+      : repsBanked > 0
+        ? `${repsBanked} ${repsBanked === 1 ? 'rep' : 'reps'} in the bank${
+            repsToGo > 0 ? ` · ${repsToGo} to go` : ''
+          }${targetBpm ? `, aiming for ${targetBpm} BPM` : ''}.`
+        : streakDays > 0
+          ? `${streakDays} days in. The pocket's closer than it feels.`
+          : 'Six minutes is the whole ask. Let’s bank the first one.';
+
   return (
     <>
       <PageErrorBoundary pageName="Bass Gym">
         <GymStyles />
-        {/* Center the dashboard in the main content area — vertically too, while
-            still scrolling if the console is taller than the viewport. */}
-        <div className="flex min-h-full w-full items-center justify-center">
-          <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-10 lg:py-12">
-            {/* Coach masthead (P1.3 + P2.1): the named GOAL + a loud streak/
-                freeze readout + a coach sentence — the "voice", not telemetry.
-                The goal name is real (frozen snapshot); streak is real
-                (useStreak). No fabricated BPM-yesterday line. */}
-          <header className="gym-rise gym-d1 mb-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="font-mono text-[10px] uppercase tracking-[2.5px] text-[#5A5660]">
-                The Bass Gym
-              </p>
-              {/* Streak — loud, the daily-return mechanic. */}
-              <div className="flex items-center gap-3 font-mono text-[11px]">
-                {streakDays > 0 && (
-                  <span className="text-[#E8E4DD]">
-                    🔥 {streakDays}-day streak
-                  </span>
-                )}
-                {freezeTokens > 0 && (
-                  <span className="text-[#5B8DEF]" title="Streak freezes banked">
-                    ❄️ {freezeTokens}
-                  </span>
-                )}
-              </div>
-            </div>
-            <h1 className="mt-2 font-serif text-[26px] leading-tight text-[#E8E4DD] md:text-[30px]">
-              {goalName}
-            </h1>
-            {/* One coach sentence from REAL state (no invented numbers). The
-                target BPM is real (goal snapshot); reps banked is real. */}
-            <p className="mt-1.5 text-sm leading-relaxed text-[#8A8690]">
-              {goalDone
-                ? 'Every rep banked — you finished the goal. Nice work.'
-                : repsBanked === 0
-                  ? repsTotal > 0
-                    ? `${repsTotal} reps between you and this goal${
-                        targetBpm ? ` at ${targetBpm} BPM` : ''
-                      }. Let's bank the first one.`
-                    : 'Your daily rep is ready. Let’s bank the first one.'
-                  : `${repsBanked} ${repsBanked === 1 ? 'rep' : 'reps'} in the bank${
-                      repsToGo > 0 ? ` · ${repsToGo} to go` : ''
-                    }${targetBpm ? `, aiming for ${targetBpm} BPM` : ''}. Today's rep keeps the momentum.`}
-            </p>
-          </header>
+        {/* Full-bleed column: a quiet topbar (brand + streak dots), the centered
+            front door, and a footer toggle that reveals the climb. */}
+        <div className="flex min-h-full w-full flex-col">
+          {/* Topbar — brand left, streak right (the daily-return mechanic, loud
+              but small). Real: useStreak. */}
+          <div className="gym-rise gym-d1 flex items-center justify-between px-1 py-1 font-mono text-[11px] tracking-[1.5px]">
+            <span className="uppercase text-[#C9A24A]">Bassicology</span>
+            <span className="flex items-center gap-2 text-[#7d786d]">
+              {streakDays > 0 && (
+                <span className="uppercase">{streakDays}-day streak</span>
+              )}
+              {freezeTokens > 0 && (
+                <span className="text-[#5B8DEF]" title="Streak freezes banked">
+                  ❄️ {freezeTokens}
+                </span>
+              )}
+            </span>
+          </div>
 
-          {/* THE HERO — one console card in the SessionCard vocabulary: #141318
-              surface, top amber accent hairline. The drill (bare DrillSessionFrame)
-              leads; the path is divided below it by a hairline. */}
-          <div className="gym-rise gym-d2 relative mb-4 overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
-            {/* Top accent line — the SessionCard signature. */}
-            <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
-
-            {/* Drill — bare (no card chrome of its own). It brings its own
-                "Today's drill" micro-label, serif title, brick list, and the
-                amber CTA. This is the primary action. The floor toggle sits
-                directly UNDER the main CTA, dimmed + subordinate. */}
-            <div className="p-[22px]">
+          {/* THE FRONT DOOR — vertically centered, the rep alone. */}
+          <div className="flex flex-1 items-center justify-center px-4 py-10">
+            <div className="gym-rise gym-d2 w-full max-w-[26rem]">
               <DrillSessionFrame
                 tutorial={memoizedTutorial}
                 tutorialSlug={slug}
@@ -835,82 +827,97 @@ export default function GymPage() {
                 isFloor={repMode === 'floor'}
                 inline
                 bare
+                frontDoor={{
+                  eyebrow,
+                  headline: 'Six minutes.',
+                  coachLine,
+                  caption: '2 + 2 + 2 MIN',
+                  floor: {
+                    label:
+                      repMode === 'floor'
+                        ? 'Do the full rep instead'
+                        : 'Short on time? 3-minute version — streak stays safe',
+                    onClick: repMode === 'floor' ? refresh : chooseFloor,
+                  },
+                }}
               />
-              {/* Secondary CTA — dimmed, clearly beneath "Start the drill". */}
-              <button
-                type="button"
-                onClick={repMode === 'floor' ? refresh : chooseFloor}
-                className="mt-2.5 w-full rounded-[9px] border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 text-xs text-[#8A8690] transition-colors hover:border-white/10 hover:bg-white/[0.04] hover:text-[#E8E4DD]"
-              >
-                {repMode === 'floor'
-                  ? 'Do the full rep instead'
-                  : 'Short on time? Do the 3-minute version — streak stays safe'}
-              </button>
             </div>
-
-            {/* Path (content-ladder topics) — quota meters as CONTEXT below the
-                rep. Absent on single-focal SPEED goals. */}
-            {topicProgress && topicProgress.length > 0 && (
-              <>
-                <div className="border-t border-white/[0.06]" />
-                <GymTopicProgress topics={topicProgress} />
-              </>
-            )}
           </div>
 
-          {/* Readout rail — the SessionCard stat-tile token. HERO = reps banked
-              (founder decision), framed counting UP toward the goal. Days-shown-
-              up + topics are secondary. Each tile renders only with real data. */}
+          {/* Footer toggle — "YOUR CLIMB & TAKES ›". Reveals the climb (stats +
+              topic path) below the fold; collapsed by default so the front door
+              stays uncluttered. Only shown when there's a climb to reveal. */}
           {(repsTotal > 0 || attendance || topicsTotal > 0) && (
-            <div className="gym-rise gym-d3 mb-4 grid grid-cols-3 gap-2.5">
-              {repsTotal > 0 && (
-                <div className="col-span-3 rounded-lg border border-[#E8A44A]/20 bg-[#E8A44A]/[0.04] px-3 py-3.5 text-center sm:col-span-1">
-                  <div className="font-mono text-2xl font-light leading-none tabular-nums text-[#E8A44A]">
-                    {repsBanked}
-                    <span className="text-base text-[#5A5660]">
-                      /{repsTotal}
-                    </span>
+            <div className="gym-rise gym-d3 px-4 pb-8">
+              <details className="group mx-auto w-full max-w-xl">
+                <summary className="flex cursor-pointer list-none items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52] transition-colors hover:text-[#7d786d] [&::-webkit-details-marker]:hidden">
+                  Your climb &amp; takes
+                  <span className="transition-transform group-open:rotate-90">
+                    ›
+                  </span>
+                </summary>
+
+                <div className="mx-auto mt-5 w-full max-w-xl space-y-4">
+                  {/* Stat rail */}
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {repsTotal > 0 && (
+                      <div className="col-span-3 rounded-lg border border-[#E8A44A]/20 bg-[#E8A44A]/[0.04] px-3 py-3.5 text-center sm:col-span-1">
+                        <div className="font-mono text-2xl font-light leading-none tabular-nums text-[#E8A44A]">
+                          {repsBanked}
+                          <span className="text-base text-[#5A5660]">
+                            /{repsTotal}
+                          </span>
+                        </div>
+                        <div className="mt-1 font-mono text-[9px] uppercase tracking-[1px] text-[#8A8690]">
+                          Reps banked
+                        </div>
+                      </div>
+                    )}
+                    {attendance && (
+                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                        <div className="font-mono text-lg font-medium tabular-nums text-[#E8E4DD]">
+                          {attendance.daysPracticed}
+                          <span className="text-[#5A5660]">
+                            /{attendance.windowDays}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                          Days shown up
+                        </div>
+                      </div>
+                    )}
+                    {topicsTotal > 0 && (
+                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                        <div className="font-mono text-lg font-medium tabular-nums">
+                          <span
+                            className={
+                              topicsDone === topicsTotal
+                                ? 'text-[#E8A44A]'
+                                : 'text-[#E8E4DD]'
+                            }
+                          >
+                            {topicsDone}
+                          </span>
+                          <span className="text-[#5A5660]">/{topicsTotal}</span>
+                        </div>
+                        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                          Topics done
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-1 font-mono text-[9px] uppercase tracking-[1px] text-[#8A8690]">
-                    Reps banked
-                  </div>
+
+                  {/* The path (per-topic quota dots) — context, not the door. */}
+                  {topicProgress && topicProgress.length > 0 && (
+                    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
+                      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
+                      <GymTopicProgress topics={topicProgress} />
+                    </div>
+                  )}
                 </div>
-              )}
-              {attendance && (
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                  <div className="font-mono text-lg font-medium tabular-nums text-[#E8E4DD]">
-                    {attendance.daysPracticed}
-                    <span className="text-[#5A5660]">
-                      /{attendance.windowDays}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                    Days shown up
-                  </div>
-                </div>
-              )}
-              {topicsTotal > 0 && (
-                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                  <div className="font-mono text-lg font-medium tabular-nums">
-                    <span
-                      className={
-                        topicsDone === topicsTotal
-                          ? 'text-[#E8A44A]'
-                          : 'text-[#E8E4DD]'
-                      }
-                    >
-                      {topicsDone}
-                    </span>
-                    <span className="text-[#5A5660]">/{topicsTotal}</span>
-                  </div>
-                  <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                    Topics done
-                  </div>
-                </div>
-              )}
+              </details>
             </div>
           )}
-          </div>
         </div>
       </PageErrorBoundary>
     </>
