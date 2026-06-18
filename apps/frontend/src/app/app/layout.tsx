@@ -17,34 +17,35 @@ import {
 } from '@/domains/playback/machines';
 
 /**
- * Sidebar is expanded on top-level /app routes (e.g. /app, /app/settings)
- * and collapsed on deeper routes (e.g. /app/bassment, /app/tutorials/come-together).
+ * Deep routes (e.g. /app/bassment, /app/tutorials/come-together) open the detail
+ * panel automatically. This drives the PANEL's behavior only — the first column
+ * (the nav sidebar) never collapses; it stays expanded on every /app route.
  */
-function isTopLevelAppRoute(pathname: string): boolean {
-  // /app/bassment gets collapsed sidebar (like tutorial routes)
-  if (pathname === '/app/bassment') return false;
-  // /app → segments = ['', 'app'] → depth 0
-  // /app/settings → segments = ['', 'app', 'settings'] → depth 1
-  // /app/tutorials/slug → segments = ['', 'app', 'tutorials', 'slug'] → depth 2+
+function isDeepAppRoute(pathname: string): boolean {
+  // /app/bassment behaves like the tutorial routes (panel auto-opens)
+  if (pathname === '/app/bassment') return true;
+  // /app → ['', 'app'] (depth 0); /app/settings → depth 1; /app/tutorials/slug
+  // → depth 2+. Anything 4+ segments is a deep route.
   const segments = pathname.split('/');
-  return segments.length <= 3;
+  return segments.length > 3;
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
-  const sidebarExpanded = useMemo(
-    () => isTopLevelAppRoute(pathname),
-    [pathname],
-  );
+  // The first column (nav sidebar) NEVER collapses — always expanded, on every
+  // /app route. (It used to collapse to an icon rail on deep routes.)
+  const sidebarExpanded = true;
 
-  // Auto-open panel when entering tutorial routes from an expanded-sidebar route
+  const isDeepRoute = useMemo(() => isDeepAppRoute(pathname), [pathname]);
+
+  // Auto-open the detail panel when entering a deep (tutorial-like) route.
   useEffect(() => {
-    if (!sidebarExpanded) {
+    if (isDeepRoute) {
       setIsPanelOpen(true);
     }
-  }, [sidebarExpanded]);
+  }, [isDeepRoute]);
 
   const handleTogglePanel = useCallback(() => {
     setIsPanelOpen((prev) => !prev);
