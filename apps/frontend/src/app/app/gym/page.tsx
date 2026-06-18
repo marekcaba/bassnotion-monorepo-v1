@@ -838,8 +838,8 @@ export default function GymPage() {
               style={{
                 background:
                   'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,0.52) 0%, rgba(12,11,14,0.76) 60%, rgba(8,7,10,0.85) 100%)',
-                backdropFilter: 'blur(9px) saturate(0.9)',
-                WebkitBackdropFilter: 'blur(9px) saturate(0.9)',
+                backdropFilter: 'blur(7px) saturate(0.9)',
+                WebkitBackdropFilter: 'blur(7px) saturate(0.9)',
               }}
             >
               {/* Streak — top-right of the overlay (daily-return mechanic). */}
