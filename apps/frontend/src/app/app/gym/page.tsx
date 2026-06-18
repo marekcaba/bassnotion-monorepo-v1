@@ -9,7 +9,10 @@ import type {
   EnrollableGoal,
 } from '@bassnotion/contracts';
 import Link from 'next/link';
-import { TutorialPageSkeleton } from '@/domains/widgets/components/YouTubeWidgetPage/TutorialPageSkeleton';
+import {
+  GymSkeleton,
+  type GymSkeletonVariant,
+} from '@/domains/training-engine/components/GymSkeleton';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
@@ -641,6 +644,7 @@ export default function GymPage() {
     topicProgress,
     goalTitle,
     goals,
+    chosenGoal,
     chooseGoal,
     placeAndStart,
     chooseFloor,
@@ -672,11 +676,12 @@ export default function GymPage() {
     [exercises, exercises?.length, exercises?.[0]?.id],
   );
 
-  // Membership gate. While auth + entitlement resolve, show the skeleton (never
-  // flash the wall to a member, nor the gym to a non-member). Resolved +
-  // non-member → the upsell wall.
+  // Membership gate. While auth + entitlement resolve, show the front-door
+  // skeleton (a returning member's destination is the rep; never flash the wall
+  // to a member, nor the gym to a non-member). Resolved + non-member → the
+  // upsell wall.
   if (gateResolving) {
-    return <TutorialPageSkeleton />;
+    return <GymSkeleton variant="front-door" />;
   }
   if (!isMember) {
     return (
@@ -717,7 +722,13 @@ export default function GymPage() {
   }
 
   if (status === 'loading' || isLoading || !slug || !memoizedTutorial) {
-    return <TutorialPageSkeleton />;
+    // Shape the skeleton to where loading is heading: with no enrollment AND no
+    // goal chosen yet, run()/startSwitch is fetching the enrollable goals → the
+    // PICKER is next. Otherwise (a returning member, or a just-enrolled goal
+    // planning today's rep) → the FRONT DOOR.
+    const loadingVariant: GymSkeletonVariant =
+      !enrollment && !chosenGoal ? 'picker' : 'front-door';
+    return <GymSkeleton variant={loadingVariant} />;
   }
 
   // Graduation owns the whole screen (recap + fork) — render it standalone.
