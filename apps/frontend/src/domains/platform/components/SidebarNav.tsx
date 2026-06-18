@@ -39,8 +39,9 @@ export function SidebarNav({
     <div
       className={cn(
         'flex flex-col gap-1 py-2 px-2',
-        // The spine sits lower from the top edge, breathing room above Backstage.
-        insetLeft && 'pt-6',
+        // The spine sits lower from the top edge (breathing room above Backstage)
+        // with more space between the rooms.
+        insetLeft && 'gap-2.5 pt-6',
       )}
     >
       {items.map((item) => {
