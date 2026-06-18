@@ -105,11 +105,13 @@ export function DrillPlanScreen({
             {frontDoor.caption}
           </p>
         )}
+        {/* Secondary CTA — the 3-minute floor. A full-width button like the
+            primary, but dimmed + outlined so it clearly sits beneath it. */}
         {frontDoor.floor && (
           <button
             type="button"
             onClick={frontDoor.floor.onClick}
-            className="mt-6 border-b border-transparent pb-0.5 text-sm text-[#7d786d] transition-colors hover:border-[#605b52] hover:text-[#9a9488]"
+            className="mt-3 w-full max-w-[26rem] rounded-[14px] border border-white/[0.07] bg-white/[0.02] px-6 py-3.5 text-sm text-[#7d786d] transition-colors hover:border-white/[0.12] hover:bg-white/[0.04] hover:text-[#9a9488]"
           >
             {frontDoor.floor.label}
           </button>

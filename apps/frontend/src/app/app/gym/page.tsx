@@ -778,13 +778,6 @@ export default function GymPage() {
   // The eyebrow: TODAY · <topic name>. Falls back to the goal name on a SPEED
   // goal (no topics), then to a bare "TODAY".
   const eyebrow = `TODAY · ${(todayTopic?.title || goalName || 'THE GRID').toUpperCase()}`;
-  // The caption under the CTA: the goal's topics (the skills this goal is made
-  // of), real from topicProgress. Falls back to the fixed rep shape on a
-  // single-focal SPEED goal (no topics). Joined with a mid-dot.
-  const topicCaption =
-    topicProgress && topicProgress.length > 0
-      ? topicProgress.map((t) => t.title.toUpperCase()).join(' · ')
-      : '2 + 2 + 2 MIN';
   // The coach line — real state only. Names this topic's progress when we have
   // it; otherwise the goal-level reps banked. No invented numbers.
   const coachLine = goalDone
@@ -838,7 +831,6 @@ export default function GymPage() {
                   eyebrow,
                   headline: 'Six minutes.',
                   coachLine,
-                  caption: topicCaption,
                   floor: {
                     label:
                       repMode === 'floor'
