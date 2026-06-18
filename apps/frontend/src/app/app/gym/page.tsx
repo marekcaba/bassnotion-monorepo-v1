@@ -5,7 +5,6 @@ import type {
   GraduationSummary,
   GraduationDoor,
   MonthInReview,
-  TopicProgress,
   EnrollableGoal,
 } from '@bassnotion/contracts';
 import Link from 'next/link';
@@ -63,22 +62,6 @@ function GymStyles() {
       }
     `}</style>
   );
-}
-
-/**
- * Per-level skill colors — the SAME palette as the /app SessionCard tags
- * (NodeMatrix LEVEL_COLORS). Each gym topic is colored by its current stage
- * level, so the path reads with the app's colorful skill-tag identity.
- */
-const LEVEL_COLORS: Record<number, { base: string; glow: string }> = {
-  1: { base: '#E8A44A', glow: 'rgba(232,164,74,0.25)' }, // orange
-  2: { base: '#5B8DEF', glow: 'rgba(91,141,239,0.25)' }, // blue
-  3: { base: '#6BCF8E', glow: 'rgba(107,207,142,0.25)' }, // green
-  4: { base: '#C77DFF', glow: 'rgba(199,125,255,0.25)' }, // purple
-  5: { base: '#FF7EB3', glow: 'rgba(255,126,179,0.25)' }, // pink
-};
-function colorForLevel(level: number): { base: string; glow: string } {
-  return LEVEL_COLORS[Math.min(Math.max(1, level), 5)] ?? LEVEL_COLORS[1];
 }
 
 /**
@@ -254,137 +237,6 @@ function GymMembershipWall() {
 }
 
 
-/**
- * The content-ladder PATH (epic §3 Build B) — the ~3-4 TOPIC quota meters the
- * student fills toward the goal. One row per topic ("Hold the Engine 3/12"); the
- * goal is done when every row is full. Internal "stages" are NEVER surfaced —
- * the student only sees the quota fill (founder decision §4: the future depends
- * on their pace, so we show present state, not a future timeline). Rendered as
- * CONTEXT below the drill hero; absent on single-focal SPEED goals
- * (topicProgress is null).
- *
- * Viz: a horizontal row of DOTS — one bold dot per rep, filled left→right.
- * Filled = solid amber; empty = dark disc. The dots size down as the quota grows
- * (a flex row, capped diameter) so 4–12 reps all sit on one line and topics line
- * up. A done topic's title + count go amber with a check.
- */
-
-/** A single topic's quota as a row of dots — one per rep, filling left→right.
- *  Filled = solid amber; empty = dark disc. Flex row with a capped dot size so a
- *  quota of 4 shows fat dots and 12 shows smaller ones, both on one line.
- *  Staggered fill, left to right. */
-function QuotaMeter({
-  logged,
-  quota,
-  color,
-}: {
-  logged: number;
-  quota: number;
-  /** The topic's skill color (filled dots + glow). */
-  color: { base: string; glow: string };
-}) {
-  const filled = Math.min(logged, quota);
-  const n = Math.max(1, quota);
-  return (
-    <div className="flex w-full items-center gap-[clamp(3px,1.5%,7px)]" aria-hidden>
-      {Array.from({ length: n }).map((_, i) => {
-        const isOn = i < filled;
-        return (
-          <span
-            key={i}
-            className="aspect-square min-w-0 flex-1 rounded-full transition-all duration-500"
-            style={{
-              transitionDelay: `${i * 45}ms`,
-              maxWidth: 16,
-              background: isOn ? color.base : 'rgba(255,255,255,0.06)',
-              boxShadow: isOn ? `0 0 6px ${color.glow}` : 'none',
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-/** The path — a clean list of per-topic quota meters with a leading status dot,
- *  topic title, and an NN/NN mono count. NO card chrome of its own (it nests
- *  inside the console card, divided from the drill above by a hairline). */
-function GymTopicProgress({ topics }: { topics: TopicProgress[] }) {
-  const done = topics.filter((t) => t.isComplete).length;
-  const allDone = done === topics.length && topics.length > 0;
-
-  return (
-    <div className="px-[22px] pb-[22px] pt-[18px]">
-      {/* Section header: micro-label + a tiny "N/N topics" readout, mirroring
-          the SessionCard label vocabulary. */}
-      <div className="mb-3.5 flex items-baseline justify-between gap-3">
-        <p className="font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
-          {allDone ? 'Goal — complete' : 'Your path'}
-        </p>
-        <p className="font-mono text-[10px] tabular-nums tracking-[1px] text-[#5A5660]">
-          <span className={allDone ? 'text-[#E8A44A]' : 'text-[#8A8690]'}>
-            {done}
-          </span>
-          <span> / {topics.length} topics</span>
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2.5">
-        {topics.map((t, i) => {
-          const shown = Math.min(t.repsLogged, t.repQuota);
-          // Each topic gets a DISTINCT skill color by its position (the /app
-          // SessionCard palette), so the 3–4 topics are always visually distinct
-          // — like the home tags — not all the same (they'd share stage-1 color).
-          const c = colorForLevel(i + 1);
-          return (
-            <div key={t.topicId} className="flex flex-col gap-1.5">
-              <div className="flex items-baseline justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  {/* Colored tag pill — the SessionCard tag treatment, tinted to
-                      the topic's skill color. */}
-                  <span
-                    className="shrink-0 rounded-full border px-2 py-[2px] font-mono text-[9px] uppercase tracking-[0.5px]"
-                    style={{
-                      color: c.base,
-                      borderColor: c.glow,
-                      background: `${c.base}14`,
-                    }}
-                    title={t.title}
-                  >
-                    {t.title}
-                  </span>
-                  {t.isComplete && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="size-3 shrink-0 fill-none stroke-[3]"
-                      style={{ stroke: c.base }}
-                      aria-hidden
-                    >
-                      <polyline points="4,12 10,18 20,6" />
-                    </svg>
-                  )}
-                </div>
-                <span className="shrink-0 font-mono text-[11px] tabular-nums">
-                  {/* P0.3: single-digit-min (3/10), not 00/10 — leading zeros
-                      read as a clock/glitch. */}
-                  <span style={{ color: t.isComplete ? c.base : '#E8E4DD' }}>
-                    {shown}
-                  </span>
-                  <span className="text-[#5A5660]">/{t.repQuota}</span>
-                </span>
-              </div>
-              <QuotaMeter
-                logged={t.repsLogged}
-                quota={t.repQuota}
-                color={c}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 const WEEKDAY_LABELS = [
   'Sundays',
@@ -640,7 +492,6 @@ export default function GymPage() {
     error,
     graduation,
     monthInReview,
-    attendance,
     repMode,
     topicProgress,
     goalTitle,
@@ -757,12 +608,9 @@ export default function GymPage() {
 
   // The daily-rep view — THE FRONT DOOR. When a student opens /app/gym they see
   // ONLY the rep: a quiet eyebrow naming today's topic, the giant "Six minutes."
-  // headline, a coach line, and the big amber CTA. Nothing else (founder
-  // direction: "it should only say Start today's rep — as loud as it can").
-  // The stats + the topic PATH are tucked behind a quiet footer toggle ("YOUR
-  // CLIMB & TAKES ›"), so the climb is one tap away but never crowds the door.
-  const topicsDone = topicProgress?.filter((t) => t.isComplete).length ?? 0;
-  const topicsTotal = topicProgress?.length ?? 0;
+  // headline, a coach line, and the big amber CTA — over the equipment floor.
+  // The climb (stats + topic path) now lives in the user dashboard (/app/settings),
+  // not the gym; under the CTAs there's only "Explore the gym".
 
   // ── Coach-voice derived values (ALL from real data, nothing fabricated) ──
   // Reps banked is the HERO metric (founder decision): sum of reps logged across
@@ -879,93 +727,21 @@ export default function GymPage() {
                   }}
                 />
 
-                {/* Dismiss → reveal the floor underneath. */}
+                {/* Dismiss → reveal the floor underneath. The only thing under
+                    the CTAs (the climb moved to the user dashboard / settings). */}
                 <div className="mt-8 text-center">
                   <button
                     type="button"
                     onClick={() => setOverlayOpen(false)}
                     className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[2px] text-[#605b52] transition-colors hover:text-[#E8A44A]"
                   >
-                    Explore the floor
+                    Explore the gym
                     <span className="transition-transform group-hover:translate-y-0.5">
                       ↓
                     </span>
                   </button>
                 </div>
               </div>
-
-              {/* Climb toggle — stats + topic path, below the door (unchanged). */}
-              {(repsTotal > 0 || attendance || topicsTotal > 0) && (
-                <div className="gym-rise gym-d3 mt-8 w-full px-4">
-                  <details className="group mx-auto w-full max-w-xl">
-                    <summary className="flex cursor-pointer list-none items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52] transition-colors hover:text-[#7d786d] [&::-webkit-details-marker]:hidden">
-                      Your climb &amp; takes
-                      <span className="transition-transform group-open:rotate-90">
-                        ›
-                      </span>
-                    </summary>
-
-                    <div className="mx-auto mt-5 w-full max-w-xl space-y-4">
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {repsTotal > 0 && (
-                          <div className="col-span-3 rounded-lg border border-[#E8A44A]/20 bg-[#E8A44A]/[0.04] px-3 py-3.5 text-center sm:col-span-1">
-                            <div className="font-mono text-2xl font-light leading-none tabular-nums text-[#E8A44A]">
-                              {repsBanked}
-                              <span className="text-base text-[#5A5660]">
-                                /{repsTotal}
-                              </span>
-                            </div>
-                            <div className="mt-1 font-mono text-[9px] uppercase tracking-[1px] text-[#8A8690]">
-                              Reps banked
-                            </div>
-                          </div>
-                        )}
-                        {attendance && (
-                          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                            <div className="font-mono text-lg font-medium tabular-nums text-[#E8E4DD]">
-                              {attendance.daysPracticed}
-                              <span className="text-[#5A5660]">
-                                /{attendance.windowDays}
-                              </span>
-                            </div>
-                            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                              Days shown up
-                            </div>
-                          </div>
-                        )}
-                        {topicsTotal > 0 && (
-                          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                            <div className="font-mono text-lg font-medium tabular-nums">
-                              <span
-                                className={
-                                  topicsDone === topicsTotal
-                                    ? 'text-[#E8A44A]'
-                                    : 'text-[#E8E4DD]'
-                                }
-                              >
-                                {topicsDone}
-                              </span>
-                              <span className="text-[#5A5660]">
-                                /{topicsTotal}
-                              </span>
-                            </div>
-                            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                              Topics done
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {topicProgress && topicProgress.length > 0 && (
-                        <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
-                          <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
-                          <GymTopicProgress topics={topicProgress} />
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
-              )}
             </div>
           )}
 

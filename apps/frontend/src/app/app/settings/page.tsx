@@ -23,6 +23,7 @@ import { AvatarUpload } from '@/domains/user/components/AvatarUpload';
 import { DashboardContent } from '@/domains/user/components/DashboardContent/index';
 import { LearningStyleSettings } from '@/domains/user/components/LearningStyleSettings';
 import { GymGoalSettings } from '@/domains/training-engine/components/GymGoalSettings';
+import { GymClimbCard } from '@/domains/training-engine/components/GymClimbCard';
 import type { UserProfileData } from '@bassnotion/contracts';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
@@ -298,6 +299,11 @@ function SettingsPageContent() {
           currentStyle={profile?.preferences?.learningStyle ?? 'free_flow'}
           onUpdate={loadProfileData}
         />
+      </div>
+
+      {/* Your climb — reps banked / days / topic path (moved here from the gym). */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
+        <GymClimbCard />
       </div>
 
       {/* Bass Gym goal — change your goal mid-cycle (lives here, not the gym). */}
