@@ -1,11 +1,8 @@
 import {
-  Home,
   GraduationCap,
   Dumbbell,
-  Headphones,
   Play,
   Martini,
-  ShoppingBag,
   HelpCircle,
   Settings,
 } from 'lucide-react';
@@ -20,31 +17,39 @@ export interface NavItem {
   activePatterns?: string[];
 }
 
+/**
+ * THE SPINE — not a list, an arc. The path of becoming a bassist:
+ *
+ *   Backstage (belong) → Gym (train) → College (learn) → Gigs (perform)
+ *
+ * Backstage is the landing room — it IS /app (the home page), the free locker
+ * where you see where you stand and the rooms you haven't entered yet. From
+ * there the arc pulls you forward: train it, learn it, deliver it. The order is
+ * the journey, so a brand-new member reads where they're going at a glance.
+ */
 export const MAIN_NAV_ITEMS: NavItem[] = [
-  { title: 'Home', url: '/app', icon: Home },
-  {
-    title: 'Bassment',
-    url: '/app/bassment',
-    icon: GraduationCap,
-    activePatterns: ['/app/bassment', '/app/tutorials'],
-  },
+  // Belong — the landing room. /app itself; the free locker / identity / Matrix.
+  { title: 'Backstage', url: '/app', icon: Martini },
+  // Train — the daily rep engine (the recurring membership core).
   {
     title: 'Gym',
     url: '/app/gym',
     icon: Dumbbell,
     activePatterns: ['/app/gym'],
   },
-  // The 3 items below are MVP placeholders (the underlying pages
-  // just render "coming soon"). Marked disabled until they're
-  // built so users don't navigate to dead routes pre-launch.
-  { title: 'Studio', url: '/app/studio', icon: Headphones, disabled: true },
-  { title: 'Gigs', url: '/app/gigs', icon: Play, disabled: true },
-  { title: 'Backstage', url: '/app/backstage', icon: Martini, disabled: true },
+  // Learn — the 4-week accelerator (the methodology; was "Bassment").
   {
-    title: 'Store',
-    url: '/app/store',
-    icon: ShoppingBag,
-    activePatterns: ['/app/store'],
+    title: 'College',
+    url: '/app/bassment',
+    icon: GraduationCap,
+    activePatterns: ['/app/bassment', '/app/tutorials'],
+  },
+  // Perform — deployment tested as a professional milestone.
+  {
+    title: 'Gigs',
+    url: '/app/gigs',
+    icon: Play,
+    activePatterns: ['/app/gigs'],
   },
 ];
 
