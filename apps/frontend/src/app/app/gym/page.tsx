@@ -512,27 +512,29 @@ export default function GymPage() {
   // self-directed floor, and a "Today's rep" button re-summons it. Re-open
   // whenever a fresh rep is planned (refresh / floor toggle / new slug).
   //
-  // `closing` drives a graceful FADE-OUT: dismiss flips `closing` true (the
-  // overlay transitions opacity → 0), and only after the transition do we unmount
-  // it (overlayOpen → false). Re-summoning resets both so it fades back in.
-  const [overlayOpen, setOverlayOpen] = React.useState(true);
-  const [overlayClosing, setOverlayClosing] = React.useState(false);
-  React.useEffect(() => {
-    if (slug) {
-      setOverlayOpen(true);
-      setOverlayClosing(false);
-    }
-  }, [slug]);
-
+  // Two flags drive a symmetric ease-in-out FADE both ways:
+  //  - `overlayMounted` = is it in the DOM (presence).
+  //  - `overlayVisible` = opacity target (1 = shown, 0 = fading).
+  // FADE IN: mount at opacity 0, then flip visible→true next frame so the CSS
+  // transition runs. FADE OUT: flip visible→false, then unmount after the fade.
   const OVERLAY_FADE_MS = 450;
-  const dismissOverlay = React.useCallback(() => {
-    setOverlayClosing(true);
-    window.setTimeout(() => setOverlayOpen(false), OVERLAY_FADE_MS);
-  }, []);
+  const [overlayMounted, setOverlayMounted] = React.useState(true);
+  const [overlayVisible, setOverlayVisible] = React.useState(true);
+
   const summonOverlay = React.useCallback(() => {
-    setOverlayClosing(false);
-    setOverlayOpen(true);
+    setOverlayMounted(true);
+    // Mount transparent, then fade to opaque on the next frame.
+    requestAnimationFrame(() => setOverlayVisible(true));
   }, []);
+  const dismissOverlay = React.useCallback(() => {
+    setOverlayVisible(false);
+    window.setTimeout(() => setOverlayMounted(false), OVERLAY_FADE_MS);
+  }, []);
+
+  // A fresh rep (new slug) re-summons the coached overlay.
+  React.useEffect(() => {
+    if (slug) summonOverlay();
+  }, [slug, summonOverlay]);
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -696,22 +698,23 @@ export default function GymPage() {
 
           {/* ── OVERLAY: today's coached rep ── A blurred scrim over the floor,
               so the equipment reads through behind the prompt ("the full floor
-              is right there"). Dismiss with "Explore the gym" — it FADES out
-              (opacity + blur ease to 0) before unmounting; re-summon with the FAB. */}
-          {overlayOpen && (
+              is right there"). FADES both ways (opacity + blur ease in/out):
+              "Explore the gym" fades it out before unmounting; "Today's rep"
+              mounts it transparent then fades it back in. */}
+          {overlayMounted && (
             <div
               className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10 transition-[opacity,backdrop-filter] duration-[450ms] ease-in-out"
               style={{
                 background:
                   'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,1) 0%, rgba(12,11,14,0) 60%, rgba(8,7,10,1) 100%)',
-                backdropFilter: overlayClosing
-                  ? 'blur(0px) saturate(1)'
-                  : 'blur(14.5px) saturate(0.9)',
-                WebkitBackdropFilter: overlayClosing
-                  ? 'blur(0px) saturate(1)'
-                  : 'blur(14.5px) saturate(0.9)',
-                opacity: overlayClosing ? 0 : 1,
-                pointerEvents: overlayClosing ? 'none' : undefined,
+                backdropFilter: overlayVisible
+                  ? 'blur(14.5px) saturate(0.9)'
+                  : 'blur(0px) saturate(1)',
+                WebkitBackdropFilter: overlayVisible
+                  ? 'blur(14.5px) saturate(0.9)'
+                  : 'blur(0px) saturate(1)',
+                opacity: overlayVisible ? 1 : 0,
+                pointerEvents: overlayVisible ? undefined : 'none',
               }}
             >
               {/* Streak — top-right of the overlay (daily-return mechanic). */}
@@ -757,7 +760,7 @@ export default function GymPage() {
                   <button
                     type="button"
                     onClick={dismissOverlay}
-                    disabled={overlayClosing}
+                    disabled={!overlayVisible}
                     className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[2px] text-[#605b52] transition-colors hover:text-[#E8A44A] disabled:opacity-50"
                   >
                     Explore the gym
@@ -771,7 +774,7 @@ export default function GymPage() {
           )}
 
           {/* Re-summon the coached rep once the floor is showing. */}
-          {!overlayOpen && (
+          {!overlayMounted && (
             <button
               type="button"
               onClick={summonOverlay}
