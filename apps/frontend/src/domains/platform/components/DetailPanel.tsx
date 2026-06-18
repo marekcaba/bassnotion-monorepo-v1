@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { GraduationCap, Home, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import {
@@ -22,7 +22,7 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
-  const pathname = usePathname();
+  const pathname = useInternalPathname();
   // Shared folder open state between expanded and collapsed views. Seed it from
   // the DB-driven folder list so free folders default to open once loaded.
   const { folders } = useTutorialsByFolder();

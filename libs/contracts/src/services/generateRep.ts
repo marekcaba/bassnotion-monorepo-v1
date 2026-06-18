@@ -34,6 +34,21 @@ import {
   selectTopicForRep,
 } from './topicLadder.js';
 
+/**
+ * Thrown when a goal carries no PLAYABLE content (e.g. a multi-topic goal whose
+ * active stages have no inline blocks — a half-authored goal). The backend maps
+ * this to a clear "goal not ready" response instead of a raw 500, and the gym
+ * shows a friendly state rather than crashing. A `code` distinguishes it from a
+ * generic Error so the backend doesn't string-match.
+ */
+export class GoalNotReadyError extends Error {
+  readonly code = 'GOAL_NOT_READY' as const;
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoalNotReadyError';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Runtime clamps — the playback engine clamps SILENTLY (setTempo → [50,180],
 // setKey → [-6,+6]) with no error. generateRep must clamp before emit so a
@@ -291,7 +306,10 @@ function buildLadder(
 ): TutorialBlock[] {
   const focal = focalBlock(content);
   if (!focal) {
-    throw new Error(emptyPoolMsg);
+    // An empty pool means the goal has no playable content (an empty single-
+    // focal block_set, or a topic stage with no blocks). Typed so the backend
+    // returns a clear 422 "goal not ready", never a raw 500.
+    throw new GoalNotReadyError(emptyPoolMsg);
   }
 
   // FLOOR (Story 5): the short "wrecked after work" session — ONE brick at
@@ -366,6 +384,11 @@ function poolFromStage(stage: Stage): BlockPool {
   return { blocks };
 }
 
+/** Does a topic's CURRENT stage have any inline block to play? */
+function topicIsPlayable(topic: Topic, repsLogged: number): boolean {
+  return poolFromStage(resolveStage(topic, repsLogged)).blocks.length > 0;
+}
+
 function generateTopicRep(
   state: ClimbState,
   history: RepResult[],
@@ -374,23 +397,44 @@ function generateTopicRep(
   topics: Topic[],
 ): TutorialBlock[] {
   if (topics.length === 0) {
-    throw new Error('generateRep(topics): no topics on the goal');
+    throw new GoalNotReadyError('This goal has no topics yet.');
   }
-  // Derive progress from the topic's own rep history (the topicId tally), pick
-  // today's topic, resolve its current stage.
   const progress = deriveTopicProgress(topics, history);
-  const topic = selectTopicForRep(topics, progress) ?? topics[topics.length - 1];
-  const repsLogged =
-    progress.find((p) => p.topicId === topic.id)?.repsLogged ?? 0;
-  const stage = resolveStage(topic, repsLogged);
+  const repsFor = (id: string) =>
+    progress.find((p) => p.topicId === id)?.repsLogged ?? 0;
 
+  // Today's topic = least-advanced active (the normal pick) — BUT only if its
+  // current stage actually has blocks. A half-authored topic (empty current
+  // stage) is SKIPPED rather than crashing the gym; we serve the next playable
+  // topic instead. Order: least-advanced first (matches selectTopicForRep), so
+  // skipping an empty one still respects the climb's intent.
+  const ordered = [...topics].sort((a, b) => repsFor(a.id) - repsFor(b.id));
+  const topic =
+    ordered.find((t) => topicIsPlayable(t, repsFor(t.id))) ??
+    // Every topic complete? selectTopicForRep returns null; fall back to the
+    // last topic IF it's playable (an over-complete enrollment the UI gates on).
+    (selectTopicForRep(topics, progress) === null
+      ? ordered.reverse().find((t) => topicIsPlayable(t, repsFor(t.id)))
+      : undefined);
+
+  if (!topic) {
+    // No topic has a playable current stage → the goal is half-authored. Fail
+    // with a typed, friendly error (the backend turns this into a clear "goal
+    // not ready" message, not a 500).
+    throw new GoalNotReadyError(
+      'This goal isn’t ready to play yet — its topics have no exercises. ' +
+        'Add blocks to each stage in the admin editor.',
+    );
+  }
+
+  const stage = resolveStage(topic, repsFor(topic.id));
   return buildLadder(
     state,
     poolFromStage(stage),
-    // Spaced-review L1 should rotate within THIS topic's history only.
     history.filter((r) => r.topicId === topic.id),
     mode,
     baseNotch,
+    // Defensive: topicIsPlayable already guaranteed blocks, so this won't fire.
     `generateRep(topics): topic "${topic.id}" stage ${stage.level} has no inline blocks`,
     topic.id,
     stage.tempoBand,

@@ -66,6 +66,22 @@ export async function enrollInGoal(
 }
 
 /**
+ * POST /api/v1/training-engine/goals/:slug/switch — switch the active goal
+ * mid-cycle (abandon current + enroll new, same billing period). The backend
+ * 400s if the student already switched this period.
+ */
+export async function switchGoal(
+  slug: string,
+  startTempoBpm?: number,
+): Promise<GoalEnrollment> {
+  await ensureAuthToken();
+  return apiClient.post<GoalEnrollment>(
+    `/api/v1/training-engine/goals/${encodeURIComponent(slug)}/switch`,
+    typeof startTempoBpm === 'number' ? { startTempoBpm } : {},
+  );
+}
+
+/**
  * POST /api/v1/training-engine/enrollments/:id/today-rep — plan + mint today's
  * rep; returns the virtual-tutorial slug the gym renders through.
  */
@@ -76,6 +92,8 @@ export async function planTodayRep(
 ): Promise<{
   slug: string;
   bricks: TutorialBlock[];
+  /** The goal's user-facing title (coach header names the goal). */
+  goalTitle?: string | null;
   /** Content-ladder (Build B): per-topic quota bars for the gym path view.
    *  Present only on a multi-topic goal; absent for single-focal SPEED. */
   topicProgress?: TopicProgress[];
@@ -84,6 +102,7 @@ export async function planTodayRep(
   return apiClient.post<{
     slug: string;
     bricks: TutorialBlock[];
+    goalTitle?: string | null;
     topicProgress?: TopicProgress[];
   }>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(

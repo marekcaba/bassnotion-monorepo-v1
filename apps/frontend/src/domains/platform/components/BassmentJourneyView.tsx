@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { usePathname } from 'next/navigation';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { CheckCircle2, ChevronDown, Library, Lock, Play } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import {
@@ -208,7 +208,7 @@ function JourneyFolder({
   onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
 }) {
-  const pathname = usePathname();
+  const pathname = useInternalPathname();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   // The connector-line positioning useEffect (and its containerRef) was
@@ -217,7 +217,8 @@ function JourneyFolder({
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
-      navigateWithTransition(`/app/tutorials/${slug}`);
+      // Clean writer URL: the middleware rewrites /tutorials/* → /app/tutorials/*.
+      navigateWithTransition(`/tutorials/${slug}`);
     },
     [navigateWithTransition],
   );

@@ -24,7 +24,7 @@ import {
   selectTopicForRep,
   isGoalComplete,
 } from '../topicLadder';
-import { generateRep } from '../generateRep';
+import { generateRep, GoalNotReadyError } from '../generateRep';
 import type { TutorialBlock } from '../../types/block';
 import type {
   ClimbState,
@@ -295,10 +295,33 @@ describe('generateRep(topics) — content-ladder path', () => {
     expect((bricks[0].config as Record<string, unknown>).topicId).toBe('hold');
   });
 
-  it('throws when the active stage has no inline blocks', () => {
+  it('throws GoalNotReadyError when NO topic has a playable stage (half-authored)', () => {
     const empty = [topic('x', 5, [{ level: 1, introduceAfterReps: 0, blocks: [] }])];
     expect(() =>
       generateRep(makeState(), { blocks: [] }, [], { goalType: 'feel', topics: empty }),
-    ).toThrow(/no inline blocks/i);
+    ).toThrow(GoalNotReadyError);
+  });
+
+  it('SKIPS an empty-stage topic and serves the next playable one (no crash)', () => {
+    const mixed = [
+      // 'empty' is least-advanced (0 reps) but its stage has no blocks → skip it.
+      topic('empty', 5, [{ level: 1, introduceAfterReps: 0, blocks: [] }]),
+      // 'good' is playable → it gets served instead.
+      topic('good', 5, [
+        {
+          level: 1,
+          introduceAfterReps: 0,
+          blocks: [{ blockId: 'g', block: makeGrooveBlock('g') }],
+        },
+      ]),
+    ];
+    const bricks = generateRep(makeState(), { blocks: [] }, [], {
+      goalType: 'feel',
+      topics: mixed,
+    });
+    expect(bricks).toHaveLength(3);
+    for (const b of bricks) {
+      expect((b.config as Record<string, unknown>).topicId).toBe('good');
+    }
   });
 });

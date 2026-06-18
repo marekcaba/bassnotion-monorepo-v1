@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { cn } from '@/shared/utils';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import {
@@ -37,13 +37,14 @@ export function CollapsedJourneyPath({
   tutorials,
   className,
 }: CollapsedJourneyPathProps) {
-  const pathname = usePathname();
+  const pathname = useInternalPathname();
   const { navigateWithTransition } = useViewTransitionRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
-      navigateWithTransition(`/app/tutorials/${slug}`);
+      // Clean writer URL: the middleware rewrites /tutorials/* → /app/tutorials/*.
+      navigateWithTransition(`/tutorials/${slug}`);
     },
     [navigateWithTransition],
   );

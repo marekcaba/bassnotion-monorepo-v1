@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bass Gym — The Floor</title>
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     BASS GYM · THE FLOOR
+     Concept: a real gym floor of equipment "stations". Neumorphic
+     cards = physical hardware machined out of the dark leather
+     surface. Amber = the "powered" LED accent. The "Six minutes."
+     daily rep sits as an overlay/scrim on top — the coached path,
+     with the full floor visible (blurred) right behind it.
+     ───────────────────────────────────────────────────────────── */
+
+  :root {
+    /* Surface — near-black warm leather, lifted at top */
+    --bg-0: #0c0b0e;
+    --bg-1: #131216;
+    --surface: #151318;       /* the floor the cards rest on */
+    --card: #17151b;          /* card body */
+    --card-hi: #201d25;       /* card top-light edge */
+
+    /* Neumorphic shadow pair (the whole trick) */
+    --sh-dark: #050406;       /* lower-right, the recess */
+    --sh-light: #221f29;      /* upper-left, the catch-light */
+
+    /* Ink */
+    --ink: #EDE8DF;
+    --ink-2: #9A938A;
+    --ink-3: #635d57;
+    --hair: rgba(255,255,255,0.05);
+
+    /* Amber — the powered accent */
+    --amber: #E8A44A;
+    --amber-deep: #D4903A;
+    --amber-glow: rgba(232,164,74,0.30);
+
+    /* Equipment accent palette (LED color per station) */
+    --c-chords:  #E8A44A;  /* amber  */
+    --c-scales:  #5B8DEF;  /* blue   */
+    --c-rhythm:  #6BCF8E;  /* green  */
+    --c-groove:  #C77DFF;  /* purple */
+    --c-timing:  #FF7EB3;  /* pink   */
+    --c-listen:  #4EC8C8;  /* teal   */
+    --c-arp:     #F0C254;  /* gold   */
+    --c-song:    #8A8AF0;  /* indigo */
+    --c-subdiv:  #E87A5A;  /* coral  */
+
+    --serif: 'Hoefler Text', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1a181e 0%, var(--bg-1) 38%, var(--bg-0) 100%);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain / leather texture overlay */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.4) 2px, rgba(255,255,255,.4) 3px),
+      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.4) 2px, rgba(0,0,0,.4) 3px);
+    background-size: 3px 3px;
+    mix-blend-mode: overlay;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* ── Top bar ──────────────────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 40px 0;
+    max-width: 1320px; margin: 0 auto;
+  }
+  .brand {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--c-arp);
+    font-weight: 600;
+  }
+  .streak {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .streak b { color: var(--ink-2); font-weight: 500; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 999px;
+    background: var(--surface);
+    box-shadow:
+      inset 2px 2px 5px var(--sh-dark),
+      inset -2px -2px 5px var(--sh-light);
+  }
+  .pip { width: 7px; height: 7px; border-radius: 50%; background: var(--amber);
+         box-shadow: 0 0 8px var(--amber-glow); }
+
+  /* ── Floor header ─────────────────────────────────────────── */
+  .floor-head {
+    max-width: 1320px; margin: 0 auto;
+    padding: 46px 40px 24px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 4px;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px;
+  }
+  .floor-title {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(34px, 5vw, 52px); line-height: 1.02;
+    color: var(--ink); letter-spacing: -0.5px;
+  }
+  .floor-title em { font-style: italic; color: var(--amber); }
+  .floor-sub {
+    margin-top: 14px; max-width: 540px;
+    color: var(--ink-2); font-size: 15.5px; line-height: 1.6;
+  }
+
+  /* ── The grid of equipment ────────────────────────────────── */
+  .floor {
+    max-width: 1320px; margin: 0 auto;
+    padding: 16px 40px 120px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 26px;
+  }
+
+  /* The card = a machined station */
+  .station {
+    position: relative;
+    border-radius: 22px;
+    padding: 26px 24px 22px;
+    background: linear-gradient(155deg, var(--card-hi) 0%, var(--card) 46%, #131117 100%);
+    box-shadow:
+      9px 9px 22px var(--sh-dark),
+      -7px -7px 18px var(--sh-light),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+    cursor: pointer;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1),
+                box-shadow .35s cubic-bezier(.2,.8,.2,1);
+    overflow: hidden;
+    min-height: 184px;
+    display: flex; flex-direction: column;
+    isolation: isolate;
+  }
+  /* faint top hairline catch-light */
+  .station::before {
+    content: ""; position: absolute; inset: 0;
+    border-radius: 22px; padding: 1px;
+    background: linear-gradient(150deg, rgba(255,255,255,.10), rgba(255,255,255,0) 38%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* radial glow keyed to the station's LED color, lit on hover */
+  .station::after {
+    content: ""; position: absolute;
+    width: 220px; height: 220px; right: -70px; top: -80px;
+    background: radial-gradient(circle, var(--led, var(--amber)) 0%, transparent 68%);
+    opacity: 0; transition: opacity .4s ease;
+    filter: blur(8px);
+    pointer-events: none; z-index: -1;
+  }
+  .station:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      14px 16px 34px var(--sh-dark),
+      -8px -8px 20px var(--sh-light),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .station:hover::after { opacity: .14; }
+
+  /* The LED + icon disc */
+  .st-top { display: flex; align-items: center; justify-content: space-between; }
+  .disc {
+    width: 50px; height: 50px; border-radius: 15px;
+    display: grid; place-items: center;
+    background: var(--surface);
+    box-shadow:
+      inset 3px 3px 7px var(--sh-dark),
+      inset -3px -3px 7px var(--sh-light);
+    color: var(--led, var(--amber));
+  }
+  .disc svg { width: 24px; height: 24px; }
+
+  .led {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--led, var(--amber));
+    box-shadow: 0 0 10px 1px var(--led, var(--amber));
+    opacity: .85;
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:.35 } 50% { opacity:.95 } }
+
+  .st-name {
+    font-family: var(--serif); font-size: 22px; line-height: 1.1;
+    color: var(--ink); margin-top: 20px; letter-spacing: -0.2px;
+  }
+  .st-desc {
+    color: var(--ink-2); font-size: 13px; line-height: 1.5; margin-top: 7px;
+    flex: 1;
+  }
+
+  /* footer: a tiny progress track + reps tag */
+  .st-foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+  .track {
+    flex: 1; height: 6px; border-radius: 999px;
+    background: var(--surface);
+    box-shadow:
+      inset 2px 2px 4px var(--sh-dark),
+      inset -1px -1px 3px var(--sh-light);
+    overflow: hidden;
+  }
+  .track > i {
+    display: block; height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--led, var(--amber)), color-mix(in srgb, var(--led, var(--amber)) 55%, #fff));
+    box-shadow: 0 0 8px var(--led, var(--amber));
+  }
+  .reps {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .5px;
+    color: var(--ink-3); white-space: nowrap;
+  }
+  .reps b { color: var(--ink-2); }
+
+  .locked .disc { color: var(--ink-3); }
+  .locked .st-name, .locked .st-desc { color: var(--ink-3); }
+  .locked .led { background: var(--ink-3); box-shadow: none; animation: none; }
+  .lock-tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+
+  /* ── The overlay (Six minutes.) ───────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: grid; place-items: center;
+    padding: 24px;
+    /* scrim that lets the floor read through, blurred */
+    background:
+      radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,.62) 0%, rgba(12,11,14,.86) 60%, rgba(8,7,10,.95) 100%);
+    backdrop-filter: blur(9px) saturate(0.9);
+    -webkit-backdrop-filter: blur(9px) saturate(0.9);
+    transition: opacity .5s ease, visibility .5s;
+    animation: fadeIn .6s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  .overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .rep {
+    text-align: center;
+    max-width: 460px; width: 100%;
+    animation: rise .7s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes rise { from { opacity:0; transform: translateY(16px) } to { opacity:1; transform:none } }
+
+  .rep-eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 5px;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 22px;
+  }
+  .rep-eyebrow span { color: var(--amber); }
+  .rep-title {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(54px, 9vw, 84px); line-height: .94; letter-spacing: -1.5px;
+    color: var(--ink);
+  }
+  .rep-coach {
+    margin-top: 22px; font-style: italic;
+    color: var(--ink-2); font-size: 17px;
+  }
+  .rep-cta {
+    margin-top: 40px;
+    width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    font-family: var(--sans); font-size: 18px; font-weight: 600;
+    color: #2a1c08;
+    padding: 22px;
+    border: none; border-radius: 18px; cursor: pointer;
+    background: linear-gradient(180deg, #efb866 0%, var(--amber) 42%, var(--amber-deep) 100%);
+    box-shadow:
+      0 14px 40px rgba(232,164,74,.30),
+      inset 0 1px 0 rgba(255,255,255,.45),
+      inset 0 -2px 6px rgba(120,70,10,.35);
+    transition: transform .12s ease, box-shadow .25s ease, filter .2s;
+  }
+  .rep-cta:hover { transform: translateY(-2px); filter: brightness(1.04);
+    box-shadow: 0 20px 50px rgba(232,164,74,.40), inset 0 1px 0 rgba(255,255,255,.5); }
+  .rep-cta:active { transform: translateY(0) scale(.995); }
+  .tri { width:0; height:0; border-left: 13px solid currentColor;
+    border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+
+  .rep-floor {
+    margin-top: 16px; width: 100%;
+    background: transparent;
+    border: 1px solid var(--hair); border-radius: 16px;
+    padding: 15px; cursor: pointer;
+    color: var(--ink-3); font-size: 13.5px; font-family: var(--sans);
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .rep-floor:hover { color: var(--ink-2); border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.02); }
+
+  /* the "explore the floor" dismiss link */
+  .explore {
+    margin-top: 34px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--ink-3);
+    background: none; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 9px;
+    transition: color .2s, gap .2s;
+  }
+  .explore:hover { color: var(--amber); gap: 13px; }
+  .explore .arr { transition: transform .2s; }
+  .explore:hover .arr { transform: translateY(2px); }
+
+  /* re-summon FAB when overlay dismissed */
+  .summon {
+    position: fixed; right: 30px; bottom: 30px; z-index: 40;
+    display: inline-flex; align-items: center; gap: 11px;
+    font-family: var(--sans); font-size: 14.5px; font-weight: 600; color: #2a1c08;
+    padding: 15px 22px; border: none; border-radius: 16px; cursor: pointer;
+    background: linear-gradient(180deg, #efb866, var(--amber) 50%, var(--amber-deep));
+    box-shadow: 0 12px 32px rgba(232,164,74,.32), inset 0 1px 0 rgba(255,255,255,.4);
+    opacity: 0; transform: translateY(20px); pointer-events: none;
+    transition: opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  .summon.show { opacity: 1; transform: none; pointer-events: auto; }
+  .summon:hover { filter: brightness(1.05); }
+
+  /* staggered entrance for the floor cards */
+  .station { opacity: 0; transform: translateY(18px); animation: cardIn .6s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes cardIn { to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .station { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand">Bassicology · The Gym</div>
+      <div class="streak">
+        <span class="pill"><span class="pip"></span> <b>12</b>-DAY STREAK</span>
+        <span>❄ 1 FREEZE</span>
+      </div>
+    </header>
+
+    <!-- FLOOR HEADER -->
+    <div class="floor-head">
+      <p class="eyebrow">The Floor · Your Equipment</p>
+      <h1 class="floor-title">Every rack on the floor. <em>Train what you want.</em></h1>
+      <p class="floor-sub">Your daily rep is the coached path — but the whole gym is open.
+        Walk up to any station and put in the work.</p>
+    </div>
+
+    <!-- THE GRID -->
+    <main class="floor" id="floor">
+
+      <!-- 1 · Connecting Chords -->
+      <article class="station" style="--led: var(--c-chords); animation-delay:.04s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/>
+              <path d="M7.7 7.4 10.3 16.6M16.3 7.4 13.7 16.6M8.4 6h7.2"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Connecting Chords</h3>
+        <p class="st-desc">Voice-lead between changes. Smooth landings on every chord tone.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:62%"></i></span>
+          <span class="reps"><b>13</b>/21</span>
+        </div>
+      </article>
+
+      <!-- 2 · Scales -->
+      <article class="station" style="--led: var(--c-scales); animation-delay:.09s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 18 8 14l4 2 4-6 4 2"/><path d="M4 6h16M4 12h16"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Scales</h3>
+        <p class="st-desc">Major, minor, modes — fluent in every position across the neck.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:84%"></i></span>
+          <span class="reps"><b>21</b>/25</span>
+        </div>
+      </article>
+
+      <!-- 3 · Rhythm -->
+      <article class="station" style="--led: var(--c-rhythm); animation-delay:.14s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 4v16M5 4h11l-2 4 2 4H5"/><circle cx="18" cy="18" r="2.5"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Rhythm</h3>
+        <p class="st-desc">Lock to the click. Build a vocabulary of grooveable patterns.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:45%"></i></span>
+          <span class="reps"><b>9</b>/20</span>
+        </div>
+      </article>
+
+      <!-- 4 · Groove -->
+      <article class="station" style="--led: var(--c-groove); animation-delay:.19s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12c2 0 2-6 4-6s2 12 4 12 2-9 4-9 2 6 4 6 1.5-3 2-3"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Groove</h3>
+        <p class="st-desc">Real grooves at real tempos. Sit in the pocket, feel the time.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:71%"></i></span>
+          <span class="reps"><b>17</b>/24</span>
+        </div>
+      </article>
+
+      <!-- 5 · Timing -->
+      <article class="station" style="--led: var(--c-timing); animation-delay:.24s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="13" r="8"/><path d="M12 13V8M12 13l3.5 2M9 2h6"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Timing</h3>
+        <p class="st-desc">Tighten your placement. Ahead, behind, dead-center — on command.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:33%"></i></span>
+          <span class="reps"><b>6</b>/18</span>
+        </div>
+      </article>
+
+      <!-- 6 · Listening -->
+      <article class="station" style="--led: var(--c-listen); animation-delay:.29s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 13a9 9 0 0 1 18 0M3 13v3a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 1zM21 13v3a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 1z"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Listening</h3>
+        <p class="st-desc">Train your ear. Name intervals, lines, and changes by sound alone.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:52%"></i></span>
+          <span class="reps"><b>11</b>/21</span>
+        </div>
+      </article>
+
+      <!-- 7 · Arpeggios -->
+      <article class="station" style="--led: var(--c-arp); animation-delay:.34s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20 8 12l4 4 4-9 4 5"/><circle cx="8" cy="12" r="1.3"/><circle cx="12" cy="16" r="1.3"/><circle cx="16" cy="7" r="1.3"/>
+            </svg>
+          </div>
+          <span class="led"></span>
+        </div>
+        <h3 class="st-name">Arpeggios</h3>
+        <p class="st-desc">Outline harmony cleanly. Triads and 7ths through every inversion.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:26%"></i></span>
+          <span class="reps"><b>5</b>/19</span>
+        </div>
+      </article>
+
+      <!-- 8 · Song Structure -->
+      <article class="station locked" style="--led: var(--c-song); animation-delay:.39s">
+        <div class="st-top">
+          <div class="disc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="5" height="14" rx="1"/><rect x="9.5" y="5" width="5" height="14" rx="1"/><rect x="16" y="5" width="5" height="14" rx="1"/>
+            </svg>
+          </div>
+          <span class="lock-tag">🔒 College</span>
+        </div>
+        <h3 class="st-name">Song Structure</h3>
+        <p class="st-desc">Map intro, verse, chorus, bridge — know where the bass should go.</p>
+        <div class="st-foot">
+          <span class="track"><i style="width:0%"></i></span>
+          <span class="reps">Unlock in College</span>
+        </div>
+      </article>
+
+    </main>
+  </div>
+
+  <!-- ── THE OVERLAY (today's coached rep) ── -->
+  <div class="overlay" id="overlay">
+    <div class="rep">
+      <p class="rep-eyebrow">TODAY · <span>STRING CROSSING</span></p>
+      <h2 class="rep-title">Six minutes.</h2>
+      <p class="rep-coach">First rep on string crossing. One dot at a time.</p>
+      <button class="rep-cta"><span class="tri"></span> Start today's rep</button>
+      <button class="rep-floor">Short on time? 3-minute version — streak stays safe</button>
+      <div>
+        <button class="explore" id="explore">Explore the floor <span class="arr">↓</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- re-summon the coached rep after dismissing -->
+  <button class="summon" id="summon"><span class="tri"></span> Today's rep</button>
+
+<script>
+  const overlay = document.getElementById('overlay');
+  const explore = document.getElementById('explore');
+  const summon  = document.getElementById('summon');
+
+  explore.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    summon.classList.add('show');
+  });
+  summon.addEventListener('click', () => {
+    overlay.classList.remove('hidden');
+    summon.classList.remove('show');
+  });
+</script>
+</body>
+</html>

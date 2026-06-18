@@ -28,10 +28,10 @@ function StoreContent() {
         variant: 'success',
       });
       refetchAccess();
-      window.history.replaceState({}, '', '/app/store');
+      window.history.replaceState({}, '', '/store');
     } else if (searchParams.get('canceled') === 'true') {
       toast({ title: 'Checkout canceled', variant: 'default' });
-      window.history.replaceState({}, '', '/app/store');
+      window.history.replaceState({}, '', '/store');
     }
   }, [searchParams, toast, refetchAccess]);
 
@@ -49,9 +49,10 @@ function StoreContent() {
     setLoadingId(p.id);
     try {
       // Build URLs here (click is client-only; avoids `window` at SSR).
+      // Clean URLs: the host-rewrite middleware maps /store → /app/store.
       const origin = window.location.origin;
-      const successUrl = `${origin}/app/store?success=true`;
-      const cancelUrl = `${origin}/app/store?canceled=true`;
+      const successUrl = `${origin}/store?success=true`;
+      const cancelUrl = `${origin}/store?canceled=true`;
       const url =
         p.type === 'membership'
           ? await storeApi.checkoutMembership(successUrl, cancelUrl)
@@ -101,7 +102,7 @@ function StoreContent() {
               buyable={isBuyable(p)}
               isLoading={loadingId === p.id}
               onBuy={() => handleBuy(p)}
-              onOpen={() => router.push(`/app/store/${p.slug}`)}
+              onOpen={() => router.push(`/store/${p.slug}`)}
             />
           ))}
           {(products ?? []).length === 0 && (

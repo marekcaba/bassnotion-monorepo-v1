@@ -307,6 +307,7 @@ The recurring heart and the simplest mechanically — validates the cap system e
 - [ ] CI green on `develop` and `main`.
 - [ ] Manual QA walkthrough on staging: signup → tutorial → audio → exercise → Stripe checkout (test mode) → Membership flow → cap-wall hit → upgrade flow.
 - [ ] Production env audit: Vercel + Railway env vars, Stripe webhook URL, Supabase site URL, DNS.
+- [ ] (Optional, cosmetic) Move the product to `app.bassicology.com/gym` — see [`APP_SUBDOMAIN_RUNBOOK.md`](./APP_SUBDOMAIN_RUNBOOK.md). Host-rewrite + DNS + Supabase allow-list + cookie-scope; staging dry-run first.
 - [ ] Stripe production keys configured.
 - [ ] Sentry verified on staging (Phase 6.2 wiring complete; confirm errors arrive).
 

@@ -165,9 +165,18 @@ export default function AdminTrainingGoalsPage() {
     setExpanded(new Set());
   };
 
+  // A multi-topic goal is only saveable if every topic has a title + quota AND
+  // every stage has at least one block — else it would 500 the gym at plan time
+  // (mirrors the backend validateTopics guard). Surfaces the reason below.
   const topicsValid =
     draft.topics.length > 0 &&
-    draft.topics.every((t) => t.title.trim().length > 0 && t.repQuota > 0);
+    draft.topics.every(
+      (t) =>
+        t.title.trim().length > 0 &&
+        t.repQuota > 0 &&
+        t.stages.length > 0 &&
+        t.stages.every((s) => (s.blocks ?? []).some((b) => !!b.block)),
+    );
   const canSave =
     draft.title.trim().length > 0 &&
     (draft.multiTopic ? topicsValid : !!draft.instruction.trim());
@@ -424,6 +433,13 @@ export default function AdminTrainingGoalsPage() {
             Note: a single-focal goal of a non-SPEED type isn’t playable yet.
             For KNOWLEDGE / VOCABULARY / FEEL goals, use a content ladder — the
             engine serves those through topics.
+          </p>
+        )}
+
+        {draft.multiTopic && !topicsValid && draft.topics.length > 0 && (
+          <p className="text-xs text-amber-700">
+            Each topic needs a title + quota, and every stage needs at least one
+            block — otherwise the goal can’t be played.
           </p>
         )}
 

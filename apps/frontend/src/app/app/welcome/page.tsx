@@ -54,21 +54,38 @@ function MemberWelcomeContent() {
   }, [isMember, polls, queryClient]);
 
   const goBack = () => {
-    // Return to the exact spot they upgraded from. Same-origin paths only
-    // (guard against an open-redirect via the return param).
-    let target = '/app';
+    // Return to the exact spot they upgraded from. Allow-list trusted origins
+    // (open-redirect guard). The upgrade can start on the APEX (/library
+    // tutorials) while welcome renders on the APP host, so accept both our
+    // origins — not just the current one. An apex return is a full-page
+    // navigation; an app/same-origin return is a client transition.
+    let target = '/';
+    let isCrossOrigin = false;
     if (returnUrl) {
       try {
         const u = new URL(returnUrl);
-        if (
-          typeof window !== 'undefined' &&
-          u.origin === window.location.origin
-        ) {
-          target = u.pathname + u.search;
+        const trusted = new Set(
+          [
+            process.env.NEXT_PUBLIC_APP_URL,
+            process.env.NEXT_PUBLIC_MARKETING_URL,
+            typeof window !== 'undefined' ? window.location.origin : undefined,
+          ].filter(Boolean) as string[],
+        );
+        if (trusted.has(u.origin)) {
+          isCrossOrigin =
+            typeof window !== 'undefined' &&
+            u.origin !== window.location.origin;
+          target = isCrossOrigin ? u.href : u.pathname + u.search;
         }
       } catch {
-        /* malformed return → fall back to /app */
+        /* malformed return → fall back to / */
       }
+    }
+    if (isCrossOrigin && typeof window !== 'undefined') {
+      // Different origin (e.g. apex /library): a client transition can't cross
+      // origins, so do a full navigation.
+      window.location.href = target;
+      return;
     }
     navigateWithTransition(target);
   };

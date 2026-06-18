@@ -32,7 +32,7 @@ function PackDetailContent() {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <button
-          onClick={() => router.push('/app/store')}
+          onClick={() => router.push('/store')}
           className="mb-4 flex items-center gap-1 text-sm text-white/50 hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" /> Back to store
@@ -53,9 +53,10 @@ function PackDetailContent() {
   const handleBuy = async () => {
     setBuying(true);
     try {
+      // Clean URLs: the host-rewrite middleware maps /store → /app/store.
       const origin = window.location.origin;
-      const successUrl = `${origin}/app/store?success=true`;
-      const cancelUrl = `${origin}/app/store/${product.slug}?canceled=true`;
+      const successUrl = `${origin}/store?success=true`;
+      const cancelUrl = `${origin}/store/${product.slug}?canceled=true`;
       // Membership is a subscription; packs are one-time purchases.
       const url = isMembership
         ? await storeApi.checkoutMembership(successUrl, cancelUrl)
@@ -74,7 +75,7 @@ function PackDetailContent() {
   return (
     <div className="mx-auto max-w-3xl p-6 md:p-10">
       <button
-        onClick={() => router.push('/app/store')}
+        onClick={() => router.push('/store')}
         className="mb-6 flex items-center gap-1 text-sm text-white/50 hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" /> Back to store

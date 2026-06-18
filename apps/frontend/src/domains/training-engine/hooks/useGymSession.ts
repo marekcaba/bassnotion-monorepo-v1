@@ -30,6 +30,7 @@ import {
   fetchMyEnrollments,
   fetchEnrollableGoals,
   enrollInGoal,
+  switchGoal,
   planTodayRep,
   fetchGraduation,
   fetchMonthInReview,
@@ -71,6 +72,9 @@ export interface GymSession {
    *  Present only on a multi-topic goal (rides the today-rep response); null for
    *  single-focal SPEED. The student sees ~3 bars; "stages" are never surfaced. */
   topicProgress: TopicProgress[] | null;
+  /** The goal's user-facing title (coach header names the goal); null until the
+   *  rep is planned, or for goals that predate the title snapshot. */
+  goalTitle: string | null;
   /** status 'choosing' → the enrollable goals to pick from (the goal picker). */
   goals: EnrollableGoal[];
   /** The goal the student picked (set by chooseGoal), shown on the placement
@@ -84,6 +88,9 @@ export interface GymSession {
   chooseFloor: () => void;
   /** Walk through a graduation door, then re-load (re-plan / re-place). */
   chooseDoor: (door: GraduationDoor) => void;
+  /** "Switch goal" — an enrolled member changes their goal mid-cycle: reopens
+   *  the picker; the eventual enroll goes through switchGoal (gated once/period). */
+  startSwitch: () => void;
   /** Re-plan today's rep (e.g. after finishing a session). */
   refresh: () => void;
 }
@@ -114,9 +121,14 @@ export function useGymSession(
   const [topicProgress, setTopicProgress] = useState<TopicProgress[] | null>(
     null,
   );
+  const [goalTitle, setGoalTitle] = useState<string | null>(null);
   // Goal picker (the "set up your goal for the month" step).
   const [goals, setGoals] = useState<EnrollableGoal[]>([]);
   const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
+  // True when the picker was entered via "Switch goal" (an existing member
+  // changing mid-cycle) vs. a fresh first-time setup — drives whether we call
+  // switchGoal (abandon+re-enroll, gated) or enrollInGoal.
+  const [isSwitching, setIsSwitching] = useState(false);
   // Guards against overlapping runs (StrictMode double-mount, refresh races).
   const runningRef = useRef(false);
 
@@ -128,11 +140,13 @@ export function useGymSession(
     const {
       slug: repSlug,
       bricks: repBricks,
+      goalTitle: repGoalTitle,
       topicProgress: repTopicProgress,
     } = await planTodayRep(active.id, mode);
     setEnrollment(active);
     setSlug(repSlug);
     setBricks(repBricks);
+    setGoalTitle(repGoalTitle ?? null);
     // Content-ladder (Build B): the path bars ride the today-rep response.
     setTopicProgress(repTopicProgress ?? null);
     // Best-effort: a graduation-check failure must not block the rep.
@@ -218,7 +232,12 @@ export function useGymSession(
       setStatus('loading');
       setError(null);
       try {
-        const active = await enrollInGoal(targetSlug, startTempoBpm);
+        // Switching mid-cycle (abandon current + re-enroll, gated once/period)
+        // vs. a fresh first-time enroll.
+        const active = isSwitching
+          ? await switchGoal(targetSlug, startTempoBpm)
+          : await enrollInGoal(targetSlug, startTempoBpm);
+        setIsSwitching(false);
         await planFor(active);
       } catch (e) {
         setError(e instanceof Error ? e : new Error(String(e)));
@@ -227,8 +246,28 @@ export function useGymSession(
         runningRef.current = false;
       }
     },
-    [chosenGoal, goalSlug, planFor],
+    [chosenGoal, goalSlug, isSwitching, planFor],
   );
+
+  /** "Switch goal" — an enrolled member changes their goal mid-cycle. Loads the
+   *  picker (status 'choosing') flagged as a switch, so the eventual enroll goes
+   *  through switchGoal (abandon current + re-enroll, gated once/period). */
+  const startSwitch = useCallback(async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setError(null);
+    try {
+      const enrollable = await fetchEnrollableGoals();
+      setGoals(enrollable);
+      setChosenGoal(null);
+      setIsSwitching(true);
+      setStatus('choosing');
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      runningRef.current = false;
+    }
+  }, []);
 
   /** Re-plan the active enrollment's rep as the short 'floor' session (Story 5).
    *  Available once an enrollment is ready; a no-op if there's none yet. */
@@ -299,12 +338,14 @@ export function useGymSession(
     attendance,
     repMode,
     topicProgress,
+    goalTitle,
     goals,
     chosenGoal,
     chooseGoal,
     placeAndStart,
     chooseFloor,
     chooseDoor,
+    startSwitch,
     refresh: run,
   };
 }
