@@ -55,7 +55,8 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
   const {
-    defaultRedirect = '/app',
+    // Clean landing: the app host's '/' rewrites to /app (Backstage home).
+    defaultRedirect = '/',
     requireEmailConfirmation = true,
     // Assessment is a suggestion, not a gate: after login users land on
     // the dashboard, which surfaces a prompt to take the assessment.

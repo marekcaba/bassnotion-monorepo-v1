@@ -145,7 +145,7 @@ export function DrillSessionFrame({
         title={tutorial.title}
         items={summaryItems}
         onRestart={restart}
-        onDone={() => navigateWithTransition('/app')}
+        onDone={() => navigateWithTransition('/')}
         // Post-record value once the mutation lands; until then the cached
         // pre-session streak so the line never pops in from nothing.
         streak={recordSession.data ?? cachedStreak.data ?? null}

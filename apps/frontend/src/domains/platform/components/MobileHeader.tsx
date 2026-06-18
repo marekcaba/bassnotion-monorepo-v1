@@ -14,7 +14,8 @@ export function MobileHeader() {
   const { navigateWithTransition } = useViewTransitionRouter();
 
   const handleLogoClick = useCallback(() => {
-    navigateWithTransition('/app');
+    // Clean writer URL: the middleware maps the app-host '/' → /app (Backstage).
+    navigateWithTransition('/');
   }, [navigateWithTransition]);
 
   return (

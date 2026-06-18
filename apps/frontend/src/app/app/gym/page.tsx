@@ -7,7 +7,7 @@ import type {
   MonthInReview,
   EnrollableGoal,
 } from '@bassnotion/contracts';
-import Link from 'next/link';
+import { marketingUrl } from '@/lib/marketing-url';
 import {
   GymSkeleton,
   type GymSkeletonVariant,
@@ -224,19 +224,20 @@ function GymMembershipWall() {
             Membership gives you a coach-built daily rep — a 6-minute goal that
             climbs with you for the month, then resets fresh.
           </p>
-          <Link
-            href="/pricing"
+          {/* Cross-origin to the apex marketing /pricing — plain <a> (a Next
+              <Link> won't client-navigate cross-origin and would prefetch a
+              308). marketingUrl() makes it absolute on the app host. */}
+          <a
+            href={marketingUrl('/pricing')}
             className="inline-flex w-full items-center justify-center rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
           >
             See membership
-          </Link>
+          </a>
         </div>
       </div>
     </div>
   );
 }
-
-
 
 const WEEKDAY_LABELS = [
   'Sundays',
@@ -303,7 +304,11 @@ function GymMonthInReview({ review }: { review: MonthInReview }) {
           value={`${daysPracticed} / ${windowDays}`}
           sub="days"
         />
-        <Stat label="Reps" value={`${totalReps}`} sub={`${conqueredReps} conquered`} />
+        <Stat
+          label="Reps"
+          value={`${totalReps}`}
+          sub={`${conqueredReps} conquered`}
+        />
         <Stat
           label="Streak"
           value={`${streakDays}`}
@@ -359,11 +364,8 @@ function GymMonthInReview({ review }: { review: MonthInReview }) {
               >
                 <span className="font-medium">{g.title}</span>
                 <span className="text-white/60">
-                  {g.bestTier ? TIER_MEDAL[g.bestTier] : ''}{' '}
-                  {g.bestTier ?? '—'}
-                  <span className="ml-2 text-white/30">
-                    {g.conqueredReps}×
-                  </span>
+                  {g.bestTier ? TIER_MEDAL[g.bestTier] : ''} {g.bestTier ?? '—'}
+                  <span className="ml-2 text-white/30">{g.conqueredReps}×</span>
                 </span>
               </li>
             ))}
@@ -636,8 +638,10 @@ export default function GymPage() {
   // Reps banked is the HERO metric (founder decision): sum of reps logged across
   // topics, against the goal's total quota. The dot fill IS this, counting up.
   const repsBanked =
-    topicProgress?.reduce((n, t) => n + Math.min(t.repsLogged, t.repQuota), 0) ??
-    0;
+    topicProgress?.reduce(
+      (n, t) => n + Math.min(t.repsLogged, t.repQuota),
+      0,
+    ) ?? 0;
   const repsTotal = topicProgress?.reduce((n, t) => n + t.repQuota, 0) ?? 0;
   const repsToGo = Math.max(0, repsTotal - repsBanked);
   const goalDone = repsTotal > 0 && repsBanked >= repsTotal;
@@ -661,8 +665,7 @@ export default function GymPage() {
       .map((b) => (b.config as { topicId?: string } | undefined)?.topicId)
       .find(Boolean) as string | undefined) ?? null;
   const todayTopic =
-    (todayTopicId &&
-      topicProgress?.find((t) => t.topicId === todayTopicId)) ||
+    (todayTopicId && topicProgress?.find((t) => t.topicId === todayTopicId)) ||
     null;
   // The eyebrow: TODAY · <topic name>. Falls back to the goal name on a SPEED
   // goal (no topics), then to a bare "TODAY".
@@ -725,7 +728,10 @@ export default function GymPage() {
                   </span>
                 )}
                 {freezeTokens > 0 && (
-                  <span className="text-[#5B8DEF]" title="Streak freezes banked">
+                  <span
+                    className="text-[#5B8DEF]"
+                    title="Streak freezes banked"
+                  >
                     ❄️ {freezeTokens}
                   </span>
                 )}

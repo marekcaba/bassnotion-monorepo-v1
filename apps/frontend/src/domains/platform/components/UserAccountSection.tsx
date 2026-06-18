@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { usePathname } from 'next/navigation';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { ChevronsUpDown, Edit2, LogOut, Shield } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,7 +45,9 @@ export function UserAccountSection({
   const { profile, isLoading } = useUserProfile();
   const resetAuth = useAuthStore((state) => state.reset);
   const { navigateWithTransition } = useViewTransitionRouter();
-  const pathname = usePathname();
+  // Internal path so the /^\/app\/tutorials\// admin-gate regex matches on the
+  // app subdomain (clean URL) too.
+  const pathname = useInternalPathname();
 
   const displayName =
     profile?.displayName ?? user?.email?.split('@')[0] ?? 'User';

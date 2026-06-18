@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { navigateToMarketing } from '@/lib/marketing-url';
 import { ArrowLeft } from 'lucide-react';
 import type { Tutorial } from '@bassnotion/contracts';
 
@@ -140,7 +141,9 @@ export function MainCard({ tutorialData }: MainCardProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigateWithTransition('/library')}
+          onClick={() =>
+            navigateToMarketing('/library', navigateWithTransition)
+          }
           className="text-white/70 hover:text-white"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

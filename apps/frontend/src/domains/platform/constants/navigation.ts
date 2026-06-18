@@ -10,11 +10,28 @@ import type { ComponentType } from 'react';
 
 export interface NavItem {
   title: string;
+  /**
+   * The CLEAN navigation target (no /app prefix). On the app subdomain the
+   * host-rewrite middleware maps e.g. /gym → the internal /app/gym folder, so the
+   * URL bar stays clean. College's clean URL is /college (it serves /app/bassment).
+   * See docs/deployment/APP_SUBDOMAIN_RUNBOOK.md (Step 3).
+   */
   url: string;
   icon: ComponentType<{ className?: string }>;
   disabled?: boolean;
-  /** Routes that should also highlight this nav item (prefix match) */
+  /**
+   * INTERNAL (/app/*) routes that also highlight this item — PREFIX match
+   * (`pathname === p || pathname.startsWith(p + '/')`). Compared against
+   * useInternalPathname(), which re-prefixes /app on the clean app-host path.
+   */
   activePatterns?: string[];
+  /**
+   * INTERNAL routes that highlight this item by EXACT equality only (no prefix).
+   * Use for root-like items (Backstage = /app) that must NOT light up on their
+   * sub-rooms (/app/gym, /app/settings, …). Takes precedence over the
+   * url-equality fallback.
+   */
+  exactPatterns?: string[];
 }
 
 /**
@@ -26,34 +43,45 @@ export interface NavItem {
  * where you see where you stand and the rooms you haven't entered yet. From
  * there the arc pulls you forward: train it, learn it, deliver it. The order is
  * the journey, so a brand-new member reads where they're going at a glance.
+ *
+ * URLs are CLEAN (no /app) so the URL bar stays clean on the app subdomain; the
+ * host-rewrite middleware maps each to its /app/* folder. activePatterns/
+ * exactPatterns compare the INTERNAL path (via useInternalPathname()).
  */
 export const MAIN_NAV_ITEMS: NavItem[] = [
   // Belong — the landing room. /app itself; the free locker / identity / Matrix.
-  { title: 'Backstage', url: '/app', icon: Martini },
+  // Root item: exact-only highlight so it doesn't light up on every sub-room.
+  { title: 'Backstage', url: '/', icon: Martini, exactPatterns: ['/app'] },
   // Train — the daily rep engine (the recurring membership core).
   {
     title: 'Gym',
-    url: '/app/gym',
+    url: '/gym',
     icon: Dumbbell,
     activePatterns: ['/app/gym'],
   },
   // Learn — the 4-week accelerator (the methodology; was "Bassment").
+  // Clean URL /college serves the /app/bassment folder (label alias).
   {
     title: 'College',
-    url: '/app/bassment',
+    url: '/college',
     icon: GraduationCap,
     activePatterns: ['/app/bassment', '/app/tutorials'],
   },
   // Perform — deployment tested as a professional milestone.
   {
     title: 'Gigs',
-    url: '/app/gigs',
+    url: '/gigs',
     icon: Play,
     activePatterns: ['/app/gigs'],
   },
 ];
 
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { title: 'Support', url: '/app/support', icon: HelpCircle, disabled: true },
-  { title: 'Settings', url: '/app/settings', icon: Settings },
+  { title: 'Support', url: '/support', icon: HelpCircle, disabled: true },
+  {
+    title: 'Settings',
+    url: '/settings',
+    icon: Settings,
+    activePatterns: ['/app/settings'],
+  },
 ];

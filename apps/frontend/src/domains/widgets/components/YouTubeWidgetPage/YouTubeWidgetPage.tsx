@@ -33,6 +33,7 @@ import { UserIndicator } from '@/domains/user/components/UserIndicator';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { navigateToMarketing } from '@/lib/marketing-url';
 import { beatTimingAnalyzer } from '@/domains/playback/utils/BeatTimingAnalyzer';
 import { getLogger } from '@/utils/logger.js';
 // Debug utilities removed for production performance - use import when debugging:
@@ -1593,7 +1594,9 @@ function YouTubeWidgetPageContent({
             <div className="mx-auto max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]">
               <div className="flex justify-between items-center gap-3">
                 <Button
-                  onClick={() => navigateWithTransition('/library')}
+                  onClick={() =>
+                    navigateToMarketing('/library', navigateWithTransition)
+                  }
                   variant="ghost"
                   size="sm"
                   className="text-white/70 hover:text-white p-2"

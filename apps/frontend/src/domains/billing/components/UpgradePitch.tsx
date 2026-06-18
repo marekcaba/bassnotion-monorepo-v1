@@ -69,14 +69,19 @@ export function UpgradePitchContent({
   const startCheckout = () => {
     // Where the user upgraded FROM — we return them to this exact spot after
     // the welcome screen.
-    const origin =
-      typeof window !== 'undefined' ? window.location.href : '/app';
-    const appOrigin =
-      typeof window !== 'undefined' ? window.location.origin : '';
+    const origin = typeof window !== 'undefined' ? window.location.href : '/';
+    // The welcome page lives in the app; build its URL against the app host so a
+    // checkout started on the apex (/library tutorials) still lands on the app
+    // welcome screen. NEXT_PUBLIC_APP_URL is the app base; fall back to the
+    // current origin for local/preview where there's no subdomain split.
+    const appBase =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '');
     // success → a member welcome page that confirms the upgrade, then offers a
-    // "Return to the Groove Card" button back to `return`. Stripe substitutes
-    // {CHECKOUT_SESSION_ID}. cancel → straight back to where they were.
-    const successUrl = `${appOrigin}/app/welcome?return=${encodeURIComponent(
+    // "Return to the Groove Card" button back to `return` (which may be an apex
+    // /library URL — the welcome guard allow-lists the apex origin). Stripe
+    // substitutes {CHECKOUT_SESSION_ID}. cancel → straight back to where they were.
+    const successUrl = `${appBase}/welcome?return=${encodeURIComponent(
       origin,
     )}&session_id={CHECKOUT_SESSION_ID}`;
     checkout.mutate({

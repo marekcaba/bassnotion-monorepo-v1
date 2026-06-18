@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { CheckCircle2, ChevronDown, Library, Lock, Play } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import {
@@ -64,7 +64,7 @@ export function TutorialFolder({
   onOpenChange,
   defaultOpen = false,
 }: TutorialFolderProps) {
-  const pathname = usePathname();
+  const pathname = useInternalPathname();
   const { navigateWithTransition } = useViewTransitionRouter();
   // Support both controlled and uncontrolled modes
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(defaultOpen);
@@ -107,7 +107,8 @@ export function TutorialFolder({
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
-      navigateWithTransition(`/app/tutorials/${slug}`);
+      // Clean writer URL: the middleware rewrites /tutorials/* → /app/tutorials/*.
+      navigateWithTransition(`/tutorials/${slug}`);
     },
     [navigateWithTransition],
   );

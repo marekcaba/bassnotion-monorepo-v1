@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import { cn } from '@/shared/utils';
 import {
   Tooltip,
@@ -9,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import type { NavItem } from '../constants/navigation';
 
 interface SidebarNavProps {
@@ -24,7 +24,10 @@ export function SidebarNav({
   expanded = false,
   insetLeft = false,
 }: SidebarNavProps) {
-  const pathname = usePathname();
+  // Compare against the INTERNAL /app/* path: on the app subdomain the URL bar is
+  // clean (/gym) and usePathname() returns it clean, so re-prefix /app for the
+  // activePatterns/exactPatterns literals. See use-internal-pathname.
+  const pathname = useInternalPathname();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   const handleNavClick = useCallback(
@@ -45,11 +48,16 @@ export function SidebarNav({
       )}
     >
       {items.map((item) => {
-        const isActive = item.activePatterns
-          ? item.activePatterns.some(
-              (p) => pathname === p || pathname.startsWith(p + '/'),
-            )
-          : pathname === item.url;
+        // exactPatterns: equality-only (root items like Backstage=/app that must
+        // NOT light up on sub-rooms). activePatterns: prefix match. Fallback:
+        // url-equality (only hit by items with neither — none today).
+        const isActive =
+          (item.exactPatterns?.some((p) => pathname === p) ?? false) ||
+          (item.activePatterns
+            ? item.activePatterns.some(
+                (p) => pathname === p || pathname.startsWith(p + '/'),
+              )
+            : pathname === item.url);
         const Icon = item.icon;
 
         const button = (
