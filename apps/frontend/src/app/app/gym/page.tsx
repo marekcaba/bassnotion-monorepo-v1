@@ -508,13 +508,31 @@ export default function GymPage() {
   const { data: streak } = useStreak();
 
   // The "Six minutes." rep sits as an OVERLAY on the equipment FLOOR. Open by
-  // default (the coached path leads); "Explore the floor" dismisses it to the
+  // default (the coached path leads); "Explore the gym" dismisses it to the
   // self-directed floor, and a "Today's rep" button re-summons it. Re-open
   // whenever a fresh rep is planned (refresh / floor toggle / new slug).
+  //
+  // `closing` drives a graceful FADE-OUT: dismiss flips `closing` true (the
+  // overlay transitions opacity → 0), and only after the transition do we unmount
+  // it (overlayOpen → false). Re-summoning resets both so it fades back in.
   const [overlayOpen, setOverlayOpen] = React.useState(true);
+  const [overlayClosing, setOverlayClosing] = React.useState(false);
   React.useEffect(() => {
-    if (slug) setOverlayOpen(true);
+    if (slug) {
+      setOverlayOpen(true);
+      setOverlayClosing(false);
+    }
   }, [slug]);
+
+  const OVERLAY_FADE_MS = 450;
+  const dismissOverlay = React.useCallback(() => {
+    setOverlayClosing(true);
+    window.setTimeout(() => setOverlayOpen(false), OVERLAY_FADE_MS);
+  }, []);
+  const summonOverlay = React.useCallback(() => {
+    setOverlayClosing(false);
+    setOverlayOpen(true);
+  }, []);
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -678,16 +696,22 @@ export default function GymPage() {
 
           {/* ── OVERLAY: today's coached rep ── A blurred scrim over the floor,
               so the equipment reads through behind the prompt ("the full floor
-              is right there"). Dismiss with "Explore the floor"; re-summon with
-              the FAB. */}
+              is right there"). Dismiss with "Explore the gym" — it FADES out
+              (opacity + blur ease to 0) before unmounting; re-summon with the FAB. */}
           {overlayOpen && (
             <div
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10 transition-[opacity,backdrop-filter] duration-[450ms] ease-in-out"
               style={{
                 background:
                   'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,1) 0%, rgba(12,11,14,0) 60%, rgba(8,7,10,1) 100%)',
-                backdropFilter: 'blur(14.5px) saturate(0.9)',
-                WebkitBackdropFilter: 'blur(14.5px) saturate(0.9)',
+                backdropFilter: overlayClosing
+                  ? 'blur(0px) saturate(1)'
+                  : 'blur(14.5px) saturate(0.9)',
+                WebkitBackdropFilter: overlayClosing
+                  ? 'blur(0px) saturate(1)'
+                  : 'blur(14.5px) saturate(0.9)',
+                opacity: overlayClosing ? 0 : 1,
+                pointerEvents: overlayClosing ? 'none' : undefined,
               }}
             >
               {/* Streak — top-right of the overlay (daily-return mechanic). */}
@@ -732,8 +756,9 @@ export default function GymPage() {
                 <div className="mt-8 text-center">
                   <button
                     type="button"
-                    onClick={() => setOverlayOpen(false)}
-                    className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[2px] text-[#605b52] transition-colors hover:text-[#E8A44A]"
+                    onClick={dismissOverlay}
+                    disabled={overlayClosing}
+                    className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[2px] text-[#605b52] transition-colors hover:text-[#E8A44A] disabled:opacity-50"
                   >
                     Explore the gym
                     <span className="transition-transform group-hover:translate-y-0.5">
@@ -749,7 +774,7 @@ export default function GymPage() {
           {!overlayOpen && (
             <button
               type="button"
-              onClick={() => setOverlayOpen(true)}
+              onClick={summonOverlay}
               className="gym-rise fixed bottom-7 right-7 z-40 inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-5 py-3.5 text-sm font-semibold text-[#2a1c08] shadow-[0_12px_32px_rgba(232,164,74,0.32)] transition-all hover:-translate-y-0.5 hover:brightness-105"
             >
               <span
