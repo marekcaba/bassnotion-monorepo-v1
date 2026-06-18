@@ -14,13 +14,6 @@ import {
   type GymSkeletonVariant,
 } from '@/domains/training-engine/components/GymSkeleton';
 import { GymFloor } from '@/domains/training-engine/components/GymFloor';
-import {
-  OverlayTuner,
-  DEFAULT_OVERLAY_BG,
-  overlayBackground,
-  overlayBackdropFilter,
-  type OverlayBg,
-} from '@/domains/training-engine/components/OverlayTuner';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
@@ -672,11 +665,6 @@ export default function GymPage() {
     if (slug) setOverlayOpen(true);
   }, [slug]);
 
-  // Overlay scrim params, live-tunable in DEV via the draggable OverlayTuner.
-  // Seeded from the committed defaults; the panel only shows in development.
-  const [overlayBg, setOverlayBg] = React.useState<OverlayBg>(DEFAULT_OVERLAY_BG);
-  const showTuner = process.env.NODE_ENV !== 'production';
-
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
   const { tutorial, exercises, isLoading } = useTutorialExercises(slug);
@@ -848,9 +836,10 @@ export default function GymPage() {
             <div
               className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10"
               style={{
-                background: overlayBackground(overlayBg),
-                backdropFilter: overlayBackdropFilter(overlayBg),
-                WebkitBackdropFilter: overlayBackdropFilter(overlayBg),
+                background:
+                  'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,1) 0%, rgba(12,11,14,0) 60%, rgba(8,7,10,1) 100%)',
+                backdropFilter: 'blur(8.5px) saturate(0.9)',
+                WebkitBackdropFilter: 'blur(8.5px) saturate(0.9)',
               }}
             >
               {/* Streak — top-right of the overlay (daily-return mechanic). */}
@@ -976,11 +965,6 @@ export default function GymPage() {
                     </div>
                   </details>
                 </div>
-              )}
-
-              {/* DEV-only: drag-to-tune the scrim, copy the numbers. */}
-              {showTuner && (
-                <OverlayTuner value={overlayBg} onChange={setOverlayBg} />
               )}
             </div>
           )}
