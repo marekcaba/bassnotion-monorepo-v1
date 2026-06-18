@@ -79,7 +79,8 @@ function LoginPageContent() {
       if (useBackendAuth) {
         const result = await authService.signInWithBackend(data);
         if (result.success) {
-          navigateWithTransition('/app');
+          // Clean landing: app host '/' rewrites to /app (Backstage home).
+          navigateWithTransition('/');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Login failed',

@@ -708,7 +708,8 @@ function SessionStartButton() {
     <button
       type="button"
       onClick={() =>
-        navigateWithTransition(`/app/tutorials/${DRILL_SESSION_SLUG}`)
+        // Clean writer URL: middleware rewrites /tutorials/* → /app/tutorials/*.
+        navigateWithTransition(`/tutorials/${DRILL_SESSION_SLUG}`)
       }
       className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
     >

@@ -24,7 +24,7 @@ import { useProgress } from '@/domains/progress/hooks/useProgress';
 import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
 import { useDrillSession } from '@/domains/drill/hooks/useDrillSession';
 import { useRecordSession, useStreak } from '@/domains/drill/hooks/useStreak';
-import { DrillPlanScreen } from './DrillPlanScreen';
+import { DrillPlanScreen, type FrontDoor } from './DrillPlanScreen';
 import {
   DrillSummaryScreen,
   type DrillSummaryItem,
@@ -41,6 +41,15 @@ interface DrillSessionFrameProps {
    *  records a FLOOR rep (showed up) — it advances the floor streak but NOT the
    *  ceiling (which is the full focused rep). Defaults to false (full rep). */
   isFloor?: boolean;
+  /** Inline the plan screen (no full-height self-centering) so it flows in a
+   *  parent column — the gym stacks its status/path strip above the drill. */
+  inline?: boolean;
+  /** Bare plan screen (no card chrome) so it nests inside a parent panel — the
+   *  gym merges stats + path + drill into one console card. */
+  bare?: boolean;
+  /** Front-door plan screen (the gym): the centered "Six minutes." invitation
+   *  with the giant CTA, no brick list. Only affects the 'plan' phase. */
+  frontDoor?: FrontDoor;
 }
 
 export function DrillSessionFrame({
@@ -48,6 +57,9 @@ export function DrillSessionFrame({
   tutorialSlug,
   exercises,
   isFloor = false,
+  inline = false,
+  bare = false,
+  frontDoor,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
@@ -116,7 +128,14 @@ export function DrillSessionFrame({
 
   if (phase === 'plan') {
     return (
-      <DrillPlanScreen title={tutorial.title} bricks={bricks} onStart={start} />
+      <DrillPlanScreen
+        title={tutorial.title}
+        bricks={bricks}
+        onStart={start}
+        inline={inline}
+        bare={bare}
+        frontDoor={frontDoor}
+      />
     );
   }
 
@@ -126,7 +145,7 @@ export function DrillSessionFrame({
         title={tutorial.title}
         items={summaryItems}
         onRestart={restart}
-        onDone={() => navigateWithTransition('/app')}
+        onDone={() => navigateWithTransition('/')}
         // Post-record value once the mutation lands; until then the cached
         // pre-session streak so the line never pops in from nothing.
         streak={recordSession.data ?? cachedStreak.data ?? null}

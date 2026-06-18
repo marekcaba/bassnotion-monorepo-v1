@@ -45,7 +45,8 @@ export const CelebrationBlockView = React.memo(function CelebrationBlockView({
         onNext();
         break;
       case 'dashboard':
-        navigateWithTransition('/app/bassment');
+        // Clean writer URL: /college is College's clean alias for /app/bassment.
+        navigateWithTransition('/college');
         break;
       case 'url':
         if (ctaUrl) {
@@ -54,7 +55,8 @@ export const CelebrationBlockView = React.memo(function CelebrationBlockView({
         break;
       case 'next-tutorial':
         if (nextTutorialSlug) {
-          navigateWithTransition(`/app/tutorials/${nextTutorialSlug}`);
+          // Clean writer URL: middleware rewrites /tutorials/* → /app/tutorials/*.
+          navigateWithTransition(`/tutorials/${nextTutorialSlug}`);
         }
         break;
     }

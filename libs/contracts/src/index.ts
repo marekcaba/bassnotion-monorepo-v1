@@ -57,6 +57,7 @@ export { ProfessionalDrumProcessor } from './services/ProfessionalDrumProcessor.
 // Bass Gym Training Engine — the pure planner (Phase 0)
 export {
   generateRep,
+  GoalNotReadyError,
   selectReviewBlock,
   clampTempo as clampRepTempo,
   clampKey as clampRepKey,

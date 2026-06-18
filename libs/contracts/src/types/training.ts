@@ -187,6 +187,25 @@ export interface Goal {
 }
 
 /**
+ * A goal as the STUDENT picker sees it — the lightweight, public-safe fields for
+ * "choose your goal for the month". Deliberately omits blockSet/topics inline
+ * content (the picker only needs to identify + pitch the goal); `topicCount` +
+ * `totalQuota` summarize the content ladder for display ("3 topics · 30 reps").
+ */
+export interface EnrollableGoal {
+  slug: string;
+  type: GoalType;
+  title: string;
+  description?: string | null;
+  /** target.tempoBpm if set (shown as the goal's headline target). */
+  targetTempoBpm?: number | null;
+  /** Number of content-ladder topics (0 for single-focal SPEED goals). */
+  topicCount: number;
+  /** Sum of topic rep quotas (the goal's total reps; 0 if no topics). */
+  totalQuota: number;
+}
+
+/**
  * A goal as the ADMIN list sees it — the Goal plus its live enrollment count.
  * The count drives the lifecycle UI: the edit "blast radius" banner ("N students
  * on the current version"), and which delete affordance to show (normal delete
@@ -233,6 +252,10 @@ export type UpdateGoalInput = Partial<CreateGoalInput>;
  */
 export interface GoalSnapshot {
   type: GoalType;
+  /** The goal's user-facing title, frozen at enrollment — so the gym can name
+   *  the goal ("Faster Right Hand") without a second lookup, and an admin's
+   *  later rename doesn't change an in-flight climb's identity. */
+  title?: string;
   target: GoalTarget;
   blockSet: BlockRef[];
   /** Frozen content-ladder topics (epic §3). Like blockSet, snapshotted at

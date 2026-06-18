@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import { cn } from '@/shared/utils';
 import {
   Tooltip,
@@ -9,15 +8,26 @@ import {
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import type { NavItem } from '../constants/navigation';
 
 interface SidebarNavProps {
   items: NavItem[];
   expanded?: boolean;
+  /** Bigger left padding for the main rooms (the spine) so the labels sit
+   *  inset from the rail edge. Off for the bottom nav. */
+  insetLeft?: boolean;
 }
 
-export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
-  const pathname = usePathname();
+export function SidebarNav({
+  items,
+  expanded = false,
+  insetLeft = false,
+}: SidebarNavProps) {
+  // Compare against the INTERNAL /app/* path: on the app subdomain the URL bar is
+  // clean (/gym) and usePathname() returns it clean, so re-prefix /app for the
+  // activePatterns/exactPatterns literals. See use-internal-pathname.
+  const pathname = useInternalPathname();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   const handleNavClick = useCallback(
@@ -29,13 +39,25 @@ export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
   );
 
   return (
-    <div className="flex flex-col gap-1 py-2 px-2">
+    <div
+      className={cn(
+        'flex flex-col gap-1 py-2 px-2',
+        // The spine sits lower from the top edge (breathing room above Backstage)
+        // with more space between the rooms.
+        insetLeft && 'gap-2.5 pt-6',
+      )}
+    >
       {items.map((item) => {
-        const isActive = item.activePatterns
-          ? item.activePatterns.some(
-              (p) => pathname === p || pathname.startsWith(p + '/'),
-            )
-          : pathname === item.url;
+        // exactPatterns: equality-only (root items like Backstage=/app that must
+        // NOT light up on sub-rooms). activePatterns: prefix match. Fallback:
+        // url-equality (only hit by items with neither — none today).
+        const isActive =
+          (item.exactPatterns?.some((p) => pathname === p) ?? false) ||
+          (item.activePatterns
+            ? item.activePatterns.some(
+                (p) => pathname === p || pathname.startsWith(p + '/'),
+              )
+            : pathname === item.url);
         const Icon = item.icon;
 
         const button = (
@@ -43,6 +65,8 @@ export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
             onClick={() => handleNavClick(item)}
             className={cn(
               'flex w-full items-center rounded-[7px] p-2 gap-3 transition-all whitespace-nowrap',
+              // The spine rooms sit inset from the rail edge when expanded.
+              insetLeft && expanded && 'pl-5',
               item.disabled
                 ? 'opacity-35 cursor-not-allowed'
                 : 'hover:bg-white/[0.04]',

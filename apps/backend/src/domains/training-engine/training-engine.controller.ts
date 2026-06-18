@@ -17,9 +17,11 @@ import type {
   GraduationDoor,
   MonthInReview,
   TopicProgress,
+  EnrollableGoal,
 } from '@bassnotion/contracts';
 
 import { AuthGuard } from '../user/auth/guards/auth.guard.js';
+import { AdminGuard } from '../user/auth/guards/admin.guard.js';
 import { CurrentUser } from '../user/auth/decorators/current-user.decorator.js';
 import { TrainingEngineService } from './training-engine.service.js';
 import { RecordRepResultDto } from './dto/record-rep-result.dto.js';
@@ -56,6 +58,20 @@ export class TrainingEngineController {
   }
 
   /**
+   * GET /api/v1/training-engine/goals
+   *
+   * The student-facing goal picker: enrollable goals (active + not archived),
+   * trimmed to public-safe fields. Auth-gated (you must be signed in to set up a
+   * goal); the membership gate is enforced at enroll time.
+   */
+  @Get('goals')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async listEnrollableGoals(): Promise<EnrollableGoal[]> {
+    return this.trainingEngineService.listEnrollableGoals();
+  }
+
+  /**
    * POST /api/v1/training-engine/goals/:slug/enroll
    *
    * Enroll the caller in a goal (freezes a snapshot, creates the enrollment +
@@ -77,6 +93,50 @@ export class TrainingEngineController {
         ? { startTempoBpm: body.startTempoBpm }
         : undefined;
     return this.trainingEngineService.enrollInGoal(user.id, slug, placement);
+  }
+
+  /**
+   * POST /api/v1/training-engine/goals/:slug/switch
+   *
+   * Switch the caller's active goal mid-cycle: abandon the current enrollment
+   * (history kept) + enroll in this goal for the same remaining billing period.
+   * Gated to once per period for the student (400 on a 2nd switch). The new
+   * goal's tempo can be (re-)placed via startTempoBpm.
+   */
+  @Post('goals/:slug/switch')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async switchGoal(
+    @CurrentUser() user: AuthUser,
+    @Param('slug') slug: string,
+    @Body() body?: { startTempoBpm?: number },
+  ): Promise<GoalEnrollment> {
+    return this.trainingEngineService.switchGoal(user.id, slug, {
+      startTempoBpm: body?.startTempoBpm,
+    });
+  }
+
+  /**
+   * POST /api/v1/training-engine/admin/users/:userId/switch-goal
+   *
+   * ADMIN-only: reassign a specific user's goal (support fixing a wrong pick).
+   * Abandons their current enrollment + enrolls them in the chosen goal,
+   * bypassing the student once-per-period limit (this isn't goal-hopping).
+   */
+  @Post('admin/users/:userId/switch-goal')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
+  async adminReassignGoal(
+    @Param('userId') userId: string,
+    @Body() body: { slug: string; startTempoBpm?: number },
+  ): Promise<GoalEnrollment> {
+    if (!body?.slug) {
+      throw new BadRequestException('slug is required');
+    }
+    return this.trainingEngineService.switchGoal(userId, body.slug, {
+      bypassLimit: true,
+      startTempoBpm: body.startTempoBpm,
+    });
   }
 
   /**
@@ -139,6 +199,7 @@ export class TrainingEngineController {
   ): Promise<{
     slug: string;
     bricks: TutorialBlock[];
+    goalTitle?: string | null;
     topicProgress?: TopicProgress[];
   }> {
     // Story 5: the gym can request the short 'floor' rep. Anything but the
