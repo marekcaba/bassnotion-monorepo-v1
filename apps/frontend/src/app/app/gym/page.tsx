@@ -13,6 +13,7 @@ import {
   GymSkeleton,
   type GymSkeletonVariant,
 } from '@/domains/training-engine/components/GymSkeleton';
+import { GymFloor } from '@/domains/training-engine/components/GymFloor';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
@@ -655,6 +656,15 @@ export default function GymPage() {
   // Streak is the daily-return mechanic (P2.1) — real data, fetched directly.
   const { data: streak } = useStreak();
 
+  // The "Six minutes." rep sits as an OVERLAY on the equipment FLOOR. Open by
+  // default (the coached path leads); "Explore the floor" dismisses it to the
+  // self-directed floor, and a "Today's rep" button re-summons it. Re-open
+  // whenever a fresh rep is planned (refresh / floor toggle / new slug).
+  const [overlayOpen, setOverlayOpen] = React.useState(true);
+  React.useEffect(() => {
+    if (slug) setOverlayOpen(true);
+  }, [slug]);
+
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
   const { tutorial, exercises, isLoading } = useTutorialExercises(slug);
@@ -809,124 +819,169 @@ export default function GymPage() {
     <>
       <PageErrorBoundary pageName="Bass Gym">
         <GymStyles />
-        {/* Full-bleed column: a quiet topbar (brand + streak dots), the centered
-            front door, and a footer toggle that reveals the climb. */}
-        <div className="flex min-h-full w-full flex-col">
-          {/* Topbar — just the streak, right-aligned (the daily-return mechanic,
-              loud but small). The brand lives in the sidebar; no second tag here.
-              Real: useStreak. */}
-          <div className="gym-rise gym-d1 flex items-center justify-end px-1 py-1 font-mono text-[11px] tracking-[1.5px]">
-            <span className="flex items-center gap-2 text-[#7d786d]">
-              {streakDays > 0 && (
-                <span className="uppercase">{streakDays}-day streak</span>
-              )}
-              {freezeTokens > 0 && (
-                <span className="text-[#5B8DEF]" title="Streak freezes banked">
-                  ❄️ {freezeTokens}
-                </span>
-              )}
-            </span>
-          </div>
+        {/* The gym = the FLOOR (equipment) with the "Six minutes." rep as an
+            OVERLAY on top. `relative` so the overlay is scoped to the gym's
+            content area (the app sidebar stays visible + clickable to the left;
+            the overlay never covers it). min-h-full so the scrim fills the view
+            even when the floor is short. */}
+        <div className="relative min-h-full w-full">
+          {/* ── BASE LAYER: the equipment floor ── */}
+          <GymFloor />
 
-          {/* THE FRONT DOOR — vertically centered, the rep alone. */}
-          <div className="flex flex-1 items-center justify-center px-4 py-10">
-            <div className="gym-rise gym-d2 w-full max-w-[26rem]">
-              <DrillSessionFrame
-                tutorial={memoizedTutorial}
-                tutorialSlug={slug}
-                exercises={memoizedExercises ?? []}
-                isFloor={repMode === 'floor'}
-                inline
-                bare
-                frontDoor={{
-                  eyebrow,
-                  headline: 'Six minutes.',
-                  coachLine,
-                  floor: {
-                    label:
-                      repMode === 'floor'
-                        ? 'Do the full rep instead'
-                        : 'Short on time? 3-minute version — streak stays safe',
-                    onClick: repMode === 'floor' ? refresh : chooseFloor,
-                  },
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Footer toggle — "YOUR CLIMB & TAKES ›". Reveals the climb (stats +
-              topic path) below the fold; collapsed by default so the front door
-              stays uncluttered. Only shown when there's a climb to reveal. */}
-          {(repsTotal > 0 || attendance || topicsTotal > 0) && (
-            <div className="gym-rise gym-d3 px-4 pb-8">
-              <details className="group mx-auto w-full max-w-xl">
-                <summary className="flex cursor-pointer list-none items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52] transition-colors hover:text-[#7d786d] [&::-webkit-details-marker]:hidden">
-                  Your climb &amp; takes
-                  <span className="transition-transform group-open:rotate-90">
-                    ›
+          {/* ── OVERLAY: today's coached rep ── A blurred scrim over the floor,
+              so the equipment reads through behind the prompt ("the full floor
+              is right there"). Dismiss with "Explore the floor"; re-summon with
+              the FAB. */}
+          {overlayOpen && (
+            <div
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10"
+              style={{
+                background:
+                  'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,0.62) 0%, rgba(12,11,14,0.86) 60%, rgba(8,7,10,0.95) 100%)',
+                backdropFilter: 'blur(9px) saturate(0.9)',
+                WebkitBackdropFilter: 'blur(9px) saturate(0.9)',
+              }}
+            >
+              {/* Streak — top-right of the overlay (daily-return mechanic). */}
+              <div className="gym-rise gym-d1 absolute right-2 top-2 flex items-center gap-2 font-mono text-[11px] tracking-[1.5px]">
+                {streakDays > 0 && (
+                  <span className="uppercase text-[#7d786d]">
+                    {streakDays}-day streak
                   </span>
-                </summary>
+                )}
+                {freezeTokens > 0 && (
+                  <span className="text-[#5B8DEF]" title="Streak freezes banked">
+                    ❄️ {freezeTokens}
+                  </span>
+                )}
+              </div>
 
-                <div className="mx-auto mt-5 w-full max-w-xl space-y-4">
-                  {/* Stat rail */}
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {repsTotal > 0 && (
-                      <div className="col-span-3 rounded-lg border border-[#E8A44A]/20 bg-[#E8A44A]/[0.04] px-3 py-3.5 text-center sm:col-span-1">
-                        <div className="font-mono text-2xl font-light leading-none tabular-nums text-[#E8A44A]">
-                          {repsBanked}
-                          <span className="text-base text-[#5A5660]">
-                            /{repsTotal}
-                          </span>
-                        </div>
-                        <div className="mt-1 font-mono text-[9px] uppercase tracking-[1px] text-[#8A8690]">
-                          Reps banked
-                        </div>
-                      </div>
-                    )}
-                    {attendance && (
-                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                        <div className="font-mono text-lg font-medium tabular-nums text-[#E8E4DD]">
-                          {attendance.daysPracticed}
-                          <span className="text-[#5A5660]">
-                            /{attendance.windowDays}
-                          </span>
-                        </div>
-                        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                          Days shown up
-                        </div>
-                      </div>
-                    )}
-                    {topicsTotal > 0 && (
-                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
-                        <div className="font-mono text-lg font-medium tabular-nums">
-                          <span
-                            className={
-                              topicsDone === topicsTotal
-                                ? 'text-[#E8A44A]'
-                                : 'text-[#E8E4DD]'
-                            }
-                          >
-                            {topicsDone}
-                          </span>
-                          <span className="text-[#5A5660]">/{topicsTotal}</span>
-                        </div>
-                        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
-                          Topics done
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              {/* The front door (the rep). */}
+              <div className="gym-rise gym-d2 w-full max-w-[26rem]">
+                <DrillSessionFrame
+                  tutorial={memoizedTutorial}
+                  tutorialSlug={slug}
+                  exercises={memoizedExercises ?? []}
+                  isFloor={repMode === 'floor'}
+                  inline
+                  bare
+                  frontDoor={{
+                    eyebrow,
+                    headline: 'Six minutes.',
+                    coachLine,
+                    floor: {
+                      label:
+                        repMode === 'floor'
+                          ? 'Do the full rep instead'
+                          : 'Short on time? 3-minute version — streak stays safe',
+                      onClick: repMode === 'floor' ? refresh : chooseFloor,
+                    },
+                  }}
+                />
 
-                  {/* The path (per-topic quota dots) — context, not the door. */}
-                  {topicProgress && topicProgress.length > 0 && (
-                    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
-                      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
-                      <GymTopicProgress topics={topicProgress} />
-                    </div>
-                  )}
+                {/* Dismiss → reveal the floor underneath. */}
+                <div className="mt-8 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setOverlayOpen(false)}
+                    className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[2px] text-[#605b52] transition-colors hover:text-[#E8A44A]"
+                  >
+                    Explore the floor
+                    <span className="transition-transform group-hover:translate-y-0.5">
+                      ↓
+                    </span>
+                  </button>
                 </div>
-              </details>
+              </div>
+
+              {/* Climb toggle — stats + topic path, below the door (unchanged). */}
+              {(repsTotal > 0 || attendance || topicsTotal > 0) && (
+                <div className="gym-rise gym-d3 mt-8 w-full px-4">
+                  <details className="group mx-auto w-full max-w-xl">
+                    <summary className="flex cursor-pointer list-none items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52] transition-colors hover:text-[#7d786d] [&::-webkit-details-marker]:hidden">
+                      Your climb &amp; takes
+                      <span className="transition-transform group-open:rotate-90">
+                        ›
+                      </span>
+                    </summary>
+
+                    <div className="mx-auto mt-5 w-full max-w-xl space-y-4">
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {repsTotal > 0 && (
+                          <div className="col-span-3 rounded-lg border border-[#E8A44A]/20 bg-[#E8A44A]/[0.04] px-3 py-3.5 text-center sm:col-span-1">
+                            <div className="font-mono text-2xl font-light leading-none tabular-nums text-[#E8A44A]">
+                              {repsBanked}
+                              <span className="text-base text-[#5A5660]">
+                                /{repsTotal}
+                              </span>
+                            </div>
+                            <div className="mt-1 font-mono text-[9px] uppercase tracking-[1px] text-[#8A8690]">
+                              Reps banked
+                            </div>
+                          </div>
+                        )}
+                        {attendance && (
+                          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                            <div className="font-mono text-lg font-medium tabular-nums text-[#E8E4DD]">
+                              {attendance.daysPracticed}
+                              <span className="text-[#5A5660]">
+                                /{attendance.windowDays}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                              Days shown up
+                            </div>
+                          </div>
+                        )}
+                        {topicsTotal > 0 && (
+                          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-3 text-center">
+                            <div className="font-mono text-lg font-medium tabular-nums">
+                              <span
+                                className={
+                                  topicsDone === topicsTotal
+                                    ? 'text-[#E8A44A]'
+                                    : 'text-[#E8E4DD]'
+                                }
+                              >
+                                {topicsDone}
+                              </span>
+                              <span className="text-[#5A5660]">
+                                /{topicsTotal}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[1px] text-[#5A5660]">
+                              Topics done
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {topicProgress && topicProgress.length > 0 && (
+                        <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318]">
+                          <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
+                          <GymTopicProgress topics={topicProgress} />
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Re-summon the coached rep once the floor is showing. */}
+          {!overlayOpen && (
+            <button
+              type="button"
+              onClick={() => setOverlayOpen(true)}
+              className="gym-rise fixed bottom-7 right-7 z-40 inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-5 py-3.5 text-sm font-semibold text-[#2a1c08] shadow-[0_12px_32px_rgba(232,164,74,0.32)] transition-all hover:-translate-y-0.5 hover:brightness-105"
+            >
+              <span
+                aria-hidden
+                className="inline-block size-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-current"
+              />
+              Today&apos;s rep
+            </button>
           )}
         </div>
       </PageErrorBoundary>
