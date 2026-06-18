@@ -801,10 +801,10 @@ export default function GymPage() {
         {/* Full-bleed column: a quiet topbar (brand + streak dots), the centered
             front door, and a footer toggle that reveals the climb. */}
         <div className="flex min-h-full w-full flex-col">
-          {/* Topbar — brand left, streak right (the daily-return mechanic, loud
-              but small). Real: useStreak. */}
-          <div className="gym-rise gym-d1 flex items-center justify-between px-1 py-1 font-mono text-[11px] tracking-[1.5px]">
-            <span className="uppercase text-[#C9A24A]">Bassicology</span>
+          {/* Topbar — just the streak, right-aligned (the daily-return mechanic,
+              loud but small). The brand lives in the sidebar; no second tag here.
+              Real: useStreak. */}
+          <div className="gym-rise gym-d1 flex items-center justify-end px-1 py-1 font-mono text-[11px] tracking-[1.5px]">
             <span className="flex items-center gap-2 text-[#7d786d]">
               {streakDays > 0 && (
                 <span className="uppercase">{streakDays}-day streak</span>
