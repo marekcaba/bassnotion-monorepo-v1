@@ -69,9 +69,9 @@ export function AppSidebar({ expanded }: AppSidebarProps) {
       {/* Divider */}
       <div className="mx-2 h-px bg-white/[0.06]" />
 
-      {/* Main nav */}
+      {/* Main nav — the spine, inset from the rail edge */}
       <div className="flex-1 overflow-y-auto">
-        <SidebarNav items={MAIN_NAV_ITEMS} expanded={expanded} />
+        <SidebarNav items={MAIN_NAV_ITEMS} expanded={expanded} insetLeft />
       </div>
 
       {/* Divider */}

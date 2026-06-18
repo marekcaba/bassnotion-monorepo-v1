@@ -14,9 +14,16 @@ import type { NavItem } from '../constants/navigation';
 interface SidebarNavProps {
   items: NavItem[];
   expanded?: boolean;
+  /** Bigger left padding for the main rooms (the spine) so the labels sit
+   *  inset from the rail edge. Off for the bottom nav. */
+  insetLeft?: boolean;
 }
 
-export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
+export function SidebarNav({
+  items,
+  expanded = false,
+  insetLeft = false,
+}: SidebarNavProps) {
   const pathname = usePathname();
   const { navigateWithTransition } = useViewTransitionRouter();
 
@@ -43,6 +50,8 @@ export function SidebarNav({ items, expanded = false }: SidebarNavProps) {
             onClick={() => handleNavClick(item)}
             className={cn(
               'flex w-full items-center rounded-[7px] p-2 gap-3 transition-all whitespace-nowrap',
+              // The spine rooms sit inset from the rail edge when expanded.
+              insetLeft && expanded && 'pl-5',
               item.disabled
                 ? 'opacity-35 cursor-not-allowed'
                 : 'hover:bg-white/[0.04]',
