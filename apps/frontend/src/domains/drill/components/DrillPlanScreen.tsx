@@ -101,7 +101,7 @@ export function DrillPlanScreen({
           Start today&apos;s rep
         </button>
         {frontDoor.caption && (
-          <p className="mt-4 font-mono text-[11px] uppercase tracking-[1.5px] text-[#605b52]">
+          <p className="mt-4 max-w-[26rem] text-balance font-mono text-[11px] uppercase leading-relaxed tracking-[1.5px] text-[#605b52]">
             {frontDoor.caption}
           </p>
         )}
