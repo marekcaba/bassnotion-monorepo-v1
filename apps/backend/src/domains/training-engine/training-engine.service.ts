@@ -815,10 +815,23 @@ export class TrainingEngineService {
       correlationId,
     });
 
+    // Goal title: prefer the frozen snapshot (set at enroll). LEGACY enrollments
+    // (created before the title was snapshotted) have none — fall back to the
+    // live goal's current title so the gym still names the goal. Best-effort.
+    let goalTitle = enrollment.goalSnapshot.title ?? null;
+    if (!goalTitle) {
+      try {
+        const liveGoal = await this.repository.findGoalById(enrollment.goalId);
+        goalTitle = liveGoal?.title ?? null;
+      } catch {
+        /* a title lookup failure must not break planning the rep */
+      }
+    }
+
     return {
       slug,
       bricks,
-      goalTitle: enrollment.goalSnapshot.title ?? null,
+      goalTitle,
       topicProgress: student.topicProgress,
     };
   }
