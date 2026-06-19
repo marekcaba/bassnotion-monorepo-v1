@@ -8,10 +8,6 @@ import type {
   EnrollableGoal,
 } from '@bassnotion/contracts';
 import { marketingUrl } from '@/lib/marketing-url';
-import {
-  GymSkeleton,
-  type GymSkeletonVariant,
-} from '@/domains/training-engine/components/GymSkeleton';
 import { GymFloor } from '@/domains/training-engine/components/GymFloor';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -61,6 +57,25 @@ function GymStyles() {
         }
       }
     `}</style>
+  );
+}
+
+/**
+ * The ONE loading state for the gym. Shown while auth + entitlement + the gym
+ * session are still resolving — shape-neutral (a calm centered spinner), so it
+ * never mimics the overlay or the picker and then yanks to the other. When
+ * everything is ready the real composed view (floor + overlay, or the picker)
+ * fades in once via gym-rise. No skeletons, no triple-flicker.
+ */
+function GymLoading() {
+  return (
+    <div className="flex min-h-[70vh] w-full items-center justify-center">
+      <div
+        className="h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#E8A44A]"
+        role="status"
+        aria-label="Loading the gym"
+      />
+    </div>
   );
 }
 
@@ -498,7 +513,6 @@ export default function GymPage() {
     topicProgress,
     goalTitle,
     goals,
-    chosenGoal,
     chooseGoal,
     placeAndStart,
     chooseFloor,
@@ -559,12 +573,12 @@ export default function GymPage() {
     [exercises, exercises?.length, exercises?.[0]?.id],
   );
 
-  // Membership gate. While auth + entitlement resolve, show the front-door
-  // skeleton (a returning member's destination is the rep; never flash the wall
-  // to a member, nor the gym to a non-member). Resolved + non-member → the
-  // upsell wall.
+  // Membership gate. While auth + entitlement resolve, show the ONE neutral
+  // loading spinner (never flash the wall to a member, nor the gym to a
+  // non-member, nor a shape-specific skeleton that pivots). Resolved +
+  // non-member → the upsell wall.
   if (gateResolving) {
-    return <GymSkeleton variant="front-door" />;
+    return <GymLoading />;
   }
   if (!isMember) {
     return (
@@ -605,13 +619,12 @@ export default function GymPage() {
   }
 
   if (status === 'loading' || isLoading || !slug || !memoizedTutorial) {
-    // Shape the skeleton to where loading is heading: with no enrollment AND no
-    // goal chosen yet, run()/startSwitch is fetching the enrollable goals → the
-    // PICKER is next. Otherwise (a returning member, or a just-enrolled goal
-    // planning today's rep) → the FRONT DOOR.
-    const loadingVariant: GymSkeletonVariant =
-      !enrollment && !chosenGoal ? 'picker' : 'front-door';
-    return <GymSkeleton variant={loadingVariant} />;
+    // ONE neutral spinner — no shape-guessing. The previous code rendered a
+    // picker-shaped OR front-door-shaped skeleton here, which (combined with the
+    // gate spinner above) produced the visible flicker: overlay-shaped skeleton
+    // → picker → skeleton → overlay. A single calm spinner until the real status
+    // resolves, then the final view fades in once.
+    return <GymLoading />;
   }
 
   // Graduation owns the whole screen (recap + fork) — render it standalone.
@@ -694,8 +707,10 @@ export default function GymPage() {
             OVERLAY on top. `relative` so the overlay is scoped to the gym's
             content area (the app sidebar stays visible + clickable to the left;
             the overlay never covers it). min-h-full so the scrim fills the view
-            even when the floor is short. */}
-        <div className="relative min-h-full w-full">
+            even when the floor is short.
+            `gym-rise` on this wrapper fades the WHOLE composed view (floor +
+            overlay) in together once it's ready — not floor-then-overlay. */}
+        <div className="gym-rise relative min-h-full w-full">
           {/* ── BASE LAYER: the equipment floor ── */}
           <GymFloor />
 
