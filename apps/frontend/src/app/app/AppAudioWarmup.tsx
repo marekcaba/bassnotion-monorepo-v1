@@ -21,15 +21,7 @@ import {
   ensureAudioReady,
   isAudioReady,
 } from '@/domains/playback/services/ensureAudioReady';
-
-/** Internal /app/* paths from which the user can reach audio playback. */
-function routeCanReachAudio(pathname: string): boolean {
-  return (
-    pathname === '/app/gym' ||
-    pathname === '/app/bassment' ||
-    pathname.startsWith('/app/tutorials')
-  );
-}
+import { routeCanReachAudio } from './audioRoutes';
 
 const noop = () => undefined;
 
