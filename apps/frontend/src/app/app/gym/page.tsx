@@ -51,24 +51,8 @@ function GymStyles() {
       .gym-d4 {
         animation-delay: 0.28s;
       }
-      @keyframes gymFadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-      /* Opacity-ONLY fade (no transform) — for wrappers that contain a
-         backdrop-filter overlay. A transform (like gym-rise uses) creates a new
-         stacking context that breaks what backdrop-filter blurs behind it, which
-         let the floor headline punch through the scrim. */
-      .gym-fade-in {
-        animation: gymFadeIn 0.5s ease-in-out both;
-      }
       @media (prefers-reduced-motion: reduce) {
-        .gym-rise,
-        .gym-fade-in {
+        .gym-rise {
           animation: none;
         }
       }
@@ -724,12 +708,12 @@ export default function GymPage() {
             content area (the app sidebar stays visible + clickable to the left;
             the overlay never covers it). min-h-full so the scrim fills the view
             even when the floor is short.
-            `gym-fade-in` (opacity-only, NO transform) fades the WHOLE composed
-            view (floor + overlay) in together once ready — not
-            floor-then-overlay. Must NOT use a transform here: it would create a
-            stacking context that breaks the overlay's backdrop-filter blur (the
-            floor headline would punch through the scrim). */}
-        <div className="gym-fade-in relative min-h-full w-full">
+            NO animation/transform/opacity on THIS wrapper — any of them promotes
+            it to its own layer / stacking context, which breaks the overlay
+            scrim's backdrop-filter blur (the floor headline punches through).
+            The entrance is handled by the overlay's own fade (overlayVisible +
+            the gym-rise children INSIDE the scrim, which sit above it). */}
+        <div className="relative min-h-full w-full">
           {/* ── BASE LAYER: the equipment floor ── */}
           <GymFloor />
 
