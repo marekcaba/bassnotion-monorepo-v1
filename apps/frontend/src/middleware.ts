@@ -26,10 +26,13 @@ const APEX_ORIGIN = 'https://bassicology.com';
 // Treat the app host AND local dev as "app hosts" so the clean-URL rewrites work
 // in `pnpm dev` / PM2 too. Without this, localhost has no app host, so `/gym`
 // 404s and `/app/*` gets 308'd to PRODUCTION — breaking local dev of the app.
-function isAppHost(host: string): boolean {
-  if (APP_HOSTS.has(host)) return true;
+function isLocalHost(host: string): boolean {
   const name = host.split(':')[0]; // strip the port
   return name === 'localhost' || name === '127.0.0.1' || name === '0.0.0.0';
+}
+
+function isAppHost(host: string): boolean {
+  return APP_HOSTS.has(host) || isLocalHost(host);
 }
 
 // Served as-is on the app host (auth + api + assets). Auth pages MUST resolve on
@@ -86,7 +89,11 @@ export function middleware(req: NextRequest) {
     }
 
     // Apex-only routes → bounce to apex (never rewrite into a nonexistent /app/*).
+    // EXCEPT on localhost: there's no apex/app split locally, so a 308 to
+    // APEX_ORIGIN would punt /admin (and /library, /pricing, …) to PRODUCTION
+    // and break local dev of those pages. On localhost serve them as-is.
     if (matchesPrefix(pathname, APEX_ONLY)) {
+      if (isLocalHost(host)) return NextResponse.next();
       return NextResponse.redirect(
         new URL(`${APEX_ORIGIN}${pathname}${search}`),
         308,
