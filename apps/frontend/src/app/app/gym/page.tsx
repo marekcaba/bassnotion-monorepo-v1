@@ -763,8 +763,16 @@ export default function GymPage() {
             The entrance is handled by the overlay's own fade (overlayVisible +
             the gym-rise children INSIDE the scrim, which sit above it). */}
         <div className="relative min-h-full w-full">
-          {/* ── BASE LAYER: the equipment floor ── */}
-          <GymFloor />
+          {/* ── BASE LAYER: the equipment floor ──
+              gym-rise (fade + up) gives the page a consistent ease-in-out
+              entrance on EVERY arrival (client nav AND direct load, where the
+              view-transition never fires). Safe to animate the FLOOR: it has no
+              backdrop-filter, so its transform doesn't break the overlay scrim's
+              blur (only an ANCESTOR of the scrim must stay transform-free — the
+              floor is a SIBLING of the scrim, not an ancestor). */}
+          <div className="gym-rise">
+            <GymFloor />
+          </div>
 
           {/* ── OVERLAY: today's coached rep ── A blurred scrim over the floor,
               so the equipment reads through behind the prompt ("the full floor

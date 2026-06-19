@@ -142,7 +142,14 @@
    group animation does NOT affect the old/new opacity fades (separate pseudos),
    so the crossfade is preserved. */
 ::view-transition-group(root) {
+  /* `animation: none` stops the UA group ANIMATION, but the UA also applies a
+     base `transform` to the captured group snapshot (the old box's geometry),
+     so the element can START offset and snap — which still reads as a slide
+     (notably in WebKit/Safari, which retains the captured transform even with
+     animation:none). Force `transform: none` too so the group sits at its final
+     position from frame 1. Together these guarantee a pure crossfade, no slide. */
   animation: none !important;
+  transform: none !important;
 }
 
 /* Old page stays fully visible, then fades out after new page is visible */
