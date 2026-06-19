@@ -19,12 +19,15 @@ interface UseCollectionsResult {
  * member vs pack-owner see different folders), so the query key includes the
  * auth state — logging in/out refetches the right folder set.
  */
-export function useCollections(): UseCollectionsResult {
+export function useCollections({
+  enabled = true,
+}: { enabled?: boolean } = {}): UseCollectionsResult {
   const { isAuthenticated } = useAuth();
 
   const { data, isLoading, error, isError, refetch } = useQuery({
     queryKey: ['collections', isAuthenticated],
     queryFn: fetchCollections,
+    enabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: (failureCount, err) => {

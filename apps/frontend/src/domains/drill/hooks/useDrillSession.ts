@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ensureAudioReady } from '@/domains/playback/services/ensureAudioReady';
 
 export type DrillPhase = 'plan' | 'running' | 'summary';
 
@@ -74,6 +75,12 @@ export function useDrillSession({
   // baseline for THIS attempt. Both the first run and every "run it again" go
   // through here, so a replay always starts from a clean baseline.
   const start = useCallback(() => {
+    // On-demand safety net: guarantee the engine is warming/ready before the
+    // 'running' phase mounts YouTubeWidgetPage (whose hooks read the audio
+    // context). Idempotent + deduped — a no-op if the background warm-up already
+    // ran. Fire-and-forget: the player's own CoreServicesGate covers the gap on
+    // a cold/slow start. Don't block the phase flip.
+    void ensureAudioReady();
     baselineRef.current = new Set(completedIds);
     setPhase('running');
   }, [completedIds]);

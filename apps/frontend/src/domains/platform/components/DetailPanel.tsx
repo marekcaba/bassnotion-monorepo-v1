@@ -23,15 +23,19 @@ interface DetailPanelProps {
 
 export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   const pathname = useInternalPathname();
-  // Shared folder open state between expanded and collapsed views. Seed it from
-  // the DB-driven folder list so free folders default to open once loaded.
-  const { folders } = useTutorialsByFolder();
-  const folderState = useFolderOpenState(folders);
 
+  // The panel only renders content on /app, /app/bassment and /app/tutorials/*.
+  // On every other app route it's hidden — so don't fetch the tutorial library
+  // (GET /collections + /tutorials) there; gate the source query on hasContent.
   const hasContent =
     pathname === '/app' ||
     pathname === '/app/bassment' ||
     pathname.startsWith('/app/tutorials');
+
+  // Shared folder open state between expanded and collapsed views. Seed it from
+  // the DB-driven folder list so free folders default to open once loaded.
+  const { folders } = useTutorialsByFolder({ enabled: hasContent });
+  const folderState = useFolderOpenState(folders);
 
   const showHome = pathname === '/app';
 

@@ -16,8 +16,8 @@
  */
 
 import { useEffect, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import type { Tutorial } from '@bassnotion/contracts';
-import { YouTubeWidgetPage } from '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useProgress } from '@/domains/progress/hooks/useProgress';
@@ -29,6 +29,26 @@ import {
   DrillSummaryScreen,
   type DrillSummaryItem,
 } from './DrillSummaryScreen';
+
+// The player (and the whole audio/playback graph it pulls) only renders in the
+// 'running' phase. Dynamic-import it so the gym overlay, the gym-floor chooser,
+// and the drill 'plan'/'summary' screens paint from a tiny chunk with no audio
+// bundle. By the time the user presses Start, the background warm-up (or the
+// ensureAudioReady() kick in useDrillSession.start) has the engine ready.
+const YouTubeWidgetPage = dynamic(
+  () =>
+    import(
+      '@/domains/widgets/components/YouTubeWidgetPage/YouTubeWidgetPage'
+    ).then((m) => ({ default: m.YouTubeWidgetPage })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[50vh] items-center justify-center text-sm text-white/50">
+        Loading rep…
+      </div>
+    ),
+  },
+);
 
 interface DrillSessionFrameProps {
   tutorial: Tutorial;
