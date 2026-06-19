@@ -68,8 +68,12 @@ function GymStyles() {
  * fades in once via gym-rise. No skeletons, no triple-flicker.
  */
 function GymLoading() {
+  // Full-height (h-svh) to match the ready gym's root geometry. If this differed
+  // (e.g. a short min-h spinner), the page view-transition would have a geometry
+  // delta to morph between old page → gym, which the browser renders as a SLIDE
+  // instead of the intended crossfade. Same footprint → clean fade.
   return (
-    <div className="flex min-h-[70vh] w-full items-center justify-center">
+    <div className="flex h-svh w-full items-center justify-center">
       <div
         className="h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#E8A44A]"
         role="status"
