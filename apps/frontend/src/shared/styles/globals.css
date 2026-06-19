@@ -181,6 +181,25 @@
   }
 }
 
+/* App-page mount entrance — fires on EVERY mount (in-app nav AND direct load /
+   reload), so a typed/reloaded /app/* page fades in too, not just on client nav
+   (the view-transition only animates in-app navigations). OPACITY-ONLY (no
+   transform) and it removes its own compositing after it completes, so it does
+   NOT break a descendant's backdrop-filter blur once settled. Pages that manage
+   their own entrance (the gym: gym-rise on the floor + the overlay's own fade)
+   opt out via [data-no-page-fade]. */
+@keyframes appPageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.app-page-enter:not([data-no-page-fade]) {
+  animation: appPageFadeIn 0.28s ease-in-out both;
+}
+
 @keyframes view-transition-fade-out {
   0% {
     opacity: 1;

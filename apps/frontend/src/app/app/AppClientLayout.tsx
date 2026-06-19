@@ -133,7 +133,15 @@ export function AppClientLayout({ children }: { children: ReactNode }) {
           <DetailPanel isOpen={isPanelOpen} onToggle={handleTogglePanel} />
         </div>
 
-        <main className="relative z-10 flex-1 overflow-auto">{children}</main>
+        <main
+          className="app-page-enter relative z-10 flex-1 overflow-auto"
+          // The gym manages its own entrance (gym-rise on the floor + the
+          // overlay's own fade) and has a backdrop-filter scrim that an animating
+          // ancestor would break — so opt it out of the <main> mount fade.
+          {...(pathname === '/app/gym' ? { 'data-no-page-fade': '' } : {})}
+        >
+          {children}
+        </main>
       </div>
     </TooltipProvider>
   );

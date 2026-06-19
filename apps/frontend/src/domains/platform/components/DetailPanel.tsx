@@ -45,7 +45,13 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   return (
     <div
       className={cn(
-        'shrink-0 transition-[width] duration-200 ease-in-out overflow-hidden flex flex-col h-svh',
+        'shrink-0 overflow-hidden flex flex-col h-svh',
+        // Only animate the width when the panel HAS content (the detail toggle on
+        // tutorial routes). On a no-content route (gym/gigs/settings/...) it must
+        // SNAP to w-0 — otherwise navigating from a wide-panel page animates the
+        // panel collapsing over 200ms, which pushes the destination content
+        // sideways and reads as a "slide from the right". This was the gym slide.
+        hasContent && 'transition-[width] duration-200 ease-in-out',
         hasContent
           ? showHome || showJourneyView
             ? 'border-r-0'
