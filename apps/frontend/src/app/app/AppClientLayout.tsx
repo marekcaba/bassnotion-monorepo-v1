@@ -13,6 +13,7 @@ import { LeatherBackground } from '@/shared/components/LeatherBackground';
 import { XStateDevToolsProvider } from '@/domains/playback/machines/XStateDevToolsProvider';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { AppAudioWarmup } from './AppAudioWarmup';
+import { AppGymWarmup } from './AppGymWarmup';
 import { routeNeedsAudioProvider } from './audioRoutes';
 
 // AudioProvider pulls the playback graph (PlaybackEngine ~162KB + CoreServices
@@ -148,6 +149,10 @@ export function AppClientLayout({ children }: { children: ReactNode }) {
               WindowRegistry singleton so it's ready when the user acts. No-op on
               audio-free routes. Sibling — never blocks paint. */}
           <AppAudioWarmup />
+          {/* Login-time prefetch of the member's gym session (enrollment +
+              today's rep) into the query cache, so /app/gym opens from warm data
+              instead of running its fetch chain on open. No-op for non-members. */}
+          <AppGymWarmup />
           {/* Debug panels: only RENDER them where active, so their chunks (and
               the prefetch links) never land on prod pages. */}
           {debugAudio && <AudioDebugPanel />}
