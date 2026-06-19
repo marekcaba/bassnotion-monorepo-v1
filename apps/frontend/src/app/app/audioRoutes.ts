@@ -1,13 +1,23 @@
 /**
- * Which INTERNAL /app/* routes can actually reach audio playback.
+ * Routes where a player renders AT MOUNT, so <AudioProvider> must be mounted
+ * (and its engine chunk fetched) on first paint.
  *
- * Used to (a) conditionally MOUNT <AudioProvider> only on these routes so the
- * 232KB audio-engine chunk is never fetched on audio-free pages
- * (gigs/college-landing/settings/backstage/store/welcome), and (b) gate the
- * background warm-up. Single source of truth for both.
- *
- * Note: /app/bassment (College) is included because its deep tutorial surface
- * embeds the player; the landing itself is light but the route can reach audio.
+ * This is DELIBERATELY tighter than the warm-up set. The GYM is excluded: its
+ * first paint is the overlay + floor chooser (both audio-free, verified), and
+ * the player only mounts at the drill 'running' phase via DrillSessionFrame's
+ * dynamic import. So the gym overlay must NOT pull the engine — the background
+ * warm-up + the ensureAudioReady() kick at drill-Start cover it. Tutorials
+ * render the player at mount (non-drill branch) so they DO need the provider.
+ */
+export function routeNeedsAudioProvider(pathname: string): boolean {
+  return pathname.startsWith('/app/tutorials');
+}
+
+/**
+ * Routes from which the user can REACH audio (a superset of the above). Used to
+ * schedule the background warm-up after paint — so the engine is already hot in
+ * the WindowRegistry singleton by the time the user starts a drill / opens a
+ * player, without ever blocking the overlay/floor/landing paint.
  */
 export function routeCanReachAudio(pathname: string): boolean {
   return (

@@ -13,7 +13,7 @@ import { LeatherBackground } from '@/shared/components/LeatherBackground';
 import { XStateDevToolsProvider } from '@/domains/playback/machines/XStateDevToolsProvider';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { AppAudioWarmup } from './AppAudioWarmup';
-import { routeCanReachAudio } from './audioRoutes';
+import { routeNeedsAudioProvider } from './audioRoutes';
 
 // AudioProvider pulls the playback graph (PlaybackEngine ~162KB + CoreServices
 // ~54KB + Tone) — evict it from the shared /app shell chunk via dynamic import so
@@ -100,11 +100,13 @@ export function AppClientLayout({ children }: { children: ReactNode }) {
     setIsPanelOpen((prev) => !prev);
   }, []);
 
-  // Only MOUNT AudioProvider on routes that can reach audio. dynamic() splits the
-  // chunk out, but mounting the provider still triggers React to FETCH that chunk
-  // (the 232KB audio-engine). Not rendering it on gigs/college-landing/settings/
-  // backstage/store/welcome is what keeps the engine off those pages.
-  const audioRoute = routeCanReachAudio(pathname);
+  // Only MOUNT AudioProvider where a player renders at mount (tutorials).
+  // dynamic() splits the chunk out, but mounting the provider still triggers
+  // React to FETCH that 232KB engine chunk — so the GYM is deliberately excluded
+  // (its overlay/floor are audio-free; the player only mounts at drill 'running',
+  // and AppAudioWarmup + ensureAudioReady() warm the engine in the background).
+  // This keeps the engine off gigs/gym-overlay/settings/college-landing/etc.
+  const audioRoute = routeNeedsAudioProvider(pathname);
 
   const inner = (
     <TooltipProvider delayDuration={0}>
