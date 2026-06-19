@@ -27,6 +27,7 @@ import {
   fetchMyEnrollments,
   planTodayRep,
 } from '@/domains/training-engine/api/training-engine.api';
+import { fetchTutorialExercises } from '@/domains/widgets/api/tutorials';
 
 const noop = () => undefined;
 
@@ -81,11 +82,24 @@ export function AppGymWarmup() {
           const active = enrollments.find((e) => e.status === 'active');
           if (!active) return;
 
-          await queryClient.prefetchQuery({
+          const rep = await queryClient.fetchQuery({
             queryKey: gymKeys.todayRep(userId, active.id, 'full'),
             queryFn: () => planTodayRep(active.id, 'full'),
             staleTime: 5 * 60 * 1000,
           });
+
+          // 3) The rep's tutorial content (bricks/exercises) — the LAST fetch the
+          //    gym needs before the Start button goes live. Warming it here means
+          //    the button is clickable the instant the overlay paints, instead of
+          //    showing the in-button spinner while this fetches on open. Same key
+          //    useTutorialExercises(slug) reads: ['tutorial-exercises', slug].
+          if (rep?.slug) {
+            await queryClient.prefetchQuery({
+              queryKey: ['tutorial-exercises', rep.slug],
+              queryFn: () => fetchTutorialExercises(rep.slug),
+              staleTime: 5 * 60 * 1000,
+            });
+          }
         } catch {
           // Login prefetch is best-effort — a lapsed sub / missing climb /
           // not-ready goal must never bubble up. The gym handles those live.
