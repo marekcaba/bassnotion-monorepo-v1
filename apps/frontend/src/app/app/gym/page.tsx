@@ -80,6 +80,46 @@ function GymLoading() {
 }
 
 /**
+ * The front-door overlay shown the INSTANT the gym opens (over the floor), before
+ * the planned rep resolves. Visually identical to the live DrillSessionFrame
+ * front door (same eyebrow / "Six minutes." headline / coach line / amber Start
+ * button) so the live frame swaps in place with no jump — the Start button is
+ * just disabled + shows an inline spinner until the rep is ready.
+ */
+function GymFrontDoorPlaceholder({
+  eyebrow,
+  coachLine,
+}: {
+  eyebrow: string;
+  coachLine: string;
+}) {
+  return (
+    <div className="flex w-full flex-col items-center text-center">
+      <p className="mb-4 font-mono text-[11px] uppercase tracking-[3px] text-[#7d786d]">
+        {eyebrow}
+      </p>
+      <h1 className="mb-5 font-serif text-[clamp(38px,9vw,56px)] font-normal leading-none text-[#f5f2ea]">
+        Six minutes.
+      </h1>
+      {coachLine && (
+        <p className="mb-11 max-w-[26rem] text-[16px] italic leading-relaxed text-[#9a9488]">
+          {coachLine}
+        </p>
+      )}
+      <button
+        type="button"
+        disabled
+        aria-label="Preparing today's rep"
+        className="flex w-full max-w-[26rem] cursor-default items-center justify-center gap-3 rounded-[14px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-6 py-6 text-[20px] font-semibold text-[#3a2606] opacity-90"
+      >
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#3a2606]/30 border-t-[#3a2606]" />
+        Start today&apos;s rep
+      </button>
+    </div>
+  );
+}
+
+/**
  * /app/gym — the daily-rep entry point (Bass Gym Training Engine, Phase 3).
  *
  * Flow: useGymSession lists/enrolls + plans today's rep → returns the reserved
@@ -547,9 +587,16 @@ export default function GymPage() {
     window.setTimeout(() => setOverlayMounted(false), OVERLAY_FADE_MS);
   }, []);
 
-  // A fresh rep (new slug) re-summons the coached overlay.
+  // A genuinely NEW rep slug re-summons the coached overlay. Guard against
+  // re-summoning the SAME slug — otherwise, if the user taps "Explore the gym"
+  // (dismiss) while the rep is still resolving, the slug's arrival would yank the
+  // overlay back open. Only a different slug than last time re-summons.
+  const lastSummonedSlugRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (slug) summonOverlay();
+    if (slug && slug !== lastSummonedSlugRef.current) {
+      lastSummonedSlugRef.current = slug;
+      summonOverlay();
+    }
   }, [slug, summonOverlay]);
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
@@ -618,14 +665,12 @@ export default function GymPage() {
     return <GymPlacement onStart={placeAndStart} />;
   }
 
-  if (status === 'loading' || isLoading || !slug || !memoizedTutorial) {
-    // ONE neutral spinner — no shape-guessing. The previous code rendered a
-    // picker-shaped OR front-door-shaped skeleton here, which (combined with the
-    // gate spinner above) produced the visible flicker: overlay-shaped skeleton
-    // → picker → skeleton → overlay. A single calm spinner until the real status
-    // resolves, then the final view fades in once.
-    return <GymLoading />;
-  }
+  // NOTE: no early loading return here. Once past the gate/error/choosing/
+  // placement, we ALWAYS render the floor + blurred overlay shell below — the
+  // "Six minutes." headline + Start button appear IMMEDIATELY. Only the live
+  // DrillSessionFrame (which needs slug + the planned tutorial) swaps in once
+  // the rep resolves (the `slug && memoizedTutorial && !isLoading` check in the
+  // overlay below); until then the GymFrontDoorPlaceholder Start button shows.
 
   // Graduation owns the whole screen (recap + fork) — render it standalone.
   if (graduation) {
@@ -755,28 +800,40 @@ export default function GymPage() {
                 )}
               </div>
 
-              {/* The front door (the rep). */}
+              {/* The front door (the rep). The live DrillSessionFrame needs the
+                  planned slug + tutorial; until those resolve we show the SAME
+                  overlay shell with a disabled Start (a small inline spinner) so
+                  the "Six minutes." headline + button are there IMMEDIATELY and
+                  the live frame swaps in place — no layout jump, no full-page
+                  spinner. */}
               <div className="gym-rise gym-d2 w-full max-w-[26rem]">
-                <DrillSessionFrame
-                  tutorial={memoizedTutorial}
-                  tutorialSlug={slug}
-                  exercises={memoizedExercises ?? []}
-                  isFloor={repMode === 'floor'}
-                  inline
-                  bare
-                  frontDoor={{
-                    eyebrow,
-                    headline: 'Six minutes.',
-                    coachLine,
-                    floor: {
-                      label:
-                        repMode === 'floor'
-                          ? 'Do the full rep instead'
-                          : 'Short on time? 3-minute version — streak stays safe',
-                      onClick: repMode === 'floor' ? refresh : chooseFloor,
-                    },
-                  }}
-                />
+                {slug && memoizedTutorial && !isLoading ? (
+                  <DrillSessionFrame
+                    tutorial={memoizedTutorial}
+                    tutorialSlug={slug}
+                    exercises={memoizedExercises ?? []}
+                    isFloor={repMode === 'floor'}
+                    inline
+                    bare
+                    frontDoor={{
+                      eyebrow,
+                      headline: 'Six minutes.',
+                      coachLine,
+                      floor: {
+                        label:
+                          repMode === 'floor'
+                            ? 'Do the full rep instead'
+                            : 'Short on time? 3-minute version — streak stays safe',
+                        onClick: repMode === 'floor' ? refresh : chooseFloor,
+                      },
+                    }}
+                  />
+                ) : (
+                  <GymFrontDoorPlaceholder
+                    eyebrow={eyebrow}
+                    coachLine={coachLine}
+                  />
+                )}
 
                 {/* Dismiss → reveal the floor underneath. The only thing under
                     the CTAs (the climb moved to the user dashboard / settings). */}
