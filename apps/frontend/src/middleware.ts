@@ -23,6 +23,15 @@ const APP_HOSTS = new Set([
 const APP_ORIGIN = 'https://app.bassicology.com';
 const APEX_ORIGIN = 'https://bassicology.com';
 
+// Treat the app host AND local dev as "app hosts" so the clean-URL rewrites work
+// in `pnpm dev` / PM2 too. Without this, localhost has no app host, so `/gym`
+// 404s and `/app/*` gets 308'd to PRODUCTION — breaking local dev of the app.
+function isAppHost(host: string): boolean {
+  if (APP_HOSTS.has(host)) return true;
+  const name = host.split(':')[0]; // strip the port
+  return name === 'localhost' || name === '127.0.0.1' || name === '0.0.0.0';
+}
+
 // Served as-is on the app host (auth + api + assets). Auth pages MUST resolve on
 // the app origin so the Supabase session is written to app.bassicology.com.
 const PASS_THROUGH = ['/login', '/register', '/auth', '/api', '/_next'];
@@ -63,8 +72,8 @@ export function middleware(req: NextRequest) {
   const host = req.headers.get('host') ?? '';
   const { pathname, search } = req.nextUrl;
 
-  // ---------- App subdomain ----------
-  if (APP_HOSTS.has(host)) {
+  // ---------- App subdomain (and local dev) ----------
+  if (isAppHost(host)) {
     // Defensive: a stale /app/* link or a Stripe return → serve directly (the
     // double-prefix guard prevents /app/app/*).
     if (pathname === '/app' || pathname.startsWith('/app/')) {
