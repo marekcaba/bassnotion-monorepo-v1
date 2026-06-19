@@ -631,14 +631,33 @@ export class TrainingEngineRepository {
     userId: string,
     goalEnrollmentId: string,
     patch: Record<string, unknown>,
+    opts?: {
+      /**
+       * Race guard: only apply the update if last_rep_date is NULL or strictly
+       * before this YYYY-MM-DD. Lets concurrent rep completions collapse to a
+       * single climb advance per day at the DB level (the losing writes match
+       * zero rows — a no-op, not an error).
+       */
+      onlyIfLastRepDateBefore?: string;
+    },
   ): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
-    const { error } = await this.supabaseService
+    let query = this.supabaseService
       .getClient()
       .from('climb_states')
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('goal_enrollment_id', goalEnrollmentId)
       .eq('user_id', userId);
+
+    if (opts?.onlyIfLastRepDateBefore) {
+      // NULL (never advanced) OR an earlier day. A row already stamped today
+      // matches neither → the update applies to zero rows (idempotent no-op).
+      query = query.or(
+        `last_rep_date.is.null,last_rep_date.lt.${opts.onlyIfLastRepDateBefore}`,
+      );
+    }
+
+    const { error } = await query;
     if (error) {
       logger.error('Failed to patch climb state', error as Error, {
         userId,
