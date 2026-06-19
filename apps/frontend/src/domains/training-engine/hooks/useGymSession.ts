@@ -26,6 +26,8 @@ import type {
 } from '@bassnotion/contracts';
 
 import { useAuth } from '@/domains/user/hooks/use-auth';
+import { queryClient } from '@/lib/react-query';
+import { gymKeys } from '../api/gymQueryKeys';
 import {
   fetchMyEnrollments,
   fetchEnrollableGoals,
@@ -136,53 +138,66 @@ export function useGymSession(
    *  day-30 fork (surfaced alongside the rep, never blocking it). */
   const planFor = useCallback(
     async (active: GoalEnrollment, mode: 'full' | 'floor' = 'full') => {
-    setRepMode(mode);
-    const {
-      slug: repSlug,
-      bricks: repBricks,
-      goalTitle: repGoalTitle,
-      topicProgress: repTopicProgress,
-    } = await planTodayRep(active.id, mode);
-    setEnrollment(active);
-    setSlug(repSlug);
-    setBricks(repBricks);
-    setGoalTitle(repGoalTitle ?? null);
-    // Content-ladder (Build B): the path bars ride the today-rep response.
-    setTopicProgress(repTopicProgress ?? null);
-    // Best-effort: a graduation-check failure must not block the rep.
-    try {
-      const grad = await fetchGraduation(active.id);
-      const due = grad.isDue && !grad.graduated;
-      setGraduation(due ? grad : null);
-      // Attendance rides the same summary but is shown EVERY day (Story 7), not
-      // only at graduation — so keep it regardless of isDue.
-      setAttendance(
-        typeof grad.daysPracticedInWindow === 'number' &&
-          typeof grad.windowDays === 'number'
-          ? {
-              daysPracticed: grad.daysPracticedInWindow,
-              windowDays: grad.windowDays,
-            }
-          : null,
-      );
-      // The month-in-review recap (Story 6) only matters at graduation — fetch
-      // it lazily when due. Best-effort: a recap failure must not block the rep.
-      if (due) {
-        try {
-          setMonthInReview(await fetchMonthInReview(active.id));
-        } catch {
+      setRepMode(mode);
+      // Read through the query cache so a login prefetch (AppGymWarmup) makes this
+      // resolve INSTANTLY. fetchQuery returns the cached rep if fresh, else fetches.
+      // Safe to cache/re-read now that planTodayRep is a pure read+mint (the climb
+      // advances on rep completion, not here). Falls back to a direct call if
+      // there's no userId (shouldn't happen on this gated path).
+      const {
+        slug: repSlug,
+        bricks: repBricks,
+        goalTitle: repGoalTitle,
+        topicProgress: repTopicProgress,
+      } = user?.id
+        ? await queryClient.fetchQuery({
+            queryKey: gymKeys.todayRep(user.id, active.id, mode),
+            queryFn: () => planTodayRep(active.id, mode),
+            staleTime: 5 * 60 * 1000,
+          })
+        : await planTodayRep(active.id, mode);
+      setEnrollment(active);
+      setSlug(repSlug);
+      setBricks(repBricks);
+      setGoalTitle(repGoalTitle ?? null);
+      // Content-ladder (Build B): the path bars ride the today-rep response.
+      setTopicProgress(repTopicProgress ?? null);
+      // Best-effort: a graduation-check failure must not block the rep.
+      try {
+        const grad = await fetchGraduation(active.id);
+        const due = grad.isDue && !grad.graduated;
+        setGraduation(due ? grad : null);
+        // Attendance rides the same summary but is shown EVERY day (Story 7), not
+        // only at graduation — so keep it regardless of isDue.
+        setAttendance(
+          typeof grad.daysPracticedInWindow === 'number' &&
+            typeof grad.windowDays === 'number'
+            ? {
+                daysPracticed: grad.daysPracticedInWindow,
+                windowDays: grad.windowDays,
+              }
+            : null,
+        );
+        // The month-in-review recap (Story 6) only matters at graduation — fetch
+        // it lazily when due. Best-effort: a recap failure must not block the rep.
+        if (due) {
+          try {
+            setMonthInReview(await fetchMonthInReview(active.id));
+          } catch {
+            setMonthInReview(null);
+          }
+        } else {
           setMonthInReview(null);
         }
-      } else {
+      } catch {
+        setGraduation(null);
+        setAttendance(null);
         setMonthInReview(null);
       }
-    } catch {
-      setGraduation(null);
-      setAttendance(null);
-      setMonthInReview(null);
-    }
-    setStatus('ready');
-  }, []);
+      setStatus('ready');
+    },
+    [user],
+  );
 
   const run = useCallback(async () => {
     if (runningRef.current) return;
@@ -190,7 +205,14 @@ export function useGymSession(
     setStatus('loading');
     setError(null);
     try {
-      const enrollments = await fetchMyEnrollments();
+      // Read through the cache so a login prefetch resolves this instantly.
+      const enrollments = user?.id
+        ? await queryClient.fetchQuery({
+            queryKey: gymKeys.enrollments(user.id),
+            queryFn: fetchMyEnrollments,
+            staleTime: 5 * 60 * 1000,
+          })
+        : await fetchMyEnrollments();
       const active =
         enrollments.find((e) => e.status === 'active') ?? enrollments[0];
       if (active) {
@@ -209,7 +231,7 @@ export function useGymSession(
     } finally {
       runningRef.current = false;
     }
-  }, [planFor]);
+  }, [planFor, user]);
 
   /** status 'choosing' → pick a goal, then advance to tempo placement. */
   const chooseGoal = useCallback(

@@ -113,6 +113,17 @@ function injectTransitionStyles() {
         'backface-visibility': 'hidden',
       });
 
+      // Pin the root GROUP so it never morphs position/size between pages. The
+      // browser's default group animation slides/resizes when the old and new
+      // root geometries differ (e.g. a short loading state vs a full-height
+      // page) — which reads as a right-to-left SLIDE. We only ever want the
+      // crossfade below, so disable the group animation; the old/new fade still
+      // runs on top. (Robust: no page's loading-state geometry can reintroduce a
+      // slide.)
+      cssManager.set('::view-transition-group(root)', {
+        animation: 'none !important',
+      });
+
       // Seamless crossfade: old stays visible while new fades in on top
       // This prevents any background flash during transition
       const fadeInKeyframes = `

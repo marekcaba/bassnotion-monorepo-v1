@@ -312,18 +312,39 @@ export function AudioProvider({ children, config }: AudioProviderProps) {
       }
     }
 
-    initializeServices().catch((err) => {
-      logger.error(
-        'AudioProvider: Failed to initialize services',
-        err as Error,
-      );
-      // Still set error state even if promise rejects
-      const error =
-        err instanceof Error
-          ? err
-          : new Error('Failed to initialize audio services');
-      setError(error);
-    });
+    // Defer the (potentially heavy) cold-boot off the paint path: run it on
+    // idle so the provider mount never blocks first paint. The existing-instance
+    // fast path inside initializeServices() makes this near-instant when the
+    // route-aware background warm-up already created the GlobalAudioSystem
+    // singleton. requestIdleCallback with a setTimeout fallback (Safari lacks rIC).
+    const runInit = () =>
+      initializeServices().catch((err) => {
+        logger.error(
+          'AudioProvider: Failed to initialize services',
+          err as Error,
+        );
+        // Still set error state even if promise rejects
+        const error =
+          err instanceof Error
+            ? err
+            : new Error('Failed to initialize audio services');
+        setError(error);
+      });
+
+    const w = typeof window !== 'undefined' ? window : undefined;
+    const ric = (
+      w as unknown as {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => number;
+      }
+    )?.requestIdleCallback;
+    if (ric) {
+      ric(runInit, { timeout: 2000 });
+    } else {
+      setTimeout(runInit, 1);
+    }
 
     // Cleanup on unmount - but avoid cleanup in StrictMode
     return () => {

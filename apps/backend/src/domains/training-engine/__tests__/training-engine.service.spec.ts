@@ -1106,17 +1106,33 @@ describe('TrainingEngineService.assembleStudentState', () => {
 
 // ── Story 2: the climb advances (mat -> treadmill) ───────────────────────────
 
-describe('TrainingEngineService.getTodayRep — climb advance', () => {
+describe('TrainingEngineService — treadmill advance moved to rep COMPLETION', () => {
   const today = new Date().toISOString().slice(0, 10);
 
-  it('advances the climb (persists a patch) when the last rep was conquered and not yet advanced today', async () => {
-    // default climb has lastRepDate: null; default history is one conquered rep.
+  // getTodayRep is now a PURE read — planning the rep must never move the climb.
+  it('getTodayRep does NOT advance the climb (planning is side-effect-free)', async () => {
     const { service, repo } = makeService({
       findClimbState: vi.fn(
         async () => ({ ...makeClimbState(), lastRepDate: null }) as never,
       ),
     });
     await service.getTodayRep(USER, ENROLLMENT);
+    expect(repo.patchClimbState).not.toHaveBeenCalled();
+  });
+
+  // recordRepResult is now the advance trigger ("you finish the rep, you earn
+  // the next notch").
+  it('recordRepResult advances the climb (persists a patch) on the first completion of the day', async () => {
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: null }) as never,
+      ),
+    });
+    await service.recordRepResult(USER, {
+      goalEnrollmentId: ENROLLMENT,
+      blockId: 'b1',
+      result: 'conquered',
+    } as never);
 
     expect(repo.patchClimbState).toHaveBeenCalledTimes(1);
     const patch = (repo.patchClimbState as ReturnType<typeof vi.fn>).mock
@@ -1124,16 +1140,44 @@ describe('TrainingEngineService.getTodayRep — climb advance', () => {
     // a win raises the tempo one notch from 90 → 98 and stamps last_rep_date
     expect((patch.current_position as { tempoBpm: number }).tempoBpm).toBe(98);
     expect(patch.last_rep_date).toBe(today);
+    // the race-safe WHERE is passed (4th arg)
+    const opts = (repo.patchClimbState as ReturnType<typeof vi.fn>).mock
+      .calls[0][3] as { onlyIfLastRepDateBefore?: string } | undefined;
+    expect(opts?.onlyIfLastRepDateBefore).toBe(today);
   });
 
-  it('does NOT advance twice in one day (idempotent on last_rep_date)', async () => {
+  it('recordRepResult does NOT advance twice in one day (idempotent on last_rep_date — the 2nd-6th completion no-ops)', async () => {
     const { service, repo } = makeService({
       findClimbState: vi.fn(
         async () => ({ ...makeClimbState(), lastRepDate: today }) as never,
       ),
     });
-    await service.getTodayRep(USER, ENROLLMENT);
+    await service.recordRepResult(USER, {
+      goalEnrollmentId: ENROLLMENT,
+      blockId: 'b2',
+      result: 'conquered',
+    } as never);
+    // already advanced today → the cheap short-circuit returns before any patch
     expect(repo.patchClimbState).not.toHaveBeenCalled();
+  });
+
+  it('recordRepResult still records the rep even if the climb advance throws (best-effort)', async () => {
+    const { service, repo } = makeService({
+      findClimbState: vi.fn(
+        async () => ({ ...makeClimbState(), lastRepDate: null }) as never,
+      ),
+      patchClimbState: vi.fn(async () => {
+        throw new Error('climb write blew up');
+      }),
+    });
+    // Must NOT throw — the rep-result write is the contract; the advance is best-effort.
+    await expect(
+      service.recordRepResult(USER, {
+        goalEnrollmentId: ENROLLMENT,
+        blockId: 'b3',
+        result: 'conquered',
+      } as never),
+    ).resolves.toBeDefined();
   });
 });
 
