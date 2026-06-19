@@ -12,12 +12,17 @@ interface UseTutorialsResult {
 }
 
 /**
- * Hook to fetch all tutorials with caching and error handling
+ * Hook to fetch all tutorials with caching and error handling.
+ * `enabled` (default true) lets callers skip the fetch on routes that don't
+ * render tutorials (e.g. the sidebar panel is hidden) — see useTutorialsByFolder.
  */
-export function useTutorials(): UseTutorialsResult {
+export function useTutorials({
+  enabled = true,
+}: { enabled?: boolean } = {}): UseTutorialsResult {
   const { data, isLoading, error, isError, refetch } = useQuery({
     queryKey: ['tutorials'],
     queryFn: fetchTutorials,
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
     retry: (failureCount, error) => {

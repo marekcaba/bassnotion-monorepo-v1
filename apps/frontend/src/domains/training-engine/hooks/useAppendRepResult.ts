@@ -34,6 +34,12 @@ export function useAppendRepResult() {
       queryClient.invalidateQueries({
         queryKey: repHistoryKey(input.goalEnrollmentId),
       });
+      // Completing a rep advances the climb (server-side), so the cached
+      // today-rep + enrollments are now stale — the NEXT gym open should re-plan
+      // from the advanced position, not serve the warm pre-rep cache. Invalidate
+      // the whole ['gym', …] prefix (covers gymKeys.todayRep / .enrollments and
+      // the dashboard's keys). Cheap: they just refetch on next read.
+      queryClient.invalidateQueries({ queryKey: ['gym'] });
     },
     // No onError rollback: there is nothing to roll back (this is an additive
     // append, not an optimistic patch). Errors propagate to the caller's

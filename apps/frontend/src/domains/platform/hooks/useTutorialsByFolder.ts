@@ -110,15 +110,20 @@ function toTutorialItem(
  * joined against the tutorials list (GET /tutorials) the app already loads.
  * Replaces the hardcoded PRODUCT_FOLDERS array + the brittle category match.
  */
-export function useTutorialsByFolder() {
-  const { tutorials, isLoading: tutorialsLoading } = useTutorials();
-  const { collections, isLoading: collectionsLoading } = useCollections();
+export function useTutorialsByFolder({
+  enabled = true,
+}: { enabled?: boolean } = {}) {
+  const { tutorials, isLoading: tutorialsLoading } = useTutorials({ enabled });
+  const { collections, isLoading: collectionsLoading } = useCollections({
+    enabled,
+  });
   const { isAuthenticated } = useAuth();
 
   // The completions query is gated on authentication — the endpoint is
-  // AuthGuard-protected and would 401 for anonymous users.
+  // AuthGuard-protected and would 401 for anonymous users — AND on `enabled`
+  // so audio-free / panel-hidden routes don't fetch the library on paint.
   const { data: completionsData, isLoading: progressLoading } =
-    useUserTutorialCompletions({ enabled: isAuthenticated });
+    useUserTutorialCompletions({ enabled: enabled && isAuthenticated });
 
   // Index completion summaries by tutorial id for O(1) lookup below.
   const summaryByTutorialId = useMemo(() => {

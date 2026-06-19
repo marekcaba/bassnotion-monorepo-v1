@@ -18,7 +18,10 @@
  * 3. Or use the XStateDebugPanel component for quick access
  */
 
-import { createBrowserInspector, type Inspector } from '@statelyai/inspect';
+// Type-only import — erased at compile time, so @statelyai/inspect (~152KB) is
+// NOT bundled. The runtime value is dynamically imported inside the dev-only
+// init path below, keeping the inspector out of the production shell chunk.
+import type { Inspector } from '@statelyai/inspect';
 import type { AnyActorRef } from 'xstate';
 
 // ============================================================================
@@ -94,23 +97,32 @@ export function initXStateDevTools(
   }
 
   try {
-    // Create the browser inspector
-    inspector = createBrowserInspector({
-      autoStart: currentConfig.autoStart,
-    });
-
-    // Expose globally for manual triggering
-    (window as WindowWithXStateDevTools).__xstateInspector = inspector;
-    (window as WindowWithXStateDevTools).__xstateInspect = () => {
-      if (inspector) {
-        console.log('[XState DevTools] Starting inspector...');
-        inspector.start();
-        return 'Inspector started - check for new window/tab';
-      } else {
-        console.warn('[XState DevTools] Inspector not initialized');
-        return 'Inspector not initialized';
-      }
-    };
+    // Create the browser inspector via a DYNAMIC import so @statelyai/inspect
+    // is only fetched in dev (this whole path is gated by currentConfig.enabled,
+    // which defaults to NODE_ENV === 'development'). Fire-and-assign: the dev
+    // panel reads `inspector` after this resolves; the sync return below stays
+    // unchanged for callers.
+    void import('@statelyai/inspect')
+      .then(({ createBrowserInspector }) => {
+        inspector = createBrowserInspector({
+          autoStart: currentConfig.autoStart,
+        });
+        // Expose globally for manual triggering
+        (window as WindowWithXStateDevTools).__xstateInspector = inspector;
+        (window as WindowWithXStateDevTools).__xstateInspect = () => {
+          if (inspector) {
+            console.log('[XState DevTools] Starting inspector...');
+            inspector.start();
+            return 'Inspector started - check for new window/tab';
+          } else {
+            console.warn('[XState DevTools] Inspector not initialized');
+            return 'Inspector not initialized';
+          }
+        };
+      })
+      .catch((err) => {
+        console.warn('[XState DevTools] inspector import failed:', err);
+      });
 
     isInitialized = true;
 
@@ -675,4 +687,6 @@ if (typeof window !== 'undefined') {
 // Exports
 // ============================================================================
 
-export { createBrowserInspector, type Inspector };
+// Re-export the type only — createBrowserInspector is dynamically imported to
+// keep @statelyai/inspect out of the prod bundle (see initXStateDevTools).
+export type { Inspector };

@@ -23,15 +23,19 @@ interface DetailPanelProps {
 
 export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   const pathname = useInternalPathname();
-  // Shared folder open state between expanded and collapsed views. Seed it from
-  // the DB-driven folder list so free folders default to open once loaded.
-  const { folders } = useTutorialsByFolder();
-  const folderState = useFolderOpenState(folders);
 
+  // The panel only renders content on /app, /app/bassment and /app/tutorials/*.
+  // On every other app route it's hidden — so don't fetch the tutorial library
+  // (GET /collections + /tutorials) there; gate the source query on hasContent.
   const hasContent =
     pathname === '/app' ||
     pathname === '/app/bassment' ||
     pathname.startsWith('/app/tutorials');
+
+  // Shared folder open state between expanded and collapsed views. Seed it from
+  // the DB-driven folder list so free folders default to open once loaded.
+  const { folders } = useTutorialsByFolder({ enabled: hasContent });
+  const folderState = useFolderOpenState(folders);
 
   const showHome = pathname === '/app';
 
@@ -41,7 +45,13 @@ export function DetailPanel({ isOpen, onToggle, className }: DetailPanelProps) {
   return (
     <div
       className={cn(
-        'shrink-0 transition-[width] duration-200 ease-in-out overflow-hidden flex flex-col h-svh',
+        'shrink-0 overflow-hidden flex flex-col h-svh',
+        // Only animate the width when the panel HAS content (the detail toggle on
+        // tutorial routes). On a no-content route (gym/gigs/settings/...) it must
+        // SNAP to w-0 — otherwise navigating from a wide-panel page animates the
+        // panel collapsing over 200ms, which pushes the destination content
+        // sideways and reads as a "slide from the right". This was the gym slide.
+        hasContent && 'transition-[width] duration-200 ease-in-out',
         hasContent
           ? showHome || showJourneyView
             ? 'border-r-0'

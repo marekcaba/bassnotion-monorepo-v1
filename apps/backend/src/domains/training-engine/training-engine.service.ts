@@ -134,6 +134,21 @@ export class TrainingEngineService {
       correlationId,
     });
 
+    // Treadmill advance lives HERE now (on genuine completion), not on plan.
+    // Best-effort: a climb-advance failure (non-SPEED goal, missing climb, etc.)
+    // must NEVER fail the rep-result write. The lastRepDate guard + the race-safe
+    // WHERE collapse the ~6 completions a session fires into one advance/day.
+    try {
+      await this.advanceClimbForToday(userId, input.goalEnrollmentId);
+    } catch (err) {
+      logger.warn('Climb advance after rep completion failed (non-fatal)', {
+        userId,
+        goalEnrollmentId: input.goalEnrollmentId,
+        error: err instanceof Error ? err.message : String(err),
+        correlationId,
+      });
+    }
+
     return result;
   }
 
@@ -268,24 +283,48 @@ export class TrainingEngineService {
    * climb.lastRepDate so re-opening the gym twice today advances once. Returns
    * the unchanged climb when not due or when the climb didn't move.
    */
-  private async maybeAdvanceClimb(
+  /**
+   * Advance the treadmill climb after a rep is COMPLETED (called from
+   * recordRepResult). Re-assembles the StudentState so the just-inserted rep is
+   * in history, runs the pure advanceClimb, and persists the delta — stamping
+   * last_rep_date=today. Idempotent per calendar day via the last_rep_date guard
+   * AND a race-safe `WHERE last_rep_date IS DISTINCT FROM today` on the write, so
+   * the ~6 rep-results a session fires collapse to a SINGLE advance (the first
+   * completed brick of the day advances; the rest no-op).
+   *
+   * Best-effort by contract: the caller swallows throws so a climb-advance
+   * failure never fails the rep-result write.
+   */
+  async advanceClimbForToday(
     userId: string,
     goalEnrollmentId: string,
-    student: StudentState,
-  ): Promise<ClimbState> {
+  ): Promise<void> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
 
-    const climb = student.climb;
-    const today = student.assembledAt.slice(0, 10);
+    // CHEAP short-circuit FIRST: read just the climb row. The 2nd–6th completed
+    // brick of the day (and any re-open) hits this and returns BEFORE the heavy
+    // assembleStudentState — so a full session pays the expensive assemble at
+    // most once. Today is UTC, matching assembledAt.slice(0,10) used below.
+    const today = new Date().toISOString().slice(0, 10);
+    const existingClimb = await this.repository
+      .findClimbState(userId, goalEnrollmentId)
+      .catch(() => null);
+    if (!existingClimb) return; // no climb (non-treadmill goal / not seeded) → nothing to advance
+    if (existingClimb.lastRepDate === today) return; // already advanced today
 
-    // Already advanced today → don't double-advance (re-open is a no-op).
-    if (climb.lastRepDate === today) return climb;
+    // Re-assemble AFTER the rep was inserted, so derived signals
+    // (consecutiveWins / recentTooHardCount) include this completion.
+    const student = await this.assembleStudentState(userId, goalEnrollmentId);
+    const climb = student.climb;
+
+    // Re-check the guard against the freshly-assembled climb (defensive; the
+    // race-safe WHERE on the write below is the real concurrency guard).
+    if (climb.lastRepDate === today) return;
 
     const delta = advanceClimb(student, { goalType: student.goal.type });
 
-    // Stamp last_rep_date even on a hold, so a no-op day still closes the window
-    // (a day with no win shouldn't re-trigger advance attempts on every re-open).
+    // Stamp last_rep_date even on a hold, so a no-op day still closes the window.
     const patch: Record<string, unknown> = { last_rep_date: today };
     if (delta.changed) {
       if (delta.currentPosition) patch.current_position = delta.currentPosition;
@@ -297,9 +336,14 @@ export class TrainingEngineService {
       }
     }
 
-    await this.repository.patchClimbState(userId, goalEnrollmentId, patch);
+    // Race-safe write: only advance if the row's last_rep_date isn't already
+    // today. Two concurrent completions both reading lastRepDate!==today can't
+    // both win the write — the DB-level guard collapses them to one advance.
+    await this.repository.patchClimbState(userId, goalEnrollmentId, patch, {
+      onlyIfLastRepDateBefore: today,
+    });
 
-    logger.info('Advanced climb', {
+    logger.info('Advanced climb (on rep completion)', {
       userId,
       goalEnrollmentId,
       changed: delta.changed,
@@ -307,16 +351,6 @@ export class TrainingEngineService {
       difficultyScalar: delta.difficultyScalar ?? null,
       correlationId,
     });
-
-    // Apply the delta in-memory so the rep plans from the advanced position
-    // without a re-read.
-    return {
-      ...climb,
-      currentPosition: delta.currentPosition ?? climb.currentPosition,
-      difficultyScalar: delta.difficultyScalar ?? climb.difficultyScalar,
-      backoffCount: delta.backoffCount ?? climb.backoffCount,
-      lastRepDate: today,
-    };
   }
 
   /** All of a user's goal enrollments (the gym's "my goals" list). */
@@ -750,16 +784,13 @@ export class TrainingEngineService {
     // destructure StudentState into the same args it always took.
     const student = await this.assembleStudentState(userId, goalEnrollmentId);
 
-    // Mat -> treadmill (Story 2): move the climb based on how the LAST rep(s)
-    // landed, BEFORE planning today's. Guarded to once per calendar day via
-    // last_rep_date (the read-time / dayDiff pattern — re-opening the gym twice
-    // a day advances once). The pure advanceClimb decides the delta; we persist
-    // it and apply it in-memory so today's rep plans from the new position.
-    const climb = await this.maybeAdvanceClimb(
-      userId,
-      goalEnrollmentId,
-      student,
-    );
+    // Plan from the CURRENT climb — PURE read, NO advance here. The treadmill
+    // advance moved to rep COMPLETION (recordRepResult → advanceClimbForToday):
+    // "train at the level you earned, then advance" — the notch a completed rep
+    // earns shows in TOMORROW's rep. This keeps getTodayRep side-effect-free, so
+    // it's safe to call eagerly (login prefetch) and N times/day without ever
+    // moving the climb. (Minting the virtual tutorial below is idempotent on slug.)
+    const climb = student.climb;
 
     const pool = this.resolveBlockPool(enrollment);
     // Content-ladder (epic §3 Build A): a multi-topic goal carries frozen topics

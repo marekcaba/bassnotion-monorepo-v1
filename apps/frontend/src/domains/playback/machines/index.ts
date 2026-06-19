@@ -58,21 +58,6 @@ export {
   type XStateDebugPanelProps,
 } from './XStateDebugPanel.js';
 
-// Test Utilities (for testing XState machines)
-export {
-  createTestActor,
-  runMachineWithEvents,
-  assertTransition,
-  assertTransitionBlocked,
-  createContextMatcher,
-  createActionTracker,
-  createMockAudioContext,
-  createMockAudioDestination,
-  createMockEventBus,
-  runTransitionTests,
-  simplifySnapshot,
-  printSnapshot,
-  type TransitionTestCase,
-  type StateAssertionOptions,
-  type ActionTracker,
-} from './__tests__/testUtils.js';
+// Test utilities are NOT re-exported from this production barrel — importing one
+// named export from a barrel executes the whole module, which would drag test
+// code into prod chunks. Tests import them directly from './__tests__/testUtils'.
