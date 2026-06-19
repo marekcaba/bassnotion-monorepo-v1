@@ -11,6 +11,7 @@ import {
 } from '@/shared/components/ui/tooltip';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from '../constants/navigation';
+import { useNavPrefetch } from '../hooks/useNavPrefetch';
 import { SidebarNav } from './SidebarNav';
 import { UserAccountSection } from './UserAccountSection';
 
@@ -18,8 +19,18 @@ interface AppSidebarProps {
   expanded: boolean;
 }
 
+// The clean nav targets to warm on idle so the first click on a room is instant
+// (see useNavPrefetch). Module-level + stable so the prefetch effect runs once.
+// Skip disabled/coming-soon items — there's no route chunk to fetch yet.
+const PREFETCH_URLS = [...MAIN_NAV_ITEMS, ...BOTTOM_NAV_ITEMS]
+  .filter((item) => !item.disabled)
+  .map((item) => item.url);
+
 export function AppSidebar({ expanded }: AppSidebarProps) {
   const { navigateWithTransition } = useViewTransitionRouter();
+
+  // Warm the spine's route chunks after first paint so first-click === re-visit.
+  useNavPrefetch(PREFETCH_URLS);
 
   const handleLogoClick = useCallback(() => {
     // Clean writer URL: the middleware maps the app-host '/' → /app (Backstage).
