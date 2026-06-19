@@ -125,6 +125,26 @@
   backface-visibility: hidden;
 }
 
+/* Pin the root GROUP so the browser's default group animation never
+   slides/resizes the whole page when the old and new root snapshot geometries
+   differ (e.g. the /app shell vs a gym loading-state, or a scrollbar-gutter
+   toggle). That UA animation (-ua-view-transition-group-anim-root) interpolates
+   the group's transform between the two boxes, which reads as a right-to-left
+   page SLIDE. We only ever want the crossfade (old/new fade below) — the group
+   must SNAP, not slide.
+
+   This MUST live in this always-present stylesheet, NOT only in the JS-injected
+   <style id="bassnotion-view-transition-styles">. The injected sheet has timing
+   gaps: it is created lazily by the pre-heat path (requestIdleCallback, up to a
+   2s timeout) and re-injected inside a requestAnimationFrame, so a navigation
+   that fires before it lands in <head> is governed solely by this file. Without
+   the pin here, any such transition reintroduces the UA group slide. Killing the
+   group animation does NOT affect the old/new opacity fades (separate pseudos),
+   so the crossfade is preserved. */
+::view-transition-group(root) {
+  animation: none !important;
+}
+
 /* Old page stays fully visible, then fades out after new page is visible */
 ::view-transition-old(*),
 ::view-transition-old(root) {
