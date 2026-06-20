@@ -558,59 +558,69 @@ export function TimingMirrorPanel({
         {phase === 'error' && <span style={{ color: '#e0604a' }}>⛔ {error}</span>}
       </div>
 
-      {phase === 'done' && (
-        <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 12,
-              color: '#e7e9ee',
-              marginBottom: 8,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={adaptivePlayer}
-              onChange={(e) => setAdaptivePlayer(e.target.checked)}
+      {/* PLAYER detection — the adaptive toggle shows ALWAYS (so you set it before
+          recording); the manual sliders only appear after a take (they re-score it
+          live) and only when adaptive is off. */}
+      <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            color: '#e7e9ee',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={adaptivePlayer}
+            onChange={(e) => setAdaptivePlayer(e.target.checked)}
+          />
+          <b>Adaptive player detection</b> (v2 — floor from the take&apos;s own signal,
+          no slider). Uncheck to use the manual sliders.
+        </label>
+
+        {!adaptivePlayer && phase === 'done' && (
+          <>
+            <div style={{ fontSize: 11, color: '#9aa0ad', margin: '8px 0 6px' }}>
+              PLAYER ONSET TUNING (manual fallback — dial until “detected” ≈ the notes
+              you actually played; re-scores live)
+            </div>
+            <Slider
+              label="sensitivity"
+              value={sensitivity}
+              min={0.5}
+              max={6}
+              step={0.1}
+              onChange={setSensitivity}
+              hint="higher = fewer onsets"
             />
-            <b>Adaptive player detection</b> (v2 — floor from the take&apos;s own signal,
-            no slider). Uncheck to use the manual sliders.
-          </label>
-          <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6, opacity: adaptivePlayer ? 0.4 : 1 }}>
-            PLAYER ONSET TUNING (manual fallback — dial until “detected” ≈ the notes
-            you actually played; re-scores live)
+            <Slider
+              label="min gap (ms)"
+              value={minGapMs}
+              min={40}
+              max={400}
+              step={10}
+              onChange={setMinGapMs}
+              hint="one note can't re-fire within this"
+            />
+            <Slider
+              label="strength floor"
+              value={minRelStrength}
+              min={0.02}
+              max={0.6}
+              step={0.01}
+              onChange={setMinRelStrength}
+              hint="drop weak flux below this × loudest"
+            />
+          </>
+        )}
+        {!adaptivePlayer && phase !== 'done' && (
+          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
+            Manual sliders appear after you record a take.
           </div>
-          <Slider
-            label="sensitivity"
-            value={sensitivity}
-            min={0.5}
-            max={6}
-            step={0.1}
-            onChange={setSensitivity}
-            hint="higher = fewer onsets"
-          />
-          <Slider
-            label="min gap (ms)"
-            value={minGapMs}
-            min={40}
-            max={400}
-            step={10}
-            onChange={setMinGapMs}
-            hint="one note can't re-fire within this"
-          />
-          <Slider
-            label="strength floor"
-            value={minRelStrength}
-            min={0.02}
-            max={0.6}
-            step={0.01}
-            onChange={setMinRelStrength}
-            hint="drop weak flux below this × loudest"
-          />
-        </div>
-      )}
+        )}
+      </div>
 
       {coachMode === 'grid' && o && offsetMs != null && jitterMs != null && (
         <>
