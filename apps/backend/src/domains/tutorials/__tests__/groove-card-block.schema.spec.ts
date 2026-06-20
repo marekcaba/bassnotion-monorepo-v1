@@ -160,6 +160,36 @@ describe('grooveCardBlockConfigSchema', () => {
     );
     expect(result.success).toBe(false);
   });
+
+  it('keeps an admin-authored gradingMode + referenceOnset (bass coach; not stripped)', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(
+      validConfig({
+        gradingMode: 'reference' as const,
+        referenceOnset: {
+          sensitivity: 2.1,
+          minOnsetGapSeconds: 0.1,
+          minRelativeStrength: 0.06, // the quiet-stem floor from Step 0
+        },
+      }),
+    );
+    expect(result.success).toBe(true);
+    const data = result.data as {
+      gradingMode?: unknown;
+      referenceOnset?: unknown;
+    };
+    expect(data.gradingMode).toBe('reference');
+    expect(data.referenceOnset).toEqual({
+      sensitivity: 2.1,
+      minOnsetGapSeconds: 0.1,
+      minRelativeStrength: 0.06,
+    });
+  });
+
+  it('accepts a legacy block with NO gradingMode (backward-compat — optional field)', () => {
+    const result = grooveCardBlockConfigSchema.safeParse(validConfig());
+    expect(result.success).toBe(true);
+    expect((result.data as { gradingMode?: unknown }).gradingMode).toBeUndefined();
+  });
 });
 
 describe('validateGrooveCardBlocks — top-level validator', () => {

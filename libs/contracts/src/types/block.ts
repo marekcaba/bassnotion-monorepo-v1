@@ -499,6 +499,35 @@ export interface GrooveCardBlockConfig {
    *  Trains Pulse·Steadiness + Timing·Awareness. ALL behaviour is admin-authored
    *  here (nothing hardcoded); absent/disabled = the drill doesn't run. */
   referenceDrop?: ReferenceDropConfig;
+  /** BASS COACH: how a player's recorded bass take is graded against the exercise.
+   *  'grid' = vs the ideal metronomic grid (raw timing). 'reference' = vs THIS
+   *  card's own bass stem (onset/length/dynamics — "play it like the record").
+   *  Admin-authored; the choice is MANDATORY at publish time, but the field stays
+   *  OPTIONAL on the wire and defaults to 'grid' on READ (GrooveCardBlockView
+   *  withDefaults) so existing blocks without it never break. */
+  gradingMode?: GradingMode;
+  /** BASS COACH (reference mode only): the onset-detection preset for THIS card's
+   *  bass stem. One global preset doesn't fit all stems — a hot DI take and a quiet
+   *  stem need different strength floors — so the admin tunes + saves it per
+   *  exercise (preview via the authoring "analyze reference" check). Absent = the
+   *  detector's defaults. */
+  referenceOnset?: ReferenceOnsetPreset;
+}
+
+/** Bass-coach grading frame. See `gradingMode`. */
+export type GradingMode = 'grid' | 'reference';
+
+/** Admin-tuned onset-detection params for a reference stem (bass coach). Mirrors
+ *  the BassOnsetOptions the frontend detector accepts; all optional so a partial
+ *  preset falls back to detector defaults. */
+export interface ReferenceOnsetPreset {
+  /** Spectral-flux sensitivity. Higher = fewer onsets. */
+  sensitivity?: number;
+  /** Minimum gap between onsets (seconds). */
+  minOnsetGapSeconds?: number;
+  /** Global confidence floor (0..1) — drop onsets below this fraction of the
+   *  loudest. The lever for quiet stems (lower = keeps soft real notes). */
+  minRelativeStrength?: number;
 }
 
 /** What a Reference-Drop drill fades, and on what cadence. Admin-authored on the

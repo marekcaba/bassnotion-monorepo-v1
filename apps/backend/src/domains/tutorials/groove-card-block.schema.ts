@@ -217,6 +217,19 @@ export const grooveCardBlockConfigSchema = z
         fadeMs: z.number().int().nonnegative().optional(),
       })
       .optional(),
+    // BASS COACH: how a player's take is graded. OPTIONAL on the wire (defaults to
+    // 'grid' on read in the frontend) so legacy blocks without it aren't rejected;
+    // the mandatory CHOICE is enforced in the admin form at publish, not here. Must
+    // be declared or the non-passthrough schema STRIPS it on save (chordChart trap).
+    gradingMode: z.enum(['grid', 'reference']).optional(),
+    // BASS COACH (reference mode): admin-tuned onset preset for this card's stem.
+    referenceOnset: z
+      .object({
+        sensitivity: z.number().positive().optional(),
+        minOnsetGapSeconds: z.number().nonnegative().optional(),
+        minRelativeStrength: z.number().min(0).max(1).optional(),
+      })
+      .optional(),
   })
   .refine(
     (c) =>

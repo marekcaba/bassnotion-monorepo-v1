@@ -164,6 +164,10 @@ export function GrooveCardBlockView({
       originalKey: c.originalKey ?? 'E',
       lengthBars: c.lengthBars ?? 4,
       stems: c.stems ?? { bass: '', drums: '', harmony: '' },
+      // BASS COACH: legacy blocks have no gradingMode → default to 'grid' on READ
+      // so the player never sees undefined (the admin form enforces the mandatory
+      // choice at publish; the wire field stays optional for backward-compat).
+      gradingMode: c.gradingMode ?? 'grid',
     });
 
     if (!rawConfig.grooveId) return withDefaults(rawConfig);
