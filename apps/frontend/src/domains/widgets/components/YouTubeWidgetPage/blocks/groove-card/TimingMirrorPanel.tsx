@@ -67,6 +67,13 @@ export function TimingMirrorPanel({
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const captureRef = useRef<BassCapture | null>(null);
+  // Live-tunable onset params — a real hot DI bass over-triggers vs the synthetic
+  // test signal, so we dial these against the ACTUAL bass (ear-first) instead of
+  // guessing. The last recorded take is kept so re-scoring is instant on a change.
+  const [sensitivity, setSensitivity] = useState(1.5);
+  const [minGapMs, setMinGapMs] = useState(120);
+  const [minRelStrength, setMinRelStrength] = useState(0.25);
+  const lastSignalRef = useRef<{ signal: Float32Array; sampleRate: number; startedAt: number } | null>(null);
   // Grid captured at the play transition (loopStartAudioTime re-anchors / nulls on stop).
   const gridRef = useRef<GridParams | null>(null);
   // phase mirror for effects (avoids stale closures in the isPlaying watcher).
@@ -98,6 +105,35 @@ export function TimingMirrorPanel({
     }
   }, [isBassMuted, setStemMuted, onContextLost]);
 
+  // Pure re-scoring of the last captured take with the CURRENT tuning params.
+  // Re-runs on a slider change — no re-recording needed.
+  const analyze = useCallback(
+    (
+      signal: Float32Array,
+      sampleRate: number,
+      startedAt: number,
+      grid: GridParams,
+    ) => {
+      const onsets = detectBassOnsets(signal, sampleRate, {
+        sensitivity,
+        minOnsetGapSeconds: minGapMs / 1000,
+        minRelativeStrength: minRelStrength,
+      });
+      const absOnsets = onsets.map((o) => o.time + startedAt);
+      const { stats, slots, skippedBeforeGrid } = scoreOnsetsAgainstGrid(
+        absOnsets,
+        grid,
+      );
+      setOutcome({
+        stats,
+        detectedCount: onsets.length,
+        scoredCount: slots.length - skippedBeforeGrid,
+        skippedBeforeGrid,
+      });
+    },
+    [sensitivity, minGapMs, minRelStrength],
+  );
+
   const score = useCallback(async () => {
     const capture = captureRef.current;
     const grid = gridRef.current;
@@ -116,25 +152,28 @@ export function TimingMirrorPanel({
         setPhase('error');
         return;
       }
-      // buffer-relative onset seconds → absolute engine-clock seconds.
-      const onsets = detectBassOnsets(captured.signal, captured.sampleRate);
-      const absOnsets = onsets.map((o) => o.time + capture.startedAtCtxTime);
-      const { stats, slots, skippedBeforeGrid } = scoreOnsetsAgainstGrid(
-        absOnsets,
-        grid,
-      );
-      setOutcome({
-        stats,
-        detectedCount: onsets.length,
-        scoredCount: slots.length - skippedBeforeGrid,
-        skippedBeforeGrid,
-      });
+      // Keep the raw take so slider changes re-score instantly.
+      lastSignalRef.current = {
+        signal: captured.signal,
+        sampleRate: captured.sampleRate,
+        startedAt: capture.startedAtCtxTime,
+      };
+      analyze(captured.signal, captured.sampleRate, capture.startedAtCtxTime, grid);
       setPhase('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setPhase('error');
     }
-  }, []);
+  }, [analyze]);
+
+  // Re-score the existing take when a tuning param changes (no re-record).
+  useEffect(() => {
+    if (phase === 'done' && lastSignalRef.current && gridRef.current) {
+      const s = lastSignalRef.current;
+      analyze(s.signal, s.sampleRate, s.startedAt, gridRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sensitivity, minGapMs, minRelStrength]);
 
   // Auto-start on PLAY, auto-score on STOP — driven by the engine's isPlaying.
   useEffect(() => {
@@ -219,6 +258,42 @@ export function TimingMirrorPanel({
         {phase === 'error' && <span style={{ color: '#e0604a' }}>⛔ {error}</span>}
       </div>
 
+      {phase === 'done' && (
+        <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6 }}>
+            ONSET TUNING (re-scores the same take live — dial until “detected” ≈ the
+            notes you actually played)
+          </div>
+          <Slider
+            label="sensitivity"
+            value={sensitivity}
+            min={0.5}
+            max={6}
+            step={0.1}
+            onChange={setSensitivity}
+            hint="higher = fewer onsets"
+          />
+          <Slider
+            label="min gap (ms)"
+            value={minGapMs}
+            min={40}
+            max={400}
+            step={10}
+            onChange={setMinGapMs}
+            hint="one note can't re-fire within this"
+          />
+          <Slider
+            label="strength floor"
+            value={minRelStrength}
+            min={0.02}
+            max={0.6}
+            step={0.01}
+            onChange={setMinRelStrength}
+            hint="drop weak flux below this × loudest"
+          />
+        </div>
+      )}
+
       {o && offsetMs != null && jitterMs != null && (
         <>
           <div style={{ marginTop: 12, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
@@ -249,6 +324,43 @@ export function TimingMirrorPanel({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function Slider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  hint: string;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>
+      <span style={{ width: 110, color: '#9aa0ad', fontSize: 12 }}>{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ flex: 1, minWidth: 120 }}
+      />
+      <span style={{ width: 56, textAlign: 'right', color: '#e7e9ee', fontSize: 12 }}>
+        {value}
+      </span>
+      <span style={{ flex: '1 1 140px', color: '#6b7280', fontSize: 11 }}>{hint}</span>
     </div>
   );
 }
