@@ -329,8 +329,10 @@ export function TimingMirrorPanel({
             style={{
               ...btn,
               padding: '4px 10px',
+              // Use the `border` shorthand (not borderColor) to match btn's
+              // shorthand — mixing the two makes React warn on toggle.
               ...(coachMode === m
-                ? { background: '#6ad08c', color: '#0a0a0a', borderColor: '#6ad08c' }
+                ? { background: '#6ad08c', color: '#0a0a0a', border: '1px solid #6ad08c' }
                 : {}),
             }}
           >
@@ -649,6 +651,6 @@ const primaryBtn: React.CSSProperties = {
   ...btn,
   background: '#6ad08c',
   color: '#0a0a0a',
-  borderColor: '#6ad08c',
+  border: '1px solid #6ad08c', // shorthand (not borderColor) to match btn's `border`
   fontWeight: 600,
 };
