@@ -95,6 +95,31 @@ export function TimingMirrorPanel({
   // Coach mode: grade vs the ideal GRID, or vs the REFERENCE stem (the bass coach).
   const [coachMode, setCoachMode] = useState<'grid' | 'reference'>('grid');
   const [collapsed, setCollapsed] = useState(false);
+  // Draggable floating panel — drag the header to move it off the groove card.
+  // pos is top/left in px once dragged; null = default bottom-right anchor.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const onDragMove = useCallback((e: PointerEvent) => {
+    if (!dragRef.current) return;
+    setPos({ left: e.clientX - dragRef.current.dx, top: e.clientY - dragRef.current.dy });
+  }, []);
+  const onDragEnd = useCallback(() => {
+    dragRef.current = null;
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+  }, [onDragMove]);
+  const onDragStart = useCallback(
+    (e: React.PointerEvent) => {
+      // grab from the element's current screen rect so the cursor stays put
+      const rect = (e.currentTarget as HTMLElement)
+        .closest('[data-timing-mirror-panel]')!
+        .getBoundingClientRect();
+      dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+      window.addEventListener('pointermove', onDragMove);
+      window.addEventListener('pointerup', onDragEnd);
+    },
+    [onDragMove, onDragEnd],
+  );
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -331,15 +356,41 @@ export function TimingMirrorPanel({
   // Release the mic if the panel unmounts mid-arm.
   useEffect(() => () => captureRef.current?.dispose(), []);
 
+  // Clean up any dangling drag listeners on unmount.
+  useEffect(
+    () => () => {
+      window.removeEventListener('pointermove', onDragMove);
+      window.removeEventListener('pointerup', onDragEnd);
+    },
+    [onDragMove, onDragEnd],
+  );
+
   const o = outcome;
   const offsetMs = o ? o.stats.averageDrift : null;
   const jitterMs = o ? o.stats.jitter : null;
 
   return (
-    <div style={panel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+    <div
+      data-timing-mirror-panel
+      style={
+        pos
+          ? { ...panel, left: pos.left, top: pos.top, right: 'auto', bottom: 'auto' }
+          : panel
+      }
+    >
+      <div
+        onPointerDown={onDragStart}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'move',
+          touchAction: 'none',
+        }}
+      >
         <strong style={{ color: '#6ad08c', letterSpacing: '.05em' }}>
-          🪞 TIMING MIRROR (spike)
+          ⠿ 🪞 TIMING MIRROR (spike)
         </strong>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 11, color: isPlaying ? '#6ad08c' : '#9aa0ad' }}>
@@ -347,6 +398,7 @@ export function TimingMirrorPanel({
           </span>
           <button
             style={{ ...btn, padding: '2px 8px' }}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? 'Expand' : 'Collapse'}
           >
