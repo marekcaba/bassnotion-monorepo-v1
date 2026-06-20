@@ -17,13 +17,15 @@
  * apps/backend/src/domains/tutorials/admin-tutorials.service.ts.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type {
   GrooveCardBlockConfig,
   GrooveCardStemSet,
   ReferenceDropConfig,
   GradingMode,
+  ReferenceAnalysis,
 } from '@bassnotion/contracts';
+import { REFERENCE_MAIN_BASS_KEY } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
 import { ReferenceTransientEditor } from './groove-card/ReferenceTransientEditor';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
@@ -304,16 +306,23 @@ export function GrooveCardBlockForm({
       />
 
       {/* Bass coach — how a player's recorded take is graded (mandatory choice) +
-          the approved reference transient analysis (ground truth). */}
+          the approved reference transient analysis PER BASSLINE (ground truth). */}
       <GradingModeFields
         value={config.gradingMode}
-        bassStemUrl={config.stems?.bass ?? ''}
-        referenceOnsets={config.referenceAnalysis?.onsetsSec}
+        basslines={[
+          { key: REFERENCE_MAIN_BASS_KEY, title: 'Bass A (main)', url: config.stems?.bass ?? '' },
+          ...(config.stems?.bassVariants ?? []).map((v) => ({
+            key: v.id,
+            title: v.title || v.id,
+            url: v.url,
+          })),
+        ]}
+        referenceAnalysis={config.referenceAnalysis}
         onChangeMode={(m) => updateField('gradingMode', m)}
-        onChangeReferenceOnsets={(onsetsSec) =>
+        onChangeReferenceOnsets={(key, onsetsSec) =>
           updateField('referenceAnalysis', {
             ...config.referenceAnalysis,
-            onsetsSec,
+            [key]: { ...config.referenceAnalysis?.[key], onsetsSec },
           })
         }
       />
@@ -576,17 +585,23 @@ function ReferenceDropFields({
  */
 function GradingModeFields({
   value,
-  bassStemUrl,
-  referenceOnsets,
+  basslines,
+  referenceAnalysis,
   onChangeMode,
   onChangeReferenceOnsets,
 }: {
   value?: GradingMode;
-  bassStemUrl: string;
-  referenceOnsets?: number[];
+  /** Every bassline that can be graded: Bass A (key='main') + each variant. */
+  basslines: { key: string; title: string; url: string }[];
+  referenceAnalysis?: Record<string, ReferenceAnalysis>;
   onChangeMode: (m: GradingMode) => void;
-  onChangeReferenceOnsets: (onsetsSec: number[]) => void;
+  onChangeReferenceOnsets: (key: string, onsetsSec: number[]) => void;
 }) {
+  // Which bassline's transients are we editing? Default to Bass A.
+  const [selectedKey, setSelectedKey] = useState<string>(REFERENCE_MAIN_BASS_KEY);
+  const selected =
+    basslines.find((b) => b.key === selectedKey) ?? basslines[0];
+
   return (
     <fieldset className="space-y-2">
       <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
@@ -613,16 +628,39 @@ function GradingModeFields({
 
       {value === 'reference' && (
         <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          {/* WHICH bassline are we authoring transients for? Each is a separate
+              performance and carries its own approved analysis. */}
+          <label className="flex items-center gap-2 text-xs text-white/60">
+            <span className="whitespace-nowrap">Editing transients for:</span>
+            <select
+              value={selectedKey}
+              onChange={(e) => setSelectedKey(e.target.value)}
+              className="flex-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80"
+            >
+              {basslines.map((b) => {
+                const has = (referenceAnalysis?.[b.key]?.onsetsSec?.length ?? 0) > 0;
+                return (
+                  <option key={b.key} value={b.key} disabled={!b.url}>
+                    {b.title}
+                    {!b.url ? ' (no stem)' : has ? ' ✓' : ' — not yet'}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
           <span className="text-xs text-white/50">
-            Reference transients — the ground truth the player is graded against.
-            Auto-detected from the bass stem on upload; correct them by hand so each
-            marker sits exactly on a real attack.
+            Reference transients for <b>{selected?.title}</b> — the ground truth the
+            player is graded against on this bassline. Auto-detected on load; correct
+            by hand so each marker sits exactly on a real attack.
           </span>
-          <ReferenceTransientEditor
-            stemUrl={bassStemUrl}
-            value={referenceOnsets}
-            onChange={onChangeReferenceOnsets}
-          />
+          {selected && (
+            <ReferenceTransientEditor
+              key={selected.key /* remount on bassline switch */}
+              stemUrl={selected.url}
+              value={referenceAnalysis?.[selected.key]?.onsetsSec}
+              onChange={(onsetsSec) => onChangeReferenceOnsets(selected.key, onsetsSec)}
+            />
+          )}
         </div>
       )}
     </fieldset>

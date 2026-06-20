@@ -582,7 +582,7 @@ export type {
 export { drillCompletionToSignal } from './training.js';
 
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
-export { CHORD_SLOTS_PER_BAR } from './block.js';
+export { CHORD_SLOTS_PER_BAR, REFERENCE_MAIN_BASS_KEY } from './block.js';
 
 // Feature registry (LAUNCH-06 product-aware feature entitlement)
 export type { FeatureKey } from './features.js';

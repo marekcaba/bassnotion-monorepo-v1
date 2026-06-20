@@ -512,14 +512,18 @@ export interface GrooveCardBlockConfig {
    *  exercise (preview via the authoring "analyze reference" check). Absent = the
    *  detector's defaults. */
   referenceOnset?: ReferenceOnsetPreset;
-  /** BASS COACH (reference mode): the APPROVED reference analysis — the ground-truth
-   *  answer key the player's take is graded against. The admin detects transients on
-   *  the bass stem in the block editor, verifies/corrects them by hand, and saves
-   *  this. The coach uses these STORED markers, NOT a live re-detection — so grading
-   *  is deterministic and human-verified. Onset times are in the stem buffer's own
-   *  seconds (at the stem's original tempo); the engine scales them to the live tempo. */
-  referenceAnalysis?: ReferenceAnalysis;
+  /** BASS COACH (reference mode): the APPROVED reference analysis PER BASSLINE — the
+   *  ground-truth answer key the player's take is graded against. Keyed by bassline:
+   *  'main' = Bass A (stems.bass); a variant id = that variant (Bass B, Fill 1, …).
+   *  Each bassline is a different performance with different attacks, so each carries
+   *  its own analysis. The admin detects + hand-corrects per bassline in the editor;
+   *  the coach uses the STORED markers for whichever bassline is active, NOT a live
+   *  re-detection. Onset times are in that stem buffer's own seconds. */
+  referenceAnalysis?: Record<string, ReferenceAnalysis>;
 }
+
+/** The key for Bass A (the main bassline) in referenceAnalysis. Variants use their id. */
+export const REFERENCE_MAIN_BASS_KEY = 'main';
 
 /** Bass-coach grading frame. See `gradingMode`. */
 export type GradingMode = 'grid' | 'reference';
