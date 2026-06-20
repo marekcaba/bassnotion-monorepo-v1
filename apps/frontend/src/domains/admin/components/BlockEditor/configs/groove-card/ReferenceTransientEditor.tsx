@@ -18,7 +18,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { detectBassOnsets } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/timing-mirror/bassOnsetDetector';
+import {
+  detectBassOnsets,
+  snapOnsetTimesToAttack,
+} from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/timing-mirror/bassOnsetDetector';
 import { supabase } from '@/infrastructure/supabase/client';
 
 /**
@@ -106,7 +109,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
         // auto-detect only if nothing approved yet
         if (!value || value.length === 0) {
           const mono = toMono(buf);
-          const detected = snapToAttack(
+          const detected = snapOnsetTimesToAttack(
             detectBassOnsets(mono, buf.sampleRate).map((o) => o.time),
             mono,
             buf.sampleRate,
@@ -134,7 +137,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   // re-detect button (e.g. after replacing the stem, or to start over)
   const redetect = useCallback(() => {
     if (!buffer || !mono) return;
-    const detected = snapToAttack(
+    const detected = snapOnsetTimesToAttack(
       detectBassOnsets(mono, buffer.sampleRate).map((o) => o.time),
       mono,
       buffer.sampleRate,
@@ -498,38 +501,4 @@ function toMono(buffer: AudioBuffer): Float32Array {
     for (let i = 0; i < len; i++) out[i]! += data[i]! / ch;
   }
   return out;
-}
-
-/**
- * Snap detected onsets to the actual ATTACK. The spectral-flux detector reports the
- * FFT FRAME START (the rising edge of energy), which is ~0-21ms BEFORE the real
- * attack peak — markers land too early (visible vs the waveform; Ableton, by
- * contrast, lands on the peak). For each onset, walk forward a short window and move
- * it to where the amplitude first reaches a high fraction of the window's peak — the
- * perceptual attack.
- */
-function snapToAttack(
-  onsetsSec: number[],
-  signal: Float32Array,
-  sampleRate: number,
-): number[] {
-  const lookSamples = Math.floor(0.03 * sampleRate); // search up to 30ms ahead
-  return onsetsSec.map((t) => {
-    const start = Math.floor(t * sampleRate);
-    const end = Math.min(signal.length, start + lookSamples);
-    if (end <= start) return t;
-    // peak amplitude in the window
-    let peak = 0;
-    for (let i = start; i < end; i++) {
-      const a = Math.abs(signal[i] ?? 0);
-      if (a > peak) peak = a;
-    }
-    if (peak <= 0) return t;
-    // first sample reaching 70% of the peak = the attack edge
-    const thr = peak * 0.7;
-    for (let i = start; i < end; i++) {
-      if (Math.abs(signal[i] ?? 0) >= thr) return i / sampleRate;
-    }
-    return t;
-  });
 }

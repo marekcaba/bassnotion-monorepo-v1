@@ -27,6 +27,7 @@ import {
 import {
   detectBassOnsets,
   detectBassOnsetsAdaptive,
+  snapOnsetTimesToAttack,
 } from './timing-mirror/bassOnsetDetector';
 import {
   scoreOnsetsAgainstGrid,
@@ -224,7 +225,15 @@ export function TimingMirrorPanel({
             minOnsetGapSeconds: minGapMs / 1000,
             minRelativeStrength: minRelStrength,
           });
-      const absOnsets = onsets.map((o) => o.time + startedAt);
+      // Snap player onsets to the ATTACK (spectral-flux fires on the early rising
+      // edge — the same correction the reference markers get, so both align on one
+      // convention; this was the visible "blue ticks land before the attack" bug).
+      const snapped = snapOnsetTimesToAttack(
+        onsets.map((o) => o.time),
+        signal,
+        sampleRate,
+      );
+      const absOnsets = snapped.map((t) => t + startedAt);
 
       // GRID score (always — the baseline, and the grid-mode result).
       const { stats, slots, skippedBeforeGrid, collisionRate } =

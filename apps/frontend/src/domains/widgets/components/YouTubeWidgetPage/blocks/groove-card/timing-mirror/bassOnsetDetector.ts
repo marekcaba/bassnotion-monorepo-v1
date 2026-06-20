@@ -159,6 +159,39 @@ export function detectBassOnsets(
 }
 
 /**
+ * Snap onset TIMES to the actual ATTACK. Spectral-flux reports the FFT frame START
+ * (the rising energy edge), ~0-21ms BEFORE the perceptual attack peak — markers/ticks
+ * land too early (visible vs the waveform; Ableton lands on the peak). For each
+ * onset, walk forward a short window and move it to where the amplitude first reaches
+ * a high fraction of the window's peak — the attack edge. Used for BOTH the reference
+ * (admin editor) and the live player take, so the two align on the same convention.
+ */
+export function snapOnsetTimesToAttack(
+  onsetsSec: number[],
+  signal: Float32Array,
+  sampleRate: number,
+  lookSec = 0.03,
+): number[] {
+  const lookSamples = Math.floor(lookSec * sampleRate);
+  return onsetsSec.map((t) => {
+    const start = Math.floor(t * sampleRate);
+    const end = Math.min(signal.length, start + lookSamples);
+    if (end <= start) return t;
+    let peak = 0;
+    for (let i = start; i < end; i++) {
+      const a = Math.abs(signal[i] ?? 0);
+      if (a > peak) peak = a;
+    }
+    if (peak <= 0) return t;
+    const thr = peak * 0.7;
+    for (let i = start; i < end; i++) {
+      if (Math.abs(signal[i] ?? 0) >= thr) return i / sampleRate;
+    }
+    return t;
+  });
+}
+
+/**
  * ADAPTIVE bass onset detection — finds the strength floor from the take's OWN
  * onset-confidence distribution, so it works on a loud OR quiet player without a
  * fixed threshold or a slider. The core of the bass-coach v2 redesign: the only

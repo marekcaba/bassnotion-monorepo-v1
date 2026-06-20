@@ -12,7 +12,7 @@
  * and why the score is what it is. Dev tool — drawn to a <canvas>.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GridParams } from './timing-mirror/scoreAgainstGrid';
 import type { ReferenceScore } from './timing-mirror/scoreAgainstReference';
 
@@ -51,6 +51,7 @@ const COL = {
 
 export function TimingMirrorVisualizer({ data }: { data: VizData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -138,7 +139,7 @@ export function TimingMirrorVisualizer({ data }: { data: VizData }) {
     ctx.fillText(`● missed ${data.score.missedCount}`, PAD + 110, cssH - 8);
     ctx.fillStyle = COL.noise;
     ctx.fillText(`● noise ${data.score.noiseCount}`, PAD + 210, cssH - 8);
-  }, [data]);
+  }, [data, zoom]);
 
   const playerDur = data.playerSignal.length / data.playerSampleRate;
   const refDur = data.refSignal.length / data.refSampleRate;
@@ -151,12 +152,30 @@ export function TimingMirrorVisualizer({ data }: { data: VizData }) {
       ? data.refOnsetsSec[data.refOnsetsSec.length - 1]! - data.refOnsetsSec[0]!
       : 0;
 
+  const zbtn: React.CSSProperties = {
+    fontSize: 11,
+    padding: '2px 8px',
+    borderRadius: 5,
+    border: '1px solid #2a2d36',
+    background: '#1a1d24',
+    color: '#e7e9ee',
+    cursor: 'pointer',
+  };
+
   return (
     <>
-      <canvas
-        ref={canvasRef}
-        style={{ width: '100%', display: 'block', borderRadius: 6, marginTop: 8 }}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 11, color: COL.text }}>zoom</span>
+        <button style={zbtn} onClick={() => setZoom((z) => Math.max(1, z - 2))} disabled={zoom <= 1}>−</button>
+        <span style={{ fontSize: 11, color: '#e7e9ee', width: 26, textAlign: 'center' }}>{zoom}×</span>
+        <button style={zbtn} onClick={() => setZoom((z) => Math.min(30, z + 2))} disabled={zoom >= 30}>+</button>
+      </div>
+      <div style={{ overflowX: zoom > 1 ? 'auto' : 'hidden', borderRadius: 6 }}>
+        <canvas
+          ref={canvasRef}
+          style={{ width: `${zoom * 100}%`, display: 'block', borderRadius: 6 }}
+        />
+      </div>
       <div style={{ marginTop: 6, fontSize: 11, color: COL.text, lineHeight: 1.5 }}>
         R={data.R.toFixed(3)} · loop={data.grid.loopDurationSeconds.toFixed(2)}s ·
         player-take={playerDur.toFixed(2)}s, ref-buf={refDur.toFixed(2)}s ·
