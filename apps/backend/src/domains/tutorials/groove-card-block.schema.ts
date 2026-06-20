@@ -230,6 +230,17 @@ export const grooveCardBlockConfigSchema = z
         minRelativeStrength: z.number().min(0).max(1).optional(),
       })
       .optional(),
+    // BASS COACH (reference mode): the admin-APPROVED reference analysis (ground
+    // truth). onsetsSec are the human-verified transient times in the stem buffer's
+    // own seconds. Must be declared or the non-passthrough schema strips it on save.
+    referenceAnalysis: z
+      .object({
+        onsetsSec: z.array(z.number().nonnegative()),
+        lengthsSec: z.array(z.number().nonnegative()).optional(),
+        dynamics: z.array(z.number().min(0).max(1)).optional(),
+        originalBpm: z.number().positive().optional(),
+      })
+      .optional(),
   })
   .refine(
     (c) =>

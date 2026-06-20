@@ -512,10 +512,33 @@ export interface GrooveCardBlockConfig {
    *  exercise (preview via the authoring "analyze reference" check). Absent = the
    *  detector's defaults. */
   referenceOnset?: ReferenceOnsetPreset;
+  /** BASS COACH (reference mode): the APPROVED reference analysis — the ground-truth
+   *  answer key the player's take is graded against. The admin detects transients on
+   *  the bass stem in the block editor, verifies/corrects them by hand, and saves
+   *  this. The coach uses these STORED markers, NOT a live re-detection — so grading
+   *  is deterministic and human-verified. Onset times are in the stem buffer's own
+   *  seconds (at the stem's original tempo); the engine scales them to the live tempo. */
+  referenceAnalysis?: ReferenceAnalysis;
 }
 
 /** Bass-coach grading frame. See `gradingMode`. */
 export type GradingMode = 'grid' | 'reference';
+
+/** The admin-approved reference performance analysis (bass coach ground truth). */
+export interface ReferenceAnalysis {
+  /** Onset (transient) times in the STEM buffer's own seconds, ascending. The
+   *  human-verified attack positions the player is graded against. */
+  onsetsSec: number[];
+  /** Optional per-onset note length (seconds) — for the Note Duration dimension.
+   *  Same index as onsetsSec. Absent until length authoring is added. */
+  lengthsSec?: number[];
+  /** Optional per-onset relative dynamics (0..1, normalised within the take) — for
+   *  the accent/ghost dimension. Same index as onsetsSec. */
+  dynamics?: number[];
+  /** The stem's original tempo (BPM) the onset times were measured at. The engine
+   *  maps stem-seconds → live-tempo via currentBpm / originalBpm. */
+  originalBpm?: number;
+}
 
 /** Admin-tuned onset-detection params for a reference stem (bass coach). Mirrors
  *  the BassOnsetOptions the frontend detector accepts; all optional so a partial

@@ -23,9 +23,9 @@ import type {
   GrooveCardStemSet,
   ReferenceDropConfig,
   GradingMode,
-  ReferenceOnsetPreset,
 } from '@bassnotion/contracts';
 import { StemUploadButton } from './groove-card/StemUploadButton';
+import { ReferenceTransientEditor } from './groove-card/ReferenceTransientEditor';
 import { ChordChartEditor } from './groove-card/ChordChartEditor';
 import { BasslineVariantsEditor } from './groove-card/BasslineVariantsEditor';
 import { CompletionCriterionFields } from './CompletionCriterionFields';
@@ -303,12 +303,19 @@ export function GrooveCardBlockForm({
         onChange={(rd) => updateField('referenceDrop', rd)}
       />
 
-      {/* Bass coach — how a player's recorded take is graded (mandatory choice). */}
+      {/* Bass coach — how a player's recorded take is graded (mandatory choice) +
+          the approved reference transient analysis (ground truth). */}
       <GradingModeFields
         value={config.gradingMode}
-        referenceOnset={config.referenceOnset}
+        bassStemUrl={config.stems?.bass ?? ''}
+        referenceOnsets={config.referenceAnalysis?.onsetsSec}
         onChangeMode={(m) => updateField('gradingMode', m)}
-        onChangeOnset={(o) => updateField('referenceOnset', o)}
+        onChangeReferenceOnsets={(onsetsSec) =>
+          updateField('referenceAnalysis', {
+            ...config.referenceAnalysis,
+            onsetsSec,
+          })
+        }
       />
 
       {/* Completion criterion — how this drill brick is "done". */}
@@ -569,27 +576,17 @@ function ReferenceDropFields({
  */
 function GradingModeFields({
   value,
-  referenceOnset,
+  bassStemUrl,
+  referenceOnsets,
   onChangeMode,
-  onChangeOnset,
+  onChangeReferenceOnsets,
 }: {
   value?: GradingMode;
-  referenceOnset?: ReferenceOnsetPreset;
+  bassStemUrl: string;
+  referenceOnsets?: number[];
   onChangeMode: (m: GradingMode) => void;
-  onChangeOnset: (o: ReferenceOnsetPreset | undefined) => void;
+  onChangeReferenceOnsets: (onsetsSec: number[]) => void;
 }) {
-  // Default the onset preset to the Step-0 values when reference mode is first
-  // chosen, so the admin starts from sane params and tunes from there.
-  const ro: ReferenceOnsetPreset = {
-    sensitivity: referenceOnset?.sensitivity ?? 2.1,
-    minOnsetGapSeconds: referenceOnset?.minOnsetGapSeconds ?? 0.1,
-    minRelativeStrength: referenceOnset?.minRelativeStrength ?? 0.1,
-  };
-  const setOnset = <K extends keyof ReferenceOnsetPreset>(
-    key: K,
-    v: ReferenceOnsetPreset[K],
-  ) => onChangeOnset({ ...ro, [key]: v });
-
   return (
     <fieldset className="space-y-2">
       <legend className="mb-1 text-xs uppercase tracking-wider text-white/40">
@@ -617,54 +614,17 @@ function GradingModeFields({
       {value === 'reference' && (
         <div className="space-y-2 rounded-lg border border-white/10 p-3">
           <span className="text-xs text-white/50">
-            Onset detection preset for this card&apos;s bass stem (tune so detected
-            ≈ the authored attacks — a quiet stem needs a lower strength floor)
+            Reference transients — the ground truth the player is graded against.
+            Auto-detected from the bass stem on upload; correct them by hand so each
+            marker sits exactly on a real attack.
           </span>
-          <NumField
-            label="sensitivity"
-            value={ro.sensitivity ?? 2.1}
-            step={0.1}
-            onChange={(v) => setOnset('sensitivity', v)}
-          />
-          <NumField
-            label="min gap (s)"
-            value={ro.minOnsetGapSeconds ?? 0.1}
-            step={0.01}
-            onChange={(v) => setOnset('minOnsetGapSeconds', v)}
-          />
-          <NumField
-            label="strength floor"
-            value={ro.minRelativeStrength ?? 0.1}
-            step={0.01}
-            onChange={(v) => setOnset('minRelativeStrength', v)}
+          <ReferenceTransientEditor
+            stemUrl={bassStemUrl}
+            value={referenceOnsets}
+            onChange={onChangeReferenceOnsets}
           />
         </div>
       )}
     </fieldset>
-  );
-}
-
-function NumField({
-  label,
-  value,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-xs text-white/60">
-      <span className="w-28">{label}</span>
-      <input
-        type="number"
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-24 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-white/80"
-      />
-    </label>
   );
 }

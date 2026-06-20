@@ -517,6 +517,7 @@ export type {
   ReferenceDropConfig,
   GradingMode,
   ReferenceOnsetPreset,
+  ReferenceAnalysis,
   GrooveCardStemSet,
   BasslineVariant,
   ChordChartEntry,
