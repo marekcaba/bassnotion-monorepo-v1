@@ -157,3 +157,100 @@ export function detectBassOnsets(
   // A real first note is never exactly at sample 0; > ~1ms is safe.
   return onsets.filter((o) => o.time > 0.001);
 }
+
+/**
+ * ADAPTIVE bass onset detection — finds the strength floor from the take's OWN
+ * onset-confidence distribution, so it works on a loud OR quiet player without a
+ * fixed threshold or a slider. The core of the bass-coach v2 redesign: the only
+ * runtime unknown is the player's signal, and we adapt to it automatically.
+ *
+ * How: detect permissively (catch everything), then find the natural CUTOFF in the
+ * sorted confidences that separates real notes (a strong cluster) from noise /
+ * sustain fragments (a weak tail). We use the largest RELATIVE gap in the sorted
+ * confidences — a parameter-free split point — clamped to a sane floor band.
+ *
+ * `expectedCount` (optional) nudges the cutoff toward a known target (e.g. the
+ * stored reference's note count) without forcing it.
+ */
+export function detectBassOnsetsAdaptive(
+  signal: Float32Array,
+  sampleRate: number,
+  opts: { highPassHz?: number; minOnsetGapSeconds?: number; expectedCount?: number } = {},
+): OnsetInfo[] {
+  // Permissive pass: catch every candidate (real notes + noise tail) with a
+  // near-zero strength floor, then let the adaptive floor split them below.
+  // Sensitivity (peak-picking) is signal-dependent — hot DI ~2.1, quiet/clean ~0.6
+  // — so we sweep and take the richest result, giving the floor the full candidate
+  // set. This is what lets ONE call adapt across loud and quiet players.
+  const gap = opts.minOnsetGapSeconds ?? BASS_DEFAULTS.minOnsetGapSeconds;
+  let all: OnsetInfo[] = [];
+  for (const sensitivity of [2.1, 1.4, 0.9, 0.6]) {
+    const got = detectBassOnsets(signal, sampleRate, {
+      highPassHz: opts.highPassHz,
+      minOnsetGapSeconds: gap,
+      sensitivity,
+      minRelativeStrength: 0.005,
+    });
+    if (got.length > all.length) all = got;
+  }
+  if (all.length <= 1) return all;
+  // If the candidate set is already at or below the target, there's no noise tail
+  // to cull — keep everything (culling would drop real notes).
+  if (opts.expectedCount != null && all.length <= opts.expectedCount) return all;
+
+  const cutoff = adaptiveConfidenceFloor(
+    all.map((o) => o.confidence),
+    opts.expectedCount,
+  );
+  return all.filter((o) => o.confidence >= cutoff);
+}
+
+/**
+ * Find the confidence floor that separates the real-note cluster from the noise
+ * tail. Sorts confidences descending and looks for the largest DROP (relative gap)
+ * — real notes sit above it, fragments below. Clamped to [0.04, 0.9] (a wide band:
+ * only an absurd all-or-nothing cutoff is prevented). If expectedCount is given,
+ * the cutoff keeps ~that many onsets.
+ */
+export function adaptiveConfidenceFloor(
+  confidences: number[],
+  expectedCount?: number,
+): number {
+  const sorted = [...confidences].sort((a, b) => b - a); // descending
+  if (sorted.length <= 1) return 0.04;
+
+  // If we know roughly how many notes to expect, the cutoff is just below the
+  // confidence of the expectedCount-th onset — robust and simple.
+  if (expectedCount != null && expectedCount >= 1 && expectedCount < sorted.length) {
+    const atTarget = sorted[expectedCount - 1]!;
+    const nextDown = sorted[expectedCount] ?? 0;
+    const mid = (atTarget + nextDown) / 2;
+    return clamp(mid, 0.04, 0.9);
+  }
+
+  // Otherwise: find the largest gap between consecutive sorted confidences. But
+  // ONLY cut if that gap is SIGNIFICANT — on a clean take all onsets are real
+  // (tight cluster, no noise tail), and an insignificant gap must NOT invent a
+  // split that culls real notes. "Significant" = the gap is a large fraction of
+  // the total confidence spread AND the lower side is genuinely weak.
+  let bestGap = 0;
+  let bestCut = 0;
+  for (let i = 1; i < sorted.length - 1; i++) {
+    const hi = sorted[i]!;
+    const lo = sorted[i + 1]!;
+    const gap = hi - lo;
+    if (gap > bestGap) {
+      bestGap = gap;
+      bestCut = (hi + lo) / 2;
+    }
+  }
+  const spread = sorted[0]! - sorted[sorted.length - 1]!;
+  // require the gap to be a clear majority of the spread AND below it to be weak,
+  // else there's no note/noise boundary → keep everything (floor at the minimum).
+  const significant = bestGap > spread * 0.4 && bestCut < 0.5;
+  return significant ? clamp(bestCut, 0.04, 0.9) : 0.04;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return v < lo ? lo : v > hi ? hi : v;
+}
