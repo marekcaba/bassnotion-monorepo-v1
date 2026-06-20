@@ -18,7 +18,7 @@
  * impressive-but-wrong trap.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   startBassCapture,
   type BassCapture,
@@ -40,7 +40,12 @@ interface TimingMirrorPanelProps {
   setStemMuted: (stem: 'audio-bass', muted: boolean) => void;
 }
 
-type Phase = 'idle' | 'recording' | 'scoring' | 'done' | 'error';
+// Flow built around how a musician actually plays: you can't press a button on
+// the downbeat. So you ARM once (mic opens, bass auto-mutes), then just hit the
+// card's ▶ Play and play — capture is already listening and auto-starts the moment
+// playback begins, auto-scores when playback stops. No button in the heat of it.
+//   idle → armed (mic open, waiting) → recording (auto, on play) → scoring → done
+type Phase = 'idle' | 'arming' | 'armed' | 'recording' | 'scoring' | 'done' | 'error';
 
 interface Outcome {
   stats: TimingStatistics;
@@ -62,75 +67,58 @@ export function TimingMirrorPanel({
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const captureRef = useRef<BassCapture | null>(null);
-
-  // The grid is recordable only while the groove is looping past the count-in.
-  const gridReady =
-    isPlaying &&
-    audioContext != null &&
-    loopStartAudioTime != null &&
-    loopDurationSeconds > 0 &&
-    audioContext.currentTime - loopStartAudioTime >= 0;
+  // Grid captured at the play transition (loopStartAudioTime re-anchors / nulls on stop).
+  const gridRef = useRef<GridParams | null>(null);
+  // phase mirror for effects (avoids stale closures in the isPlaying watcher).
+  const phaseRef = useRef<Phase>('idle');
+  phaseRef.current = phase;
 
   const onContextLost = useCallback(() => {
+    captureRef.current?.dispose();
     captureRef.current = null;
     setPhase('error');
-    setError('Engine audio context restarted mid-take — press ▶ Play again, then re-record.');
+    setError('Engine audio context restarted — press the card ▶ Play again, then re-arm.');
   }, []);
 
-  const startRecording = useCallback(async () => {
+  /** ARM: open the mic once + auto-mute the bass, then WAIT. The actual recording
+   *  auto-starts when playback begins (see the isPlaying effect) so you never have
+   *  to press a button on the downbeat. */
+  const arm = useCallback(async () => {
     setError(null);
     setOutcome(null);
-    if (!gridReady) {
-      setError('Press the card ▶ Play and let the count-in finish, then Record.');
-      setPhase('error');
-      return;
-    }
+    setPhase('arming');
     try {
+      if (!isBassMuted) setStemMuted('audio-bass', true); // play along to backing only
       captureRef.current = await startBassCapture(onContextLost);
-      setPhase('recording');
+      setPhase('armed');
     } catch (err) {
+      captureRef.current = null;
       setError(err instanceof Error ? err.message : String(err));
       setPhase('error');
     }
-  }, [gridReady, onContextLost]);
+  }, [isBassMuted, setStemMuted, onContextLost]);
 
-  const stopAndScore = useCallback(async () => {
+  const score = useCallback(async () => {
     const capture = captureRef.current;
+    const grid = gridRef.current;
     if (!capture) return;
     setPhase('scoring');
-    // Snapshot the grid NOW (loopStartAudioTime re-anchors per loop / nulls on stop).
-    // Derive bpm from the LIVE loop geometry so it agrees with the grid snap:
-    //   barSeconds = loopDurationSeconds / lengthBars
-    //   bpm = beatsPerBar * 60 / barSeconds   (4/4 → beatsPerBar = 4)
-    const BEATS_PER_BAR = 4;
-    const barSeconds = loopDurationSeconds / lengthBars;
-    const grid: GridParams | null =
-      loopStartAudioTime != null && loopDurationSeconds > 0 && lengthBars > 0
-        ? {
-            loopStartAudioTime,
-            loopDurationSeconds,
-            lengthBars,
-            bpm: (BEATS_PER_BAR * 60) / barSeconds,
-          }
-        : null;
     try {
       const captured = await capture.stop();
       captureRef.current = null;
       if (!captured) {
-        setError('No audio captured — check the input reached the browser.');
+        setError('No audio captured — check the Clarett is the macOS input device.');
         setPhase('error');
         return;
       }
       if (!grid) {
-        setError('Lost the groove grid before scoring — keep playing through Stop.');
+        setError('No groove grid was captured — make sure the groove played while armed.');
         setPhase('error');
         return;
       }
       // buffer-relative onset seconds → absolute engine-clock seconds.
       const onsets = detectBassOnsets(captured.signal, captured.sampleRate);
-      const absOnsets = onsets.map(
-        (o) => o.time + capture.startedAtCtxTime,
-      );
+      const absOnsets = onsets.map((o) => o.time + capture.startedAtCtxTime);
       const { stats, slots, skippedBeforeGrid } = scoreOnsetsAgainstGrid(
         absOnsets,
         grid,
@@ -146,15 +134,41 @@ export function TimingMirrorPanel({
       setError(err instanceof Error ? err.message : String(err));
       setPhase('error');
     }
-  }, [loopStartAudioTime, loopDurationSeconds, lengthBars]);
+  }, []);
+
+  // Auto-start on PLAY, auto-score on STOP — driven by the engine's isPlaying.
+  useEffect(() => {
+    if (isPlaying && phaseRef.current === 'armed') {
+      // Capture the grid the instant playback begins. loopStartAudioTime is the
+      // (future) bar-1 downbeat anchor; bpm derived from live loop geometry so it
+      // agrees with the grid snap (4/4 → beatsPerBar 4).
+      if (loopStartAudioTime != null && loopDurationSeconds > 0 && lengthBars > 0) {
+        const BEATS_PER_BAR = 4;
+        gridRef.current = {
+          loopStartAudioTime,
+          loopDurationSeconds,
+          lengthBars,
+          bpm: (BEATS_PER_BAR * 60) / (loopDurationSeconds / lengthBars),
+        };
+        setPhase('recording');
+      }
+    } else if (!isPlaying && phaseRef.current === 'recording') {
+      // Playback stopped → that's the end of the take. Score automatically.
+      void score();
+    }
+  }, [isPlaying, loopStartAudioTime, loopDurationSeconds, lengthBars, score]);
 
   const reset = useCallback(() => {
     captureRef.current?.dispose();
     captureRef.current = null;
+    gridRef.current = null;
     setOutcome(null);
     setError(null);
     setPhase('idle');
   }, []);
+
+  // Release the mic if the panel unmounts mid-arm.
+  useEffect(() => () => captureRef.current?.dispose(), []);
 
   const o = outcome;
   const offsetMs = o ? o.stats.averageDrift : null;
@@ -166,40 +180,41 @@ export function TimingMirrorPanel({
         <strong style={{ color: '#6ad08c', letterSpacing: '.05em' }}>
           🪞 TIMING MIRROR (spike · step 4 — numbers only)
         </strong>
-        <span style={{ fontSize: 11, color: gridReady ? '#6ad08c' : '#9aa0ad' }}>
-          {gridReady ? '● grid ready' : '○ play the groove first'}
+        <span style={{ fontSize: 11, color: isPlaying ? '#6ad08c' : '#9aa0ad' }}>
+          {isPlaying ? '● groove playing' : '○ stopped'}
         </span>
       </div>
-
-      {!isBassMuted && (
-        <div style={{ marginTop: 8, color: '#e0b24a', fontSize: 12 }}>
-          Mute the bass so you play along to the backing only.{' '}
-          <button style={linkBtn} onClick={() => setStemMuted('audio-bass', true)}>
-            mute bass
-          </button>
-        </div>
-      )}
 
       <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
           style={primaryBtn}
-          onClick={startRecording}
-          disabled={phase === 'recording' || phase === 'scoring' || !gridReady}
-          title={!gridReady ? 'Press ▶ Play and let the count-in finish' : undefined}
+          onClick={arm}
+          disabled={phase === 'arming' || phase === 'armed' || phase === 'recording' || phase === 'scoring'}
         >
-          Record
+          {phase === 'arming' ? 'Arming…' : '1 · Arm'}
         </button>
-        <button style={btn} onClick={stopAndScore} disabled={phase !== 'recording'}>
-          Stop &amp; score
-        </button>
-        <button style={btn} onClick={reset}>
+        <button style={btn} onClick={reset} disabled={phase === 'idle'}>
           Reset
         </button>
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 12, color: '#9aa0ad' }}>
-        {phase === 'idle' && 'Mute bass → ▶ Play → Record → play the bassline on the beats → Stop & score.'}
-        {phase === 'recording' && <span style={{ color: '#e0604a' }}>● Recording — play the bassline…</span>}
+      <div style={{ marginTop: 8, fontSize: 12, color: '#9aa0ad', lineHeight: 1.5 }}>
+        {phase === 'idle' && (
+          <>
+            <b>How:</b> press <b>1 · Arm</b> (opens the mic, mutes the bass) → then
+            press the card&apos;s <b>▶ Play</b> and play the bassline through the count-in.
+            It records automatically and scores when the groove stops. No button to press while you play.
+          </>
+        )}
+        {phase === 'arming' && 'Opening the mic… allow the permission prompt.'}
+        {phase === 'armed' && (
+          <span style={{ color: '#6ad08c' }}>
+            ✅ Armed &amp; listening — now press the card&apos;s ▶ Play and play the bassline.
+          </span>
+        )}
+        {phase === 'recording' && (
+          <span style={{ color: '#e0604a' }}>● Recording — play along; stop the groove when done.</span>
+        )}
         {phase === 'scoring' && 'Scoring…'}
         {phase === 'error' && <span style={{ color: '#e0604a' }}>⛔ {error}</span>}
       </div>
@@ -282,13 +297,4 @@ const primaryBtn: React.CSSProperties = {
   color: '#0a0a0a',
   borderColor: '#6ad08c',
   fontWeight: 600,
-};
-const linkBtn: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: '#6ad08c',
-  textDecoration: 'underline',
-  cursor: 'pointer',
-  font: 'inherit',
-  padding: 0,
 };
