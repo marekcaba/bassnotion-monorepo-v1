@@ -94,6 +94,7 @@ export function TimingMirrorPanel({
 }: TimingMirrorPanelProps) {
   // Coach mode: grade vs the ideal GRID, or vs the REFERENCE stem (the bass coach).
   const [coachMode, setCoachMode] = useState<'grid' | 'reference'>('grid');
+  const [collapsed, setCollapsed] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -336,14 +337,26 @@ export function TimingMirrorPanel({
 
   return (
     <div style={panel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <strong style={{ color: '#6ad08c', letterSpacing: '.05em' }}>
           🪞 TIMING MIRROR (spike)
         </strong>
-        <span style={{ fontSize: 11, color: isPlaying ? '#6ad08c' : '#9aa0ad' }}>
-          {isPlaying ? '● groove playing' : '○ stopped'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, color: isPlaying ? '#6ad08c' : '#9aa0ad' }}>
+            {isPlaying ? '● playing' : '○ stopped'}
+          </span>
+          <button
+            style={{ ...btn, padding: '2px 8px' }}
+            onClick={() => setCollapsed((c) => !c)}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            {collapsed ? '▢' : '—'}
+          </button>
+        </div>
       </div>
+
+      {collapsed ? null : (
+      <>
 
       {/* Coach mode: grade vs the ideal GRID or vs the REFERENCE recording. */}
       <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -624,6 +637,9 @@ export function TimingMirrorPanel({
           </div>
         </div>
       )}
+
+      </>
+      )}
     </div>
   );
 }
@@ -686,17 +702,23 @@ function Stat({
 }
 
 const panel: React.CSSProperties = {
-  marginTop: 12,
+  // FLOATING overlay, fixed to the viewport with its own scroll — the inline panel
+  // grew the page past its scroll limit and the results at the bottom were
+  // unreachable. Fixed-positioning decouples it from the page's scroll entirely.
+  position: 'fixed',
+  bottom: 12,
+  right: 12,
+  width: 'min(560px, 46vw)',
+  maxHeight: '92vh',
+  overflowY: 'auto',
+  zIndex: 9999,
   padding: 14,
   borderRadius: 10,
   border: '1px solid #2a2d36',
-  background: '#13151b',
+  background: '#13151bf2', // slightly translucent
+  boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
   color: '#e7e9ee',
   font: '13px/1.5 ui-monospace, Menlo, monospace',
-  // Keep the dev panel within the viewport and scrollable — it grows with results
-  // and was overflowing the page with no way to reach the bottom.
-  maxHeight: '85vh',
-  overflowY: 'auto',
 };
 const btn: React.CSSProperties = {
   background: '#2a2f3a',
