@@ -34,6 +34,12 @@ import {
  *  so callers supply it explicitly rather than reading a phantom signature. */
 const BEATS_PER_BAR = 4;
 
+/** Subdivisions per quarter-note beat for snapping. Basslines play OFF-beats
+ *  (eighths/sixteenths), so snapping to quarters mis-scores every off-beat note
+ *  by up to half a beat → huge erratic jitter even on a tight take. 4 = snap to
+ *  sixteenths (covers most basslines); the analyzer's grid runs at this resolution. */
+const DEFAULT_SUBDIVISIONS_PER_BEAT = 4;
+
 export interface GridParams {
   /** Audio-context time (seconds) of bar-1 downbeat — the engine's grid anchor
    *  (useGrooveCardPlayback.loopStartAudioTime). Same origin the waveform +
@@ -45,6 +51,9 @@ export interface GridParams {
   lengthBars: number;
   /** Current tempo. Drives BeatTimingAnalyzer's expectedTime spacing. */
   bpm: number;
+  /** Snap resolution: subdivisions per quarter beat. 4 = sixteenths (default).
+   *  Onsets snap to the nearest subdivision so off-beat notes score correctly. */
+  subdivisionsPerBeat?: number;
   /** Beats per bar. Defaults to 4 (the engine's fixed 4/4). */
   beatsPerBar?: number;
 }
@@ -52,27 +61,36 @@ export interface GridParams {
 export interface GridSlot {
   /** Onset time in audio-ctx seconds. */
   onsetSec: number;
+  /** Absolute SUBDIVISION index the onset snapped to (0 = bar-1 downbeat;
+   *  at sixteenths, +1 per sixteenth). The scoring grid runs at this resolution. */
+  subIndex: number;
   /** Which bar (0-based) the onset snapped to. */
   measureNumber: number;
   /** Which beat within the bar (0-based) the onset snapped to. */
   beatNumber: number;
-  /** Signed offset from the grid slot, seconds (onset - gridSlotTime). */
+  /** Signed offset from the snapped grid slot, seconds (onset - gridSlotTime).
+   *  THIS is the timing error — distance to the nearest subdivision, not a beat. */
   errorSec: number;
   /** Whether the onset fell before the first downbeat (count-in) → skipped. */
   beforeGrid: boolean;
 }
 
 /**
- * Snap one onset to the nearest grid beat using the deterministic
- * loopStart + k*beatSeconds grid (NOT getAudioPhase — that's a visual,
- * latency-shifted playhead, never a scoring clock; useReferenceDrop abandoned
- * it for exactly this). Grid is re-derived from the LIVE loop duration so it
- * tracks tempo; never cache a grid captured at record-start.
+ * Snap one onset to the nearest grid SUBDIVISION (sixteenths by default) using
+ * the deterministic loopStart + k*subSeconds grid (NOT getAudioPhase — a visual,
+ * latency-shifted playhead, never a scoring clock; useReferenceDrop abandoned it
+ * for exactly this). Snapping to subdivisions, not quarter beats, is essential:
+ * basslines play off-beats, and quarter-snapping mis-scores every eighth/sixteenth
+ * by up to half a beat → huge erratic jitter on a perfectly tight take. Grid is
+ * re-derived from the LIVE loop duration so it tracks tempo.
  */
 export function snapOnsetToGrid(onsetSec: number, grid: GridParams): GridSlot {
   const beatsPerBar = grid.beatsPerBar ?? BEATS_PER_BAR;
+  const subPerBeat = grid.subdivisionsPerBeat ?? DEFAULT_SUBDIVISIONS_PER_BEAT;
   const barSeconds = grid.loopDurationSeconds / grid.lengthBars;
   const beatSeconds = barSeconds / beatsPerBar;
+  const subSeconds = beatSeconds / subPerBeat;
+  const subsPerBar = beatsPerBar * subPerBeat;
 
   const elapsed = onsetSec - grid.loopStartAudioTime;
   if (elapsed < 0) {
@@ -80,6 +98,7 @@ export function snapOnsetToGrid(onsetSec: number, grid: GridParams): GridSlot {
     // downbeat). Not on the loop grid yet → skip from scoring.
     return {
       onsetSec,
+      subIndex: 0,
       measureNumber: 0,
       beatNumber: 0,
       errorSec: elapsed,
@@ -87,14 +106,14 @@ export function snapOnsetToGrid(onsetSec: number, grid: GridParams): GridSlot {
     };
   }
 
-  const absBeat = Math.round(elapsed / beatSeconds);
-  const measureNumber = Math.floor(absBeat / beatsPerBar);
-  // guard against negative modulo (defensive; absBeat >= 0 here)
-  const beatNumber = ((absBeat % beatsPerBar) + beatsPerBar) % beatsPerBar;
-  const gridSlotSec = grid.loopStartAudioTime + absBeat * beatSeconds;
+  const subIndex = Math.round(elapsed / subSeconds);
+  const measureNumber = Math.floor(subIndex / subsPerBar);
+  const beatNumber = Math.floor((subIndex % subsPerBar) / subPerBeat);
+  const gridSlotSec = grid.loopStartAudioTime + subIndex * subSeconds;
 
   return {
     onsetSec,
+    subIndex,
     measureNumber,
     beatNumber,
     errorSec: onsetSec - gridSlotSec,
@@ -120,22 +139,20 @@ export function scoreOnsetsAgainstGrid(
   onsetsSec: number[],
   grid: GridParams,
 ): ScoreResult {
+  const subPerBeat = grid.subdivisionsPerBeat ?? DEFAULT_SUBDIVISIONS_PER_BEAT;
   const analyzer = new BeatTimingAnalyzer();
-  analyzer.start(grid.bpm, {
-    numerator: grid.beatsPerBar ?? BEATS_PER_BAR,
-    denominator: 4,
-  });
+  // Run the analyzer's grid at SUBDIVISION resolution: tempo × subPerBeat makes
+  // its beatDuration one subdivision (60000/(bpm*subPerBeat) ms), and we feed each
+  // onset's absolute subIndex as the analyzer's "beat" (measure 0). Then its
+  // expectedTime = subIndex × subSeconds — the sixteenth grid. This is what makes
+  // off-beat notes score correctly (the quarter grid was the 150ms-jitter bug).
+  analyzer.start(grid.bpm * subPerBeat, { numerator: 1, denominator: 4 });
   // Anchor startTime to the grid's bar-1 downbeat IN MS (loopStartAudioTime is
-  // audioContext.currentTime seconds). Then pass each onset as its ABSOLUTE
-  // audio-clock ms, so the class computes:
-  //   elapsedTime = onsetMs - startTime = (onsetSec - loopStartAudioTime) * 1000
-  // i.e. the relative ms in the audio clock — exactly the bridge we want.
-  //
-  // Why anchor to the downbeat (not 0): recordBeat guards `if (!this.startTime) return`,
-  // a falsy-zero trap that silently drops EVERY beat when startTime is 0. The
-  // downbeat anchor keeps startTime truthy (and a real take's loopStartAudioTime
-  // is ~tens of seconds, never 0). Likewise recordBeat's `actualTime || now`
-  // trap: an absolute onsetMs is never 0 for a real grid, so no EPSILON dance.
+  // audioContext.currentTime seconds), so elapsedTime = onsetMs - startMs =
+  // (onsetSec - loopStartAudioTime)*1000 — relative ms in the audio clock.
+  // Anchored to the downbeat (not 0) to dodge recordBeat's `if (!startTime) return`
+  // falsy-zero trap; absolute onsetMs is never 0, so the `actualTime || now` trap
+  // is also moot.
   const startMs = grid.loopStartAudioTime * 1000;
   (analyzer as unknown as { startTime: number }).startTime = startMs;
 
@@ -149,13 +166,9 @@ export function scoreOnsetsAgainstGrid(
       skippedBeforeGrid++;
       continue;
     }
-    // absolute audio-clock ms; elapsedTime resolves to relative-ms vs the anchor.
-    analyzer.recordBeat(
-      'user-bass',
-      slot.beatNumber,
-      slot.measureNumber,
-      onsetSec * 1000,
-    );
+    // beat = absolute subIndex, measure = 0 → expectedTime = subIndex*subSeconds.
+    // actualTime = absolute audio-clock ms → drift = onset's distance to its sub.
+    analyzer.recordBeat('user-bass', slot.subIndex, 0, onsetSec * 1000);
   }
 
   return {

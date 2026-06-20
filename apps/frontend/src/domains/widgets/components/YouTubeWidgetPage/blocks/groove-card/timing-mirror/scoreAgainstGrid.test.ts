@@ -64,6 +64,36 @@ describe('snapOnsetToGrid', () => {
   });
 });
 
+describe('subdivision snapping (the off-beat / 150ms-jitter fix)', () => {
+  // The bug: a real bassline plays EIGHTH notes; snapping each to the nearest
+  // QUARTER mis-scores every off-beat by ~half a beat (250ms @ 120bpm) → erratic
+  // jitter on a perfectly tight take. Sixteenth-snapping must score eighths clean.
+  it('eighth notes played dead-on → jitter ≈ 0 (would be ~125ms erratic on a quarter grid)', () => {
+    const EIGHTH = BEAT_SEC / 2; // 0.25s
+    const onsets = Array.from({ length: 8 }, (_, i) => T0 + i * EIGHTH); // 8 eighths
+    const { stats } = scoreOnsetsAgainstGrid(onsets, grid);
+    expect(stats.totalBeats).toBe(8);
+    expect(stats.averageDrift).toBeCloseTo(0, 2);
+    expect(stats.jitter).toBeCloseTo(0, 2); // the fix: NOT ~125ms
+    expect(stats.syncScore).toBeCloseTo(100, 2);
+  });
+
+  it('two notes in the SAME beat are not deduped away (16ths model)', () => {
+    // On the old quarter model both landed on beat 0 → the 100ms same-beat dedup
+    // dropped one. At sixteenth resolution they occupy distinct subIndices.
+    const onsets = [T0, T0 + BEAT_SEC / 2]; // downbeat + the 'and'
+    const { stats } = scoreOnsetsAgainstGrid(onsets, grid);
+    expect(stats.totalBeats).toBe(2);
+  });
+
+  it('a syncopated 16th-note offset reads as small drift, not half a beat', () => {
+    // Note on the 'e' of beat 1 (one sixteenth past the downbeat), played +15ms late.
+    const sixteenth = BEAT_SEC / 4; // 0.125s
+    const { stats } = scoreOnsetsAgainstGrid([T0 + sixteenth + 0.015], grid);
+    expect(stats.averageDrift).toBeCloseTo(15, 0); // ~15ms, not ~125ms
+  });
+});
+
 describe('scoreOnsetsAgainstGrid — the clock bridge', () => {
   it('perfectly on-grid onsets → jitter ≈ 0, syncScore ≈ 100, avgDrift ≈ 0', () => {
     const { stats, skippedBeforeGrid } = scoreOnsetsAgainstGrid(onGridQuarters(8), grid);
