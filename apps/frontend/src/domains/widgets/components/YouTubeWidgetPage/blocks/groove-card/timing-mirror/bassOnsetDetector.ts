@@ -183,10 +183,15 @@ export function detectBassOnsetsAdaptive(
   // — so we sweep and take the richest result, giving the floor the full candidate
   // set. This is what lets ONE call adapt across loud and quiet players.
   const gap = opts.minOnsetGapSeconds ?? BASS_DEFAULTS.minOnsetGapSeconds;
+  // Use the default HPF unless explicitly overridden. NEVER pass `undefined` — the
+  // detector spreads options over BASS_DEFAULTS, so an undefined highPassHz would
+  // OVERRIDE the 45Hz default with undefined → NaN biquad coeffs → wrecks the
+  // signal → 0 onsets. (This was the live "0% coverage" bug.)
+  const highPassHz = opts.highPassHz ?? BASS_DEFAULTS.highPassHz;
   let all: OnsetInfo[] = [];
   for (const sensitivity of [2.1, 1.4, 0.9, 0.6]) {
     const got = detectBassOnsets(signal, sampleRate, {
-      highPassHz: opts.highPassHz,
+      highPassHz,
       minOnsetGapSeconds: gap,
       sensitivity,
       minRelativeStrength: 0.005,
