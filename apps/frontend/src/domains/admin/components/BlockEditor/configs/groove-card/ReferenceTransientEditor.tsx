@@ -57,7 +57,10 @@ interface Props {
 }
 
 const WAVE_H = 220;
-const CLICK_DELETE_PX = 6; // a press that moves less than this = a click (delete)
+const CLICK_DELETE_PX = 6; // a press that moves less than this = a click (not a drag)
+const DELETE_Y = 10; // y of the red × delete handle (top of each marker)
+const DRAG_Y = WAVE_H - 12; // y of the green drag handle (bottom of each marker)
+const HANDLE_R = 9; // hit radius for the top/bottom handles
 
 export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
@@ -278,18 +281,30 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     }
     ctx.stroke();
 
-    // transient markers
+    // transient markers: a line, a DELETE handle (red ×) at the TOP, and a DRAG
+    // handle (green dot) at the BOTTOM — two clear, separate hit zones.
     for (const t of onsets) {
       const px = (t / duration) * w;
       ctx.strokeStyle = '#6ad08c';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(px, 0);
-      ctx.lineTo(px, WAVE_H);
+      ctx.moveTo(px, DELETE_Y + 6);
+      ctx.lineTo(px, DRAG_Y - 6);
       ctx.stroke();
+      // delete handle (×) at top
+      ctx.strokeStyle = '#e0604a';
+      ctx.lineWidth = 2;
+      const r = 5;
+      ctx.beginPath();
+      ctx.moveTo(px - r, DELETE_Y - r);
+      ctx.lineTo(px + r, DELETE_Y + r);
+      ctx.moveTo(px + r, DELETE_Y - r);
+      ctx.lineTo(px - r, DELETE_Y + r);
+      ctx.stroke();
+      // drag handle (●) at bottom
       ctx.fillStyle = '#6ad08c';
       ctx.beginPath();
-      ctx.arc(px, 8, 4, 0, Math.PI * 2);
+      ctx.arc(px, DRAG_Y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -318,6 +333,13 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     [duration],
   );
 
+  /** Canvas-local Y (0..WAVE_H) for hit-testing the top/bottom handles. */
+  const canvasY = useCallback((clientY: number): number => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return ((clientY - rect.top) / rect.height) * WAVE_H;
+  }, []);
+
   const nearestMarker = useCallback(
     (clientX: number): number | null => {
       const canvas = canvasRef.current!;
@@ -342,21 +364,22 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     (e: React.PointerEvent) => {
       if (!buffer) return;
       const hit = nearestMarker(e.clientX);
+      const y = canvasY(e.clientY);
       if (hit != null) {
-        if (e.altKey || e.button === 2) {
-          // alt-click / right-click a marker = DELETE
+        // TOP zone (the red ×) → DELETE. Also alt/right-click anywhere on a marker.
+        if (Math.abs(y - DELETE_Y) < HANDLE_R || e.altKey || e.button === 2) {
           commit(onsets.filter((_, i) => i !== hit));
           return;
         }
-        // start a potential drag; a plain click (no drag) PLAYS the note so you can
-        // HEAR whether it's a real attack you want graded, or just noise.
+        // anywhere else on the marker (incl. the bottom drag dot) → drag, or PLAY
+        // the note on a plain click (hear if it's a real attack or noise).
         dragRef.current = { index: hit, downX: e.clientX, moved: false };
       } else {
         // empty space → ADD a marker here immediately
         commit([...onsets, xToTime(e.clientX)]);
       }
     },
-    [buffer, nearestMarker, onsets, commit, xToTime],
+    [buffer, nearestMarker, canvasY, onsets, commit, xToTime],
   );
 
   const onPointerMove = useCallback(
@@ -445,8 +468,9 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       <p style={{ fontSize: 11, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>
         {status}
         <br />
-        <b>Click a marker</b> to HEAR that note (is it a real attack, or noise?) ·{' '}
-        <b>alt/right-click a marker</b> to delete · <b>drag</b> to move ·{' '}
+        <b style={{ color: '#e0604a' }}>Top × handle</b> = delete ·{' '}
+        <b style={{ color: '#6ad08c' }}>bottom ● handle</b> = drag to move ·{' '}
+        <b>click the line</b> to HEAR that note (real attack, or noise?) ·{' '}
         <b>click empty space</b> to add · <b>▶ Play stem</b> to hear the whole part
         with a click on each marker · <b>zoom</b> in to place precisely. Auto-saves.
       </p>
