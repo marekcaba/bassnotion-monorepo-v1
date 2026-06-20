@@ -31,6 +31,7 @@ import {
   formatKeyLabel,
 } from './groove-card/GrooveCardControls';
 import { GrooveCardDynamicLoopDial } from './groove-card/GrooveCardDynamicLoopDial';
+import { TimingMirrorPanel } from './groove-card/TimingMirrorPanel';
 import { LinesAndFillsSection } from './groove-card/LinesAndFillsSection';
 import {
   buildLinesAndFillsGroups,
@@ -1125,6 +1126,21 @@ export function GrooveCardBlockView({
             grooveName={config.title}
           />
         </>
+      )}
+
+      {/* Timing-mirror spike (dev-only; NEXT_PUBLIC_BASS_RECORDER_PROBE). Hear the
+          player, score their timing vs THIS groove's grid. Tree-shakes out of prod.
+          See docs/TIMING_MIRROR_SPIKE_PLAN.md. */}
+      {process.env.NEXT_PUBLIC_BASS_RECORDER_PROBE === 'true' && (
+        <TimingMirrorPanel
+          audioContext={playback.audioContext}
+          loopStartAudioTime={playback.loopStartAudioTime}
+          loopDurationSeconds={playback.loopDurationSeconds}
+          lengthBars={config.lengthBars ?? 4}
+          isPlaying={playback.isPlaying}
+          isBassMuted={isBassMuted}
+          setStemMuted={(stem, muted) => playback.setStemMuted(stem, muted)}
+        />
       )}
     </div>
   );
