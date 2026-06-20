@@ -19,7 +19,7 @@ describe('alignToReference — grid-anchored matching', () => {
     const res = alignToReference(ref, ref, grid);
     expect(res.matched).toHaveLength(4);
     expect(res.missed).toHaveLength(0);
-    expect(res.extra).toHaveLength(0);
+    expect(res.noise).toHaveLength(0);
     expect(res.coverage).toBe(1);
     res.matched.forEach((p) => expect(p.errorSec).toBeCloseTo(0, 6));
   });
@@ -39,7 +39,7 @@ describe('alignToReference — grid-anchored matching', () => {
     expect(res.matched).toHaveLength(3);
     expect(res.missed).toHaveLength(1);
     expect(res.missed[0]).toBeCloseTo(T0 + BEAT, 3);
-    expect(res.extra).toHaveLength(0);
+    expect(res.noise).toHaveLength(0);
     expect(res.coverage).toBeCloseTo(0.75, 3);
   });
 
@@ -49,8 +49,8 @@ describe('alignToReference — grid-anchored matching', () => {
     const res = alignToReference(player, ref, grid);
     expect(res.matched).toHaveLength(2);
     expect(res.missed).toHaveLength(0);
-    expect(res.extra).toHaveLength(1);
-    expect(res.extra[0]).toBeCloseTo(T0 + SIX, 3);
+    expect(res.noise).toHaveLength(1);
+    expect(res.noise[0]).toBeCloseTo(T0 + SIX, 3);
   });
 
   it('matches off-beat (syncopated) reference notes too', () => {
@@ -65,7 +65,7 @@ describe('alignToReference — grid-anchored matching', () => {
     const player = [T0 - 1.0, T0, T0 + BEAT]; // one onset before the downbeat
     const res = alignToReference(player, ref, grid);
     expect(res.matched).toHaveLength(2);
-    expect(res.extra).toHaveLength(0); // the count-in onset is dropped, not an extra
+    expect(res.noise).toHaveLength(0); // the count-in onset is dropped, not an extra
   });
 
   // The plan's open question, now RESOLVED with ±1-slot tolerance: a note played
@@ -78,7 +78,7 @@ describe('alignToReference — grid-anchored matching', () => {
     const res = alignToReference(player, ref, grid);
     expect(res.matched).toHaveLength(2);
     expect(res.missed).toHaveLength(0);
-    expect(res.extra).toHaveLength(0);
+    expect(res.noise).toHaveLength(0);
     // the late note is a real match carrying its ~70ms error
     const late = res.matched.find((m) => m.referenceSec > T0)!;
     expect(late.errorSec).toBeCloseTo(0.07, 2);
@@ -91,7 +91,7 @@ describe('alignToReference — grid-anchored matching', () => {
     const player = [T0, T0 + SIX];
     const res = alignToReference(player, ref, grid);
     expect(res.matched).toHaveLength(2);
-    expect(res.extra).toHaveLength(0);
+    expect(res.noise).toHaveLength(0);
     expect(res.missed).toHaveLength(0);
   });
 });

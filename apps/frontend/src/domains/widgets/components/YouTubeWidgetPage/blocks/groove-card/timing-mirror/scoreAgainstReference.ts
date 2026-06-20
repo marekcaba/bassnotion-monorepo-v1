@@ -29,7 +29,8 @@ export interface ReferenceScore {
   coverage: number;
   matchedCount: number;
   missedCount: number;
-  extraCount: number;
+  /** Player onsets rejected as noise (matched no reference note). */
+  noiseCount: number;
   /** The raw alignment, for the visualizer / detail. */
   alignment: AlignmentResult;
   /** True when the reference target is untrustworthy → no grade shown. */
@@ -85,7 +86,7 @@ export function scoreAgainstReference(
     coverage: alignment.coverage,
     matchedCount: matched.length,
     missedCount: alignment.missed.length,
-    extraCount: alignment.extra.length,
+    noiseCount: alignment.noise.length,
     alignment,
   };
 

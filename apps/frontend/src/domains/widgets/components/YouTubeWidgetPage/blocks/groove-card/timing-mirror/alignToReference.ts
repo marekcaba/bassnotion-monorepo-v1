@@ -33,8 +33,12 @@ export interface AlignmentResult {
   matched: AlignedPair[];
   /** Reference notes with no player note in their slot — MISSED. (ref times, sec) */
   missed: number[];
-  /** Player notes with no reference note in their slot — EXTRA. (player times, sec) */
-  extra: number[];
+  /** Player onsets that matched no reference note. The player is playing a KNOWN
+   *  part, so an onset where the reference has no note is almost always NOISE
+   *  (string buzz, sustain re-trigger) — NOT a real extra note. We REJECT these as
+   *  noise rather than penalise them, and they cannot steal a real note's slot.
+   *  (player times, sec) */
+  noise: number[];
   /** matched / (matched + missed) — how much of the part the player actually hit. */
   coverage: number;
 }
@@ -67,61 +71,64 @@ export function alignToReference(
   referenceOnsetsSec: number[],
   grid: GridParams,
 ): AlignmentResult {
-  const playerSlots = bucketBySlot(playerOnsetsSec, grid);
   const refSlots = bucketBySlot(referenceOnsetsSec, grid);
+  // Player onsets kept in TIME space (not slot-bucketed) — bucketing collapses
+  // adjacent onsets and drives the slot-stealing cascade. We match in time with a
+  // tolerance, so a phantom near a reference note can't bump the REAL player note.
+  const players = playerOnsetsSec
+    .map((sec) => ({ sec, slot: snapOnsetToGrid(sec, grid) }))
+    .filter((p) => !p.slot.beforeGrid)
+    .map((p, i) => ({ sec: p.sec, subIndex: p.slot.subIndex, idx: i, claimed: false }));
+
+  // Match tolerance: ±1.5 sixteenths in TIME. A note played up to ~1.5 subs off
+  // still matches (as a late/early note carrying its error); anything further is
+  // unmatched (a miss for the reference / noise for the player).
+  const barSeconds = grid.loopDurationSeconds / grid.lengthBars;
+  const subSeconds = barSeconds / ((grid.beatsPerBar ?? 4) * (grid.subdivisionsPerBeat ?? 4));
+  const tolSec = subSeconds * 1.5;
 
   const matched: AlignedPair[] = [];
   const missed: number[] = [];
-  const claimedPlayerSlots = new Set<number>();
 
-  // For each reference note, find the player note in its slot — OR, if none, an
-  // unclaimed player note in an ADJACENT slot (±1 sixteenth). The adjacent reach
-  // is essential: a note played more than half a sixteenth off snaps to the
-  // neighbor slot, and a feel-grading coach must score that as a LATE/EARLY note
-  // (a real match with a large error), not as miss+extra. Reference slots are
-  // processed in order so an earlier note claims its closest player onset first.
-  for (const subIndex of [...refSlots.keys()].sort((a, b) => a - b)) {
-    const referenceSec = refSlots.get(subIndex)!;
-    // candidate slots: exact first, then ±1 (closest grid distance wins on a tie)
-    const candidates = [subIndex, subIndex - 1, subIndex + 1].filter(
-      (s) => playerSlots.has(s) && !claimedPlayerSlots.has(s),
-    );
-    if (candidates.length === 0) {
-      missed.push(referenceSec);
-      continue;
-    }
-    // pick the player onset closest in TIME to the reference
-    let best = candidates[0]!;
-    let bestDist = Math.abs(playerSlots.get(best)! - referenceSec);
-    for (const c of candidates.slice(1)) {
-      const d = Math.abs(playerSlots.get(c)! - referenceSec);
+  // For each reference note (in time order), claim the NEAREST unclaimed player
+  // onset within tolerance. Nearest-in-time means a phantom slightly off can't
+  // out-compete the real note that's closer.
+  const refEntries = [...refSlots.entries()].sort((a, b) => a[1] - b[1]);
+  for (const [subIndex, referenceSec] of refEntries) {
+    let best: (typeof players)[number] | null = null;
+    let bestDist = tolSec;
+    for (const p of players) {
+      if (p.claimed) continue;
+      const d = Math.abs(p.sec - referenceSec);
       if (d < bestDist) {
-        best = c;
         bestDist = d;
+        best = p;
       }
     }
-    const playerSec = playerSlots.get(best)!;
-    claimedPlayerSlots.add(best);
-    matched.push({
-      subIndex,
-      referenceSec,
-      playerSec,
-      errorSec: playerSec - referenceSec,
-    });
+    if (best) {
+      best.claimed = true;
+      matched.push({
+        subIndex,
+        referenceSec,
+        playerSec: best.sec,
+        errorSec: best.sec - referenceSec,
+      });
+    } else {
+      missed.push(referenceSec);
+    }
   }
 
-  // Player onsets not claimed by any reference note = extras.
-  const extra: number[] = [];
-  for (const [subIndex, playerSec] of playerSlots) {
-    if (!claimedPlayerSlots.has(subIndex)) extra.push(playerSec);
-  }
+  // Unclaimed player onsets = NOISE (the player is playing a known part, so an
+  // onset matching no reference note is almost always a phantom). Rejected, NOT
+  // penalised, and — because we matched in time — they never stole a real slot.
+  const noise = players.filter((p) => !p.claimed).map((p) => p.sec);
 
   matched.sort((a, b) => a.subIndex - b.subIndex);
   missed.sort((a, b) => a - b);
-  extra.sort((a, b) => a - b);
+  noise.sort((a, b) => a - b);
 
   const refCount = refSlots.size;
   const coverage = refCount > 0 ? matched.length / refCount : 0;
 
-  return { matched, missed, extra, coverage };
+  return { matched, missed, noise, coverage };
 }

@@ -719,7 +719,7 @@ export function TimingMirrorPanel({
                 label="coverage"
                 value={`${Math.round(refScore.coverage * 100)}%`}
                 color={refScore.coverage > 0.85 ? '#6ad08c' : '#e0b24a'}
-                sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed · ${refScore.extraCount} extra`}
+                sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed · ${refScore.noiseCount} noise`}
               />
             </div>
           )}
