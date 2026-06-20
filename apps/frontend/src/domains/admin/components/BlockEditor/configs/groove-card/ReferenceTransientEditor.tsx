@@ -37,10 +37,18 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const [status, setStatus] = useState<string>('');
   const [onsets, setOnsets] = useState<number[]>(value ?? []);
   const [zoom, setZoom] = useState(1); // 1 = fit; higher = wider (scrollable)
+  const [clickOnMarkers, setClickOnMarkers] = useState(true);
+  const [playhead, setPlayhead] = useState<number | null>(null); // sec, null = stopped
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // playback engine
+  const playCtxRef = useRef<AudioContext | null>(null);
+  const playSrcRef = useRef<AudioBufferSourceNode | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const onsetsRef = useRef<number[]>(onsets);
+  onsetsRef.current = onsets;
 
   // Decode the stem + auto-detect transients whenever the URL changes. If the block
   // already has an approved set, KEEP it (don't clobber an admin's edits on reload);
@@ -102,6 +110,102 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     onChangeRef.current(sorted);
   }, []);
 
+  // ---- playback ----
+  const stop = useCallback(() => {
+    try {
+      playSrcRef.current?.stop();
+    } catch {
+      /* already stopped */
+    }
+    playSrcRef.current = null;
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    setPlayhead(null);
+  }, []);
+
+  /** Play the stem from `fromSec` to `toSec` (whole stem if omitted). A short click
+   *  fires on each marker within the played range (so the markers are AUDIBLE against
+   *  the bass) when clickOnMarkers is on. The playhead sweeps the waveform. */
+  const play = useCallback(
+    (fromSec = 0, toSec?: number) => {
+      if (!buffer) return;
+      stop();
+      const ctx = playCtxRef.current ?? new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      playCtxRef.current = ctx;
+      if (ctx.state === 'suspended') void ctx.resume();
+      const end = toSec ?? buffer.duration;
+      const dur = Math.max(0.02, end - fromSec);
+
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      const startAt = ctx.currentTime + 0.03;
+      src.start(startAt, fromSec, dur);
+      playSrcRef.current = src;
+
+      // schedule a click on each marker in range
+      if (clickOnMarkers) {
+        for (const t of onsetsRef.current) {
+          if (t < fromSec - 0.001 || t > end + 0.001) continue;
+          const when = startAt + (t - fromSec);
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.frequency.value = 2000;
+          g.gain.setValueAtTime(0.0001, when);
+          g.gain.exponentialRampToValueAtTime(0.3, when + 0.001);
+          g.gain.exponentialRampToValueAtTime(0.0001, when + 0.03);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(when);
+          osc.stop(when + 0.04);
+        }
+      }
+
+      // playhead RAF
+      const t0 = startAt;
+      const tick = () => {
+        const elapsed = ctx.currentTime - t0;
+        const pos = fromSec + elapsed;
+        if (elapsed < 0) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        if (pos >= end) {
+          stop();
+          return;
+        }
+        setPlayhead(pos);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+      src.onended = () => {
+        if (playSrcRef.current === src) stop();
+      };
+    },
+    [buffer, stop, clickOnMarkers],
+  );
+
+  /** Play just the note at a marker: from the marker to the next marker (or +0.5s). */
+  const playNote = useCallback(
+    (index: number) => {
+      const list = onsetsRef.current;
+      const from = list[index]!;
+      const next = list[index + 1];
+      const to = Math.min(from + 0.6, next != null ? next : from + 0.6);
+      play(from, to);
+    },
+    [play],
+  );
+
+  // clean up audio on unmount
+  useEffect(
+    () => () => {
+      stop();
+      void playCtxRef.current?.close();
+    },
+    [stop],
+  );
+
   // ---- draw ----
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -151,7 +255,18 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       ctx.arc(px, 8, 4, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [mono, duration, onsets, zoom]);
+
+    // playhead
+    if (playhead != null) {
+      const px = (playhead / duration) * w;
+      ctx.strokeStyle = '#ffd24a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, WAVE_H);
+      ctx.stroke();
+    }
+  }, [mono, duration, onsets, zoom, playhead]);
 
   // ---- interaction ----
   const dragRef = useRef<{ index: number; downX: number; moved: boolean } | null>(null);
@@ -191,7 +306,13 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       if (!buffer) return;
       const hit = nearestMarker(e.clientX);
       if (hit != null) {
-        // start a potential drag (or a click-to-delete if it doesn't move)
+        if (e.altKey || e.button === 2) {
+          // alt-click / right-click a marker = DELETE
+          commit(onsets.filter((_, i) => i !== hit));
+          return;
+        }
+        // start a potential drag; a plain click (no drag) PLAYS the note so you can
+        // HEAR whether it's a real attack you want graded, or just noise.
         dragRef.current = { index: hit, downX: e.clientX, moved: false };
       } else {
         // empty space → ADD a marker here immediately
@@ -222,10 +343,10 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     if (d.moved) {
       commit(onsets); // persist the dragged position (sorted)
     } else {
-      // a click without a drag = DELETE this marker
-      commit(onsets.filter((_, i) => i !== d.index));
+      // a click without a drag = PLAY this note (hear if it's a real attack)
+      playNote(d.index);
     }
-  }, [onsets, commit]);
+  }, [onsets, commit, playNote]);
 
   if (!stemUrl) {
     return (
@@ -238,9 +359,20 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => (playhead != null ? stop() : play(0))}
+          style={{ ...smallBtn, background: playhead != null ? '#e0604a' : '#6ad08c', color: '#0a0a0a', fontWeight: 600 }}
+        >
+          {playhead != null ? '■ Stop' : '▶ Play stem'}
+        </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9aa0ad' }}>
+          <input type="checkbox" checked={clickOnMarkers} onChange={(e) => setClickOnMarkers(e.target.checked)} />
+          click on markers
+        </label>
         <span style={{ fontSize: 12, color: '#9aa0ad' }}>{onsets.length} transients</span>
         <button type="button" onClick={redetect} style={smallBtn}>
-          Re-detect (reset)
+          Re-detect
         </button>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9aa0ad' }}>zoom</span>
         <button type="button" onClick={() => setZoom((z) => Math.max(1, z - 1))} style={smallBtn} disabled={zoom <= 1}>
@@ -264,6 +396,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onContextMenu={(e) => e.preventDefault()}
           style={{
             width: `${zoom * 100}%`,
             display: 'block',
@@ -275,9 +408,10 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       <p style={{ fontSize: 11, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>
         {status}
         <br />
-        <b>Click empty space</b> to add · <b>click a marker</b> to delete ·{' '}
-        <b>drag a marker</b> to move · <b>zoom</b> in to place precisely (scroll
-        horizontally). Changes auto-save onto the block.
+        <b>Click a marker</b> to HEAR that note (is it a real attack, or noise?) ·{' '}
+        <b>alt/right-click a marker</b> to delete · <b>drag</b> to move ·{' '}
+        <b>click empty space</b> to add · <b>▶ Play stem</b> to hear the whole part
+        with a click on each marker · <b>zoom</b> in to place precisely. Auto-saves.
       </p>
     </div>
   );
