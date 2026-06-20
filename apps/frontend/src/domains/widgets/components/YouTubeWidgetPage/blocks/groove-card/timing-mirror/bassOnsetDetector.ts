@@ -46,20 +46,23 @@ export interface BassOnsetOptions {
   /** Spectral-flux sensitivity (passed through). Higher = fewer onsets. */
   sensitivity?: number;
   /** Global confidence floor — drop onsets below this fraction of the loudest
-   *  onset's flux. The drum default (0.12) is too aggressive for bass: a bass
-   *  player's attack strength varies far more note-to-note than a drum machine's,
-   *  and a quieter (but real) note's attack flux can sit well below the loudest
-   *  note's. 0.05 keeps real-but-soft attacks while still culling the sustain
-   *  re-trigger fragments (which sit ~0.01-0.04). Tune by ear against the
-   *  note-count guard. */
+   *  onset's flux. Tune by ear against the note-count guard (see defaults note). */
   minRelativeStrength?: number;
 }
 
+// Defaults RE-TUNED against a real Clarett DI bass take (2026-06-20). The earlier
+// values (sensitivity 0.6, floor 0.05) were derived from a SYNTHETIC test signal
+// and over-triggered ~10x on real audio (219 onsets for ~16-32 played notes) — a
+// hot DI bass has far more sustain/flux energy than the generated signal. The ear
+// is ground truth; these match the played note count on real bass:
+//   sensitivity 2.1 — flux peak must clear localMean*(1+2.1); the big over-trigger lever
+//   minOnsetGap 0.12s — one note can't re-fire within 120ms
+//   minRelativeStrength 0.25 — drop the weak sustain fragments (they sit well below 0.25)
 const BASS_DEFAULTS: Required<BassOnsetOptions> = {
   highPassHz: 45,
-  minOnsetGapSeconds: 0.08,
-  sensitivity: 0.6,
-  minRelativeStrength: 0.05,
+  minOnsetGapSeconds: 0.12,
+  sensitivity: 2.1,
+  minRelativeStrength: 0.25,
 };
 
 /**

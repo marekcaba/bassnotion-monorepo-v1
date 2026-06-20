@@ -70,7 +70,9 @@ export function TimingMirrorPanel({
   // Live-tunable onset params — a real hot DI bass over-triggers vs the synthetic
   // test signal, so we dial these against the ACTUAL bass (ear-first) instead of
   // guessing. The last recorded take is kept so re-scoring is instant on a change.
-  const [sensitivity, setSensitivity] = useState(1.5);
+  // Defaults below were dialed against a real Clarett DI bass take (2026-06-20):
+  // detected-count matched the played notes at sensitivity 2.1 / gap 120 / floor 0.25.
+  const [sensitivity, setSensitivity] = useState(2.1);
   const [minGapMs, setMinGapMs] = useState(120);
   const [minRelStrength, setMinRelStrength] = useState(0.25);
   const lastSignalRef = useRef<{ signal: Float32Array; sampleRate: number; startedAt: number } | null>(null);
