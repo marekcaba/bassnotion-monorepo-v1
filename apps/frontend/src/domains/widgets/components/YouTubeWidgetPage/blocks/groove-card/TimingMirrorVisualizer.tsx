@@ -140,11 +140,36 @@ export function TimingMirrorVisualizer({ data }: { data: VizData }) {
     ctx.fillText(`● noise ${data.score.noiseCount}`, PAD + 210, cssH - 8);
   }, [data]);
 
+  const playerDur = data.playerSignal.length / data.playerSampleRate;
+  const refDur = data.refSignal.length / data.refSampleRate;
+  const playerSpan =
+    data.playerOnsetsSec.length > 1
+      ? data.playerOnsetsSec[data.playerOnsetsSec.length - 1]! - data.playerOnsetsSec[0]!
+      : 0;
+  const refSpan =
+    data.refOnsetsSec.length > 1
+      ? data.refOnsetsSec[data.refOnsetsSec.length - 1]! - data.refOnsetsSec[0]!
+      : 0;
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: '100%', display: 'block', borderRadius: 6, marginTop: 8 }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        style={{ width: '100%', display: 'block', borderRadius: 6, marginTop: 8 }}
+      />
+      <div style={{ marginTop: 6, fontSize: 11, color: COL.text, lineHeight: 1.5 }}>
+        R={data.R.toFixed(3)} · loop={data.grid.loopDurationSeconds.toFixed(2)}s ·
+        player-take={playerDur.toFixed(2)}s, ref-buf={refDur.toFixed(2)}s ·
+        first→last onset: player {playerSpan.toFixed(2)}s vs ref {refSpan.toFixed(2)}s
+        {' '}
+        {Math.abs(playerSpan - refSpan) > 0.15 && (
+          <span style={{ color: COL.noise }}>
+            ⚠ spans differ by {((playerSpan - refSpan) * 1000).toFixed(0)}ms — timelines run at
+            different rates (this fans out the alignment)
+          </span>
+        )}
+      </div>
+    </>
   );
 }
 
