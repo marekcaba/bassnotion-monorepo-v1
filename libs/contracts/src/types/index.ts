@@ -515,6 +515,8 @@ export type {
   GrooveCardBlock,
   GrooveCardBlockConfig,
   ReferenceDropConfig,
+  GradingMode,
+  ReferenceOnsetPreset,
   GrooveCardStemSet,
   BasslineVariant,
   ChordChartEntry,
