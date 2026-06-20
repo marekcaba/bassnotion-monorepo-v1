@@ -238,8 +238,13 @@ const nextConfig = {
           // Additional security headers
           {
             key: 'Permissions-Policy',
+            // microphone=(self): allow getUserMedia for OUR OWN origin only (still
+            // blocks any third-party iframe). Needed for in-browser audio capture
+            // (bass recording / practice tools); same-origin-only keeps the
+            // hardening intact — was microphone=() which denied the mic to every
+            // document, including ours. See docs/PRACTICE_TOOLS_FEASIBILITY.md.
             value:
-              'geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()',
+              'geolocation=(), microphone=(self), camera=(), payment=(), usb=(), bluetooth=()',
           },
           {
             key: 'Cross-Origin-Opener-Policy',
