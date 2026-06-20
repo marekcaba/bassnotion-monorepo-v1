@@ -29,14 +29,16 @@ interface Props {
   onChange: (onsetsSec: number[]) => void;
 }
 
-const WAVE_H = 160;
+const WAVE_H = 220;
 const CLICK_DELETE_PX = 6; // a press that moves less than this = a click (delete)
 
 export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
   const [status, setStatus] = useState<string>('');
   const [onsets, setOnsets] = useState<number[]>(value ?? []);
+  const [zoom, setZoom] = useState(1); // 1 = fit; higher = wider (scrollable)
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -149,7 +151,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       ctx.arc(px, 8, 4, 0, Math.PI * 2);
       ctx.fill();
     }
-  }, [mono, duration, onsets]);
+  }, [mono, duration, onsets, zoom]);
 
   // ---- interaction ----
   const dragRef = useRef<{ index: number; downX: number; moved: boolean } | null>(null);
@@ -235,47 +237,61 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: '#9aa0ad' }}>{onsets.length} transients</span>
-        <button
-          type="button"
-          onClick={redetect}
-          style={{
-            fontSize: 11,
-            padding: '3px 8px',
-            borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#e7e9ee',
-            cursor: 'pointer',
-          }}
-        >
+        <button type="button" onClick={redetect} style={smallBtn}>
           Re-detect (reset)
         </button>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9aa0ad' }}>zoom</span>
+        <button type="button" onClick={() => setZoom((z) => Math.max(1, z - 1))} style={smallBtn} disabled={zoom <= 1}>
+          −
+        </button>
+        <span style={{ fontSize: 12, color: '#e7e9ee', width: 28, textAlign: 'center' }}>{zoom}×</span>
+        <button type="button" onClick={() => setZoom((z) => Math.min(20, z + 1))} style={smallBtn} disabled={zoom >= 20}>
+          +
+        </button>
       </div>
-      <canvas
-        ref={canvasRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+      <div
+        ref={scrollRef}
         style={{
-          width: '100%',
-          display: 'block',
-          borderRadius: 6,
-          cursor: 'crosshair',
-          touchAction: 'none',
+          overflowX: zoom > 1 ? 'auto' : 'hidden',
           border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 6,
         }}
-      />
+      >
+        <canvas
+          ref={canvasRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          style={{
+            width: `${zoom * 100}%`,
+            display: 'block',
+            cursor: 'crosshair',
+            touchAction: 'none',
+          }}
+        />
+      </div>
       <p style={{ fontSize: 11, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>
         {status}
         <br />
         <b>Click empty space</b> to add · <b>click a marker</b> to delete ·{' '}
-        <b>drag a marker</b> to move. Changes auto-save onto the block.
+        <b>drag a marker</b> to move · <b>zoom</b> in to place precisely (scroll
+        horizontally). Changes auto-save onto the block.
       </p>
     </div>
   );
 }
+
+const smallBtn: React.CSSProperties = {
+  fontSize: 11,
+  padding: '3px 8px',
+  borderRadius: 6,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.05)',
+  color: '#e7e9ee',
+  cursor: 'pointer',
+};
 
 function toMono(buffer: AudioBuffer): Float32Array {
   const ch = buffer.numberOfChannels;
