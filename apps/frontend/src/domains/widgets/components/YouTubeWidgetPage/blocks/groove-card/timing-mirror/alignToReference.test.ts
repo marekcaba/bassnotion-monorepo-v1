@@ -60,12 +60,32 @@ describe('alignToReference — grid-anchored matching', () => {
     expect(res.coverage).toBe(1);
   });
 
-  it('drops count-in onsets from both sides', () => {
-    const ref = [T0, T0 + BEAT];
-    const player = [T0 - 1.0, T0, T0 + BEAT]; // one onset before the downbeat
+  it('over-detection mid-sustain is NOISE — the player count need not match the ref', () => {
+    // The real bug: the player detector fired EXTRA onsets in the middle of held
+    // notes (sustain wobble). Coach-anchored: each ref marker grabs the nearest
+    // real attack; the spurious mid-note onsets are near no ref marker → noise,
+    // ignored. Coverage stays full, the take isn't penalised.
+    const ref = [T0, T0 + BEAT, T0 + 2 * BEAT];
+    const player = [
+      T0, T0 + 0.18, // <- spurious wobble mid-note (no ref marker near 0.18)
+      T0 + BEAT, T0 + BEAT + 0.2, // <- another wobble
+      T0 + 2 * BEAT,
+    ];
     const res = alignToReference(player, ref, grid);
+    expect(res.matched).toHaveLength(3); // all 3 ref notes hit
+    expect(res.coverage).toBe(1);
+    expect(res.noise).toHaveLength(2); // the 2 wobble onsets, ignored
+    expect(res.missed).toHaveLength(0);
+  });
+
+  it('a count-in (pre-downbeat) onset is NOISE, not a penalised match', () => {
+    const ref = [T0, T0 + BEAT];
+    const player = [T0 - 1.0, T0, T0 + BEAT]; // one onset a second before the part
+    const res = alignToReference(player, ref, grid);
+    // coach-anchored: the real notes match; the stray pre-roll onset is near no
+    // reference marker → classified NOISE (ignored), never hurts the score.
     expect(res.matched).toHaveLength(2);
-    expect(res.noise).toHaveLength(0); // the count-in onset is dropped, not an extra
+    expect(res.noise).toEqual([T0 - 1.0]);
   });
 
   // The plan's open question, now RESOLVED with ±1-slot tolerance: a note played

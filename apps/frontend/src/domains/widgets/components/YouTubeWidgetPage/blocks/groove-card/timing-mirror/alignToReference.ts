@@ -15,7 +15,7 @@
  * Pure: onset lists in, matched pairs out. Unit-tested offline.
  */
 
-import { snapOnsetToGrid, type GridParams } from './scoreAgainstGrid';
+import type { GridParams } from './scoreAgainstGrid';
 
 export interface AlignedPair {
   /** Absolute subdivision index both onsets snapped to. */
@@ -43,20 +43,6 @@ export interface AlignmentResult {
   coverage: number;
 }
 
-/**
- * Bucket onsets (audio-ctx seconds) into a map of subIndex → onset times, dropping
- * count-in onsets. When two onsets land in one slot, keep the FIRST (a second is a
- * spurious double-trigger at this resolution).
- */
-function bucketBySlot(onsetsSec: number[], grid: GridParams): Map<number, number> {
-  const slots = new Map<number, number>();
-  for (const onsetSec of onsetsSec) {
-    const slot = snapOnsetToGrid(onsetSec, grid);
-    if (slot.beforeGrid) continue;
-    if (!slots.has(slot.subIndex)) slots.set(slot.subIndex, onsetSec);
-  }
-  return slots;
-}
 
 /**
  * Align player onsets to reference onsets via the shared grid.
@@ -64,39 +50,43 @@ function bucketBySlot(onsetsSec: number[], grid: GridParams): Map<number, number
  * @param playerOnsetsSec    detected player onsets, audio-ctx seconds
  * @param referenceOnsetsSec detected reference-stem onsets, audio-ctx seconds
  *                           (mapped to ctx time by the caller: loopStart + onset/R)
- * @param grid               the SAME GridParams used for grid-mode scoring
+ * @param _grid              kept for API stability; the coach-anchored matcher works
+ *                           purely in time and no longer needs the grid.
  */
 export function alignToReference(
   playerOnsetsSec: number[],
   referenceOnsetsSec: number[],
-  grid: GridParams,
+  _grid: GridParams,
 ): AlignmentResult {
-  const refSlots = bucketBySlot(referenceOnsetsSec, grid);
-  // Player onsets kept in TIME space (not slot-bucketed) — bucketing collapses
-  // adjacent onsets and drives the slot-stealing cascade. We match in time with a
-  // tolerance, so a phantom near a reference note can't bump the REAL player note.
+  // COACH-ANCHORED matching, purely in TIME (no grid-slot bucketing). The reference
+  // markers are the SOURCE OF TRUTH: for each one, find the player's nearest unclaimed
+  // attack and measure the distance. A player onset not near ANY reference marker is
+  // NOISE (sustain wobble / a stray) — ignored, never penalised. This is robust to
+  // the player playing a sparser/denser take and to over-detection (the # of player
+  // onsets doesn't have to match the reference).
+  const refs = [...referenceOnsetsSec].sort((a, b) => a - b);
   const players = playerOnsetsSec
-    .map((sec) => ({ sec, slot: snapOnsetToGrid(sec, grid) }))
-    .filter((p) => !p.slot.beforeGrid)
-    .map((p, i) => ({ sec: p.sec, subIndex: p.slot.subIndex, idx: i, claimed: false }));
+    .map((sec) => ({ sec, claimed: false }))
+    .sort((a, b) => a.sec - b.sec);
 
-  // Match tolerance: ±1.5 sixteenths in TIME. A note played up to ~1.5 subs off
-  // still matches (as a late/early note carrying its error); anything further is
-  // unmatched (a miss for the reference / noise for the player).
-  const barSeconds = grid.loopDurationSeconds / grid.lengthBars;
-  const subSeconds = barSeconds / ((grid.beatsPerBar ?? 4) * (grid.subdivisionsPerBeat ?? 4));
-  const tolSec = subSeconds * 1.5;
+  // Per-reference tolerance: half the distance to the nearest neighbouring reference
+  // marker (so two close reference notes can't both claim the same player onset),
+  // capped at ~120ms (a note >120ms off its target is genuinely a miss, not a match).
+  const MAX_TOL = 0.12;
+  const tolFor = (i: number): number => {
+    const prevGap = i > 0 ? refs[i]! - refs[i - 1]! : Infinity;
+    const nextGap = i < refs.length - 1 ? refs[i + 1]! - refs[i]! : Infinity;
+    const halfNearest = Math.min(prevGap, nextGap) / 2;
+    return Math.min(MAX_TOL, Math.max(0.03, halfNearest));
+  };
 
   const matched: AlignedPair[] = [];
   const missed: number[] = [];
 
-  // For each reference note (in time order), claim the NEAREST unclaimed player
-  // onset within tolerance. Nearest-in-time means a phantom slightly off can't
-  // out-compete the real note that's closer.
-  const refEntries = [...refSlots.entries()].sort((a, b) => a[1] - b[1]);
-  for (const [subIndex, referenceSec] of refEntries) {
+  refs.forEach((referenceSec, i) => {
+    const tol = tolFor(i);
     let best: (typeof players)[number] | null = null;
-    let bestDist = tolSec;
+    let bestDist = tol;
     for (const p of players) {
       if (p.claimed) continue;
       const d = Math.abs(p.sec - referenceSec);
@@ -108,7 +98,7 @@ export function alignToReference(
     if (best) {
       best.claimed = true;
       matched.push({
-        subIndex,
+        subIndex: i, // index into the reference markers (kept for the viz)
         referenceSec,
         playerSec: best.sec,
         errorSec: best.sec - referenceSec,
@@ -116,19 +106,15 @@ export function alignToReference(
     } else {
       missed.push(referenceSec);
     }
-  }
+  });
 
-  // Unclaimed player onsets = NOISE (the player is playing a known part, so an
-  // onset matching no reference note is almost always a phantom). Rejected, NOT
-  // penalised, and — because we matched in time — they never stole a real slot.
+  // Player onsets that matched no reference marker = NOISE (sustain wobble, strays).
   const noise = players.filter((p) => !p.claimed).map((p) => p.sec);
 
-  matched.sort((a, b) => a.subIndex - b.subIndex);
   missed.sort((a, b) => a - b);
   noise.sort((a, b) => a - b);
 
-  const refCount = refSlots.size;
-  const coverage = refCount > 0 ? matched.length / refCount : 0;
+  const coverage = refs.length > 0 ? matched.length / refs.length : 0;
 
   return { matched, missed, noise, coverage };
 }
