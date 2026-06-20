@@ -19,6 +19,33 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { detectBassOnsets } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/timing-mirror/bassOnsetDetector';
+import { supabase } from '@/infrastructure/supabase/client';
+
+/**
+ * Resolve a stem ref to a fetchable URL. Public audio-samples urls fetch directly;
+ * a private premium-bassline / groove-stem ref (Bass B, Fill 1, premium grooves)
+ * 400s if fetched raw — it must be SIGNED first via the gated signer. (Same split
+ * the player's preload uses; without this, a variant stem fails with HTTP 400.)
+ */
+async function resolveStemUrl(refUrl: string): Promise<string> {
+  const isPrivate =
+    refUrl.includes('/premium-basslines/') || refUrl.includes('/groove-stems/');
+  if (!isPrivate) return refUrl;
+  const signer = refUrl.includes('/premium-basslines/')
+    ? 'bassline-url'
+    : 'stem-url';
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${apiUrl}/api/v1/grooves/${signer}?path=${encodeURIComponent(refUrl)}`,
+    { headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} },
+  );
+  if (!res.ok) throw new Error(`${signer} signer failed: HTTP ${res.status}`);
+  const { url } = (await res.json()) as { url: string };
+  return url;
+}
 
 interface Props {
   /** The bass stem URL (config.stems.bass). */
@@ -62,7 +89,9 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     setStatus('Decoding bass stem…');
     (async () => {
       try {
-        const res = await fetch(stemUrl);
+        // private variant refs (Bass B / fills) must be signed before fetch.
+        const fetchUrl = await resolveStemUrl(stemUrl);
+        const res = await fetch(fetchUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const arr = await res.arrayBuffer();
         const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
