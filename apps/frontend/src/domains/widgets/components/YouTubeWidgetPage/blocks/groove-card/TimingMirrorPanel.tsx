@@ -33,6 +33,7 @@ import {
   type GridParams,
 } from './timing-mirror/scoreAgainstGrid';
 import { gradeTiming, type TimingGrade } from './timing-mirror/timingGrade';
+import { TimingMirrorVisualizer, type VizData } from './TimingMirrorVisualizer';
 import {
   scoreAgainstReference,
   type ReferenceScore,
@@ -127,6 +128,7 @@ export function TimingMirrorPanel({
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [refScore, setRefScore] = useState<ReferenceScore | null>(null);
+  const [vizData, setVizData] = useState<VizData | null>(null);
   const captureRef = useRef<BassCapture | null>(null);
   // Live-tunable onset params — a real hot DI bass over-triggers vs the synthetic
   // test signal, so we dial these against the ACTUAL bass (ear-first) instead of
@@ -261,13 +263,26 @@ export function TimingMirrorPanel({
         const refOnsets = detectBassOnsets(refMono, bassBuffer.sampleRate, refOnsetOpts);
         // reference onset (buffer-relative seconds) → ctx time: loopStart + t/R
         const refAbs = refOnsets.map((o) => grid.loopStartAudioTime + o.time / R);
-        setRefScore(
-          scoreAgainstReference(absOnsets, refAbs, grid, {
-            expectedReferenceCount: expectedAttacks,
-          }),
-        );
+        const score = scoreAgainstReference(absOnsets, refAbs, grid, {
+          expectedReferenceCount: expectedAttacks,
+        });
+        setRefScore(score);
+        // Capture everything the visualizer needs to SHOW the analysis.
+        setVizData({
+          grid,
+          playerSignal: signal,
+          playerSampleRate: sampleRate,
+          playerStartedAt: startedAt,
+          playerOnsetsSec: absOnsets,
+          refSignal: refMono,
+          refSampleRate: bassBuffer.sampleRate,
+          refOnsetsSec: refAbs,
+          R,
+          score,
+        });
       } else {
         setRefScore(null);
+        setVizData(null);
       }
     },
     [
@@ -723,6 +738,10 @@ export function TimingMirrorPanel({
               />
             </div>
           )}
+          {/* THE VISUALIZER — see the take over the reference, the transients, the
+              alignment, the matched/missed/noise. */}
+          {vizData && <TimingMirrorVisualizer data={vizData} />}
+
           <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
             reference vs player onset-by-onset. offset{' '}
             {refScore.offsetMs >= 0 ? '+' : ''}
@@ -803,7 +822,7 @@ const panel: React.CSSProperties = {
   position: 'fixed',
   bottom: 12,
   right: 12,
-  width: 'min(560px, 46vw)',
+  width: 'min(820px, 62vw)',
   maxHeight: '92vh',
   overflowY: 'auto',
   zIndex: 9999,
