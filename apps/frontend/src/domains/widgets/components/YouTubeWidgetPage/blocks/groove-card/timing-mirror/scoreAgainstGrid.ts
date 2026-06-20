@@ -93,9 +93,11 @@ export function snapOnsetToGrid(onsetSec: number, grid: GridParams): GridSlot {
   const subsPerBar = beatsPerBar * subPerBeat;
 
   const elapsed = onsetSec - grid.loopStartAudioTime;
-  if (elapsed < 0) {
-    // Onset is during the count-in (loopStartAudioTime is the FUTURE bar-1
-    // downbeat). Not on the loop grid yet → skip from scoring.
+  // A note snaps to slot 0 (the bar-1 downbeat) within ±half a subdivision of the
+  // anchor. Only onsets EARLIER than that half-slot are count-in. Using a hard 0
+  // cutoff wrongly drops a downbeat note played slightly AHEAD (e.g. 5ms early) as
+  // count-in — a real note played in front of the beat, not a pre-roll click.
+  if (elapsed < -subSeconds / 2) {
     return {
       onsetSec,
       subIndex: 0,
