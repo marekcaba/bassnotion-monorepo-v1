@@ -1148,6 +1148,9 @@ export function GrooveCardBlockView({
           // compares detected onsets to expected ATTACKS = notes minus legato).
           bassBuffer={playback.bassBuffer}
           authoredNotes={config.bassNotation?.notes ?? null}
+          // Step 4/7: R = currentBpm/originalBpm maps reference onsets to ctx time.
+          currentBpm={playback.currentBpm}
+          originalBpm={config.originalBpm ?? 100}
         />
       )}
     </div>

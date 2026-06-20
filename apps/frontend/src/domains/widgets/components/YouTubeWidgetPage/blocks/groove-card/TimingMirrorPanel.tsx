@@ -30,6 +30,10 @@ import {
   type GridParams,
 } from './timing-mirror/scoreAgainstGrid';
 import { gradeTiming, type TimingGrade } from './timing-mirror/timingGrade';
+import {
+  scoreAgainstReference,
+  type ReferenceScore,
+} from './timing-mirror/scoreAgainstReference';
 import type { TimingStatistics } from '@/domains/playback/utils/BeatTimingAnalyzer';
 
 // G3: if more than this fraction of onsets collide on a subdivision, the detector
@@ -52,6 +56,10 @@ interface TimingMirrorPanelProps {
    *  a fresh ATTACK (excluding legato continuations: hammer-on/pull-off/slide, which
    *  sound with no new pluck), NOT the raw note count. */
   authoredNotes: { techniques?: string[] }[] | null;
+  // Step 4/7 (bass coach reference mode): map reference-stem onsets to ctx time via
+  // R = currentBpm / originalBpm (the stem is detected at original tempo, scaled live).
+  currentBpm: number;
+  originalBpm: number;
 }
 
 // Flow built around how a musician actually plays: you can't press a button on
@@ -81,10 +89,15 @@ export function TimingMirrorPanel({
   setStemMuted,
   bassBuffer,
   authoredNotes,
+  currentBpm,
+  originalBpm,
 }: TimingMirrorPanelProps) {
+  // Coach mode: grade vs the ideal GRID, or vs the REFERENCE stem (the bass coach).
+  const [coachMode, setCoachMode] = useState<'grid' | 'reference'>('grid');
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [refScore, setRefScore] = useState<ReferenceScore | null>(null);
   const captureRef = useRef<BassCapture | null>(null);
   // Live-tunable onset params — a real hot DI bass over-triggers vs the synthetic
   // test signal, so we dial these against the ACTUAL bass (ear-first) instead of
@@ -165,15 +178,17 @@ export function TimingMirrorPanel({
       startedAt: number,
       grid: GridParams,
     ) => {
-      const onsets = detectBassOnsets(signal, sampleRate, {
+      const onsetOpts = {
         sensitivity,
         minOnsetGapSeconds: minGapMs / 1000,
         minRelativeStrength: minRelStrength,
-      });
+      };
+      const onsets = detectBassOnsets(signal, sampleRate, onsetOpts);
       const absOnsets = onsets.map((o) => o.time + startedAt);
+
+      // GRID score (always — the baseline, and the grid-mode result).
       const { stats, slots, skippedBeforeGrid, collisionRate } =
         scoreOnsetsAgainstGrid(absOnsets, grid);
-      const untrustworthy = collisionRate > COLLISION_REFUSE_THRESHOLD;
       setOutcome({
         stats,
         grade: gradeTiming(stats.jitter, stats.averageDrift),
@@ -181,10 +196,36 @@ export function TimingMirrorPanel({
         scoredCount: slots.length - skippedBeforeGrid,
         skippedBeforeGrid,
         collisionRate,
-        untrustworthy,
+        untrustworthy: collisionRate > COLLISION_REFUSE_THRESHOLD,
       });
+
+      // REFERENCE score (the coach) — detect the stem's onsets at original tempo,
+      // map to ctx time via R = currentBpm/originalBpm, align + grade vs the player.
+      if (coachMode === 'reference' && bassBuffer) {
+        const R = originalBpm > 0 ? currentBpm / originalBpm : 1;
+        const refMono = toMono(bassBuffer);
+        const refOnsets = detectBassOnsets(refMono, bassBuffer.sampleRate, onsetOpts);
+        // reference onset (buffer-relative seconds) → ctx time: loopStart + t/R
+        const refAbs = refOnsets.map((o) => grid.loopStartAudioTime + o.time / R);
+        setRefScore(
+          scoreAgainstReference(absOnsets, refAbs, grid, {
+            expectedReferenceCount: expectedAttacks,
+          }),
+        );
+      } else {
+        setRefScore(null);
+      }
     },
-    [sensitivity, minGapMs, minRelStrength],
+    [
+      sensitivity,
+      minGapMs,
+      minRelStrength,
+      coachMode,
+      bassBuffer,
+      currentBpm,
+      originalBpm,
+      expectedAttacks,
+    ],
   );
 
   const score = useCallback(async () => {
@@ -226,7 +267,7 @@ export function TimingMirrorPanel({
       analyze(s.signal, s.sampleRate, s.startedAt, gridRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sensitivity, minGapMs, minRelStrength]);
+  }, [sensitivity, minGapMs, minRelStrength, coachMode]);
 
   // Auto-start on PLAY, auto-score on STOP — driven by the engine's isPlaying.
   useEffect(() => {
@@ -255,6 +296,7 @@ export function TimingMirrorPanel({
     captureRef.current = null;
     gridRef.current = null;
     setOutcome(null);
+    setRefScore(null);
     setError(null);
     setPhase('idle');
   }, []);
@@ -270,11 +312,31 @@ export function TimingMirrorPanel({
     <div style={panel}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <strong style={{ color: '#6ad08c', letterSpacing: '.05em' }}>
-          🪞 TIMING MIRROR (spike · step 4 — numbers only)
+          🪞 TIMING MIRROR (spike)
         </strong>
         <span style={{ fontSize: 11, color: isPlaying ? '#6ad08c' : '#9aa0ad' }}>
           {isPlaying ? '● groove playing' : '○ stopped'}
         </span>
+      </div>
+
+      {/* Coach mode: grade vs the ideal GRID or vs the REFERENCE recording. */}
+      <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: '#9aa0ad' }}>grade vs:</span>
+        {(['grid', 'reference'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setCoachMode(m)}
+            style={{
+              ...btn,
+              padding: '4px 10px',
+              ...(coachMode === m
+                ? { background: '#6ad08c', color: '#0a0a0a', borderColor: '#6ad08c' }
+                : {}),
+            }}
+          >
+            {m === 'grid' ? 'the grid (timing)' : 'the recording (coach)'}
+          </button>
+        ))}
       </div>
 
       {/* Step 0 (bass coach): does detectBassOnsets find the right notes in the
@@ -394,7 +456,7 @@ export function TimingMirrorPanel({
         </div>
       )}
 
-      {o && offsetMs != null && jitterMs != null && (
+      {coachMode === 'grid' && o && offsetMs != null && jitterMs != null && (
         <>
           {o.untrustworthy ? (
             <div
@@ -451,6 +513,58 @@ export function TimingMirrorPanel({
             {o.stats.syncScore.toFixed(0)} are machine-tuned and not used for the headline.
           </div>
         </>
+      )}
+
+      {/* REFERENCE-mode result — the bass coach: how close to the recording. */}
+      {coachMode === 'reference' && refScore && (
+        <div style={{ marginTop: 14 }}>
+          {refScore.untrustworthy ? (
+            <div
+              style={{
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: '#331a16',
+                border: '1px solid #6b352a',
+                color: '#e0b24a',
+                lineHeight: 1.5,
+              }}
+            >
+              ⛔ {refScore.untrustworthyReason}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'baseline' }}>
+              <div style={{ minWidth: 200 }}>
+                <div style={{ color: '#9aa0ad', fontSize: 11 }}>vs the recording</div>
+                <div style={{ fontSize: 30, fontWeight: 700, color: refScore.grade.color, lineHeight: 1.1 }}>
+                  {refScore.grade.label}
+                </div>
+                <div style={{ color: '#9aa0ad', fontSize: 12 }}>
+                  {refScore.jitterMs.toFixed(0)}ms spread
+                  {refScore.grade.feel !== 'centered' && ` · you tend to ${refScore.grade.feel}`}
+                </div>
+              </div>
+              <Stat
+                label="match score"
+                value={`${refScore.grade.score}`}
+                color={refScore.grade.color}
+                sub="how close to the record"
+              />
+              <Stat
+                label="coverage"
+                value={`${Math.round(refScore.coverage * 100)}%`}
+                color={refScore.coverage > 0.85 ? '#6ad08c' : '#e0b24a'}
+                sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed · ${refScore.extraCount} extra`}
+              />
+            </div>
+          )}
+          <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
+            reference vs player onset-by-onset. offset{' '}
+            {refScore.offsetMs >= 0 ? '+' : ''}
+            {refScore.offsetMs.toFixed(1)}ms (your constant lean vs the record — latency/anticipation,
+            calibratable). The grade is the de-meaned spread (feel). Step 4 = timing only;
+            length + dynamics are steps 5-6.
+          </div>
+        </div>
       )}
     </div>
   );
