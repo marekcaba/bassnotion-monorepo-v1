@@ -1151,6 +1151,13 @@ export function GrooveCardBlockView({
           // Step 4/7: R = currentBpm/originalBpm maps reference onsets to ctx time.
           currentBpm={playback.currentBpm}
           originalBpm={config.originalBpm ?? 100}
+          // v2: the STORED, admin-approved reference transients for the ACTIVE
+          // bassline (Bass A = 'main', else the variant id) — ground truth the coach
+          // grades against instead of re-detecting the stem live.
+          storedReferenceOnsets={
+            config.referenceAnalysis?.[playback.activeBassVariantId ?? 'main']
+              ?.onsetsSec ?? null
+          }
         />
       )}
     </div>

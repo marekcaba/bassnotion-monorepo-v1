@@ -64,6 +64,10 @@ interface TimingMirrorPanelProps {
   // R = currentBpm / originalBpm (the stem is detected at original tempo, scaled live).
   currentBpm: number;
   originalBpm: number;
+  // v2: STORED admin-approved reference transients (stem-buffer seconds) for the
+  // active bassline. When present, the coach grades against THESE (ground truth),
+  // not a live re-detection of the stem.
+  storedReferenceOnsets: number[] | null;
 }
 
 // Flow built around how a musician actually plays: you can't press a button on
@@ -95,6 +99,7 @@ export function TimingMirrorPanel({
   authoredNotes,
   currentBpm,
   originalBpm,
+  storedReferenceOnsets,
 }: TimingMirrorPanelProps) {
   // Coach mode: grade vs the ideal GRID, or vs the REFERENCE stem (the bass coach).
   const [coachMode, setCoachMode] = useState<'grid' | 'reference'>('grid');
@@ -252,19 +257,28 @@ export function TimingMirrorPanel({
         untrustworthy: collisionRate > COLLISION_REFUSE_THRESHOLD,
       });
 
-      // REFERENCE score (the coach) — detect the stem's onsets at original tempo,
-      // map to ctx time via R = currentBpm/originalBpm, align + grade vs the player.
+      // REFERENCE score (the coach) — grade vs the reference's note positions,
+      // mapped to ctx time via loopStart + t/R (R = currentBpm/originalBpm).
       if (coachMode === 'reference' && bassBuffer) {
         const R = originalBpm > 0 ? currentBpm / originalBpm : 1;
         const refMono = toMono(bassBuffer);
-        // The reference stem uses its OWN preset (refOnsetOpts) — a quiet stem
-        // needs a lower floor than the hot DI take. Sharing one preset mis-detected
-        // one side → mass mis-alignment (coverage 62%, score 0 on a clean take).
-        const refOnsets = detectBassOnsets(refMono, bassBuffer.sampleRate, refOnsetOpts);
+        // GROUND TRUTH: if the admin approved a stored reference analysis for this
+        // bassline, grade against THOSE markers — deterministic, human-verified, no
+        // live re-detection (which was the source of every reference-side problem).
+        // Fall back to live detection only when nothing is approved yet.
+        const refBufSec =
+          storedReferenceOnsets && storedReferenceOnsets.length > 0
+            ? storedReferenceOnsets
+            : detectBassOnsets(refMono, bassBuffer.sampleRate, refOnsetOpts).map(
+                (o) => o.time,
+              );
         // reference onset (buffer-relative seconds) → ctx time: loopStart + t/R
-        const refAbs = refOnsets.map((o) => grid.loopStartAudioTime + o.time / R);
+        const refAbs = refBufSec.map((t) => grid.loopStartAudioTime + t / R);
+        const usingStored =
+          storedReferenceOnsets != null && storedReferenceOnsets.length > 0;
         const score = scoreAgainstReference(absOnsets, refAbs, grid, {
-          expectedReferenceCount: expectedAttacks,
+          // the stored set is approved-by-definition → skip the ref-count trust guard
+          expectedReferenceCount: usingStored ? null : expectedAttacks,
         });
         setRefScore(score);
         // Capture everything the visualizer needs to SHOW the analysis.
@@ -298,6 +312,7 @@ export function TimingMirrorPanel({
       currentBpm,
       originalBpm,
       expectedAttacks,
+      storedReferenceOnsets,
     ],
   );
 
@@ -715,7 +730,14 @@ export function TimingMirrorPanel({
           ) : (
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'baseline' }}>
               <div style={{ minWidth: 200 }}>
-                <div style={{ color: '#9aa0ad', fontSize: 11 }}>vs the recording</div>
+                <div style={{ color: '#9aa0ad', fontSize: 11 }}>
+                  vs the recording{' '}
+                  {storedReferenceOnsets && storedReferenceOnsets.length > 0 ? (
+                    <span style={{ color: '#6ad08c' }}>· ✓ approved markers</span>
+                  ) : (
+                    <span style={{ color: '#e0b24a' }}>· live-detected (no approved set)</span>
+                  )}
+                </div>
                 <div style={{ fontSize: 30, fontWeight: 700, color: refScore.grade.color, lineHeight: 1.1 }}>
                   {refScore.grade.label}
                 </div>
