@@ -104,9 +104,21 @@ export function TimingMirrorPanel({
   // guessing. The last recorded take is kept so re-scoring is instant on a change.
   // Defaults below were dialed against a real Clarett DI bass take (2026-06-20):
   // detected-count matched the played notes at sensitivity 2.1 / gap 120 / floor 0.25.
+  // PLAYER preset — your hot Clarett DI take (the 219-over-trigger rig).
   const [sensitivity, setSensitivity] = useState(2.1);
   const [minGapMs, setMinGapMs] = useState(120);
   const [minRelStrength, setMinRelStrength] = useState(0.25);
+  // REFERENCE preset — the recorded stem (different signal class: a quiet stem
+  // needs a lower strength floor, ~0.06). Player and reference CANNOT share one
+  // preset — that was making the coach mis-align (low coverage, score 0).
+  const [refSensitivity, setRefSensitivity] = useState(2.1);
+  const [refMinGapMs, setRefMinGapMs] = useState(120);
+  const [refMinRelStrength, setRefMinRelStrength] = useState(0.06);
+  const refOnsetOpts = {
+    sensitivity: refSensitivity,
+    minOnsetGapSeconds: refMinGapMs / 1000,
+    minRelativeStrength: refMinRelStrength,
+  };
   const lastSignalRef = useRef<{ signal: Float32Array; sampleRate: number; startedAt: number } | null>(null);
 
   // Step 0 (bass coach) — reference-stem onset check. Detected count vs the authored
@@ -119,12 +131,12 @@ export function TimingMirrorPanel({
       return;
     }
     const onsets = detectBassOnsets(toMono(bassBuffer), bassBuffer.sampleRate, {
-      sensitivity,
-      minOnsetGapSeconds: minGapMs / 1000,
-      minRelativeStrength: minRelStrength,
+      sensitivity: refSensitivity,
+      minOnsetGapSeconds: refMinGapMs / 1000,
+      minRelativeStrength: refMinRelStrength,
     });
     setRefResult({ detected: onsets.length });
-  }, [bassBuffer, sensitivity, minGapMs, minRelStrength]);
+  }, [bassBuffer, refSensitivity, refMinGapMs, refMinRelStrength]);
 
   // Expected ATTACK count = authored notes MINUS legato continuations. A hammer-on /
   // pull-off / slide sounds with NO fresh pluck, so it produces no onset — comparing
@@ -204,7 +216,10 @@ export function TimingMirrorPanel({
       if (coachMode === 'reference' && bassBuffer) {
         const R = originalBpm > 0 ? currentBpm / originalBpm : 1;
         const refMono = toMono(bassBuffer);
-        const refOnsets = detectBassOnsets(refMono, bassBuffer.sampleRate, onsetOpts);
+        // The reference stem uses its OWN preset (refOnsetOpts) — a quiet stem
+        // needs a lower floor than the hot DI take. Sharing one preset mis-detected
+        // one side → mass mis-alignment (coverage 62%, score 0 on a clean take).
+        const refOnsets = detectBassOnsets(refMono, bassBuffer.sampleRate, refOnsetOpts);
         // reference onset (buffer-relative seconds) → ctx time: loopStart + t/R
         const refAbs = refOnsets.map((o) => grid.loopStartAudioTime + o.time / R);
         setRefScore(
@@ -220,6 +235,9 @@ export function TimingMirrorPanel({
       sensitivity,
       minGapMs,
       minRelStrength,
+      refSensitivity,
+      refMinGapMs,
+      refMinRelStrength,
       coachMode,
       bassBuffer,
       currentBpm,
@@ -267,7 +285,15 @@ export function TimingMirrorPanel({
       analyze(s.signal, s.sampleRate, s.startedAt, gridRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sensitivity, minGapMs, minRelStrength, coachMode]);
+  }, [
+    sensitivity,
+    minGapMs,
+    minRelStrength,
+    refSensitivity,
+    refMinGapMs,
+    refMinRelStrength,
+    coachMode,
+  ]);
 
   // Auto-start on PLAY, auto-score on STOP — driven by the engine's isPlaying.
   useEffect(() => {
@@ -381,10 +407,40 @@ export function TimingMirrorPanel({
         </div>
         <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>
           Compares to EXPECTED ATTACKS (notes minus hammer-on/pull-off/slide, which
-          sound with no fresh pluck), not the raw note count. Tune the sliders, then
-          re-analyze. If detected ≈ expected on real stems, reference grading is
-          de-risked (BASS_DEFAULTS were tuned for hot DI —
-          the clean stem may need different values).
+          sound with no fresh pluck), not the raw note count. Tune the REFERENCE
+          sliders below, then re-analyze, until detected ≈ expected (a quiet stem
+          needs a lower strength floor than your hot DI take).
+        </div>
+        {/* REFERENCE-stem onset preset — separate from the PLAYER preset because the
+            stem and your live DI are different signal classes. */}
+        <div style={{ marginTop: 8 }}>
+          <Slider
+            label="ref sensitivity"
+            value={refSensitivity}
+            min={0.5}
+            max={6}
+            step={0.1}
+            onChange={setRefSensitivity}
+            hint="reference stem"
+          />
+          <Slider
+            label="ref min gap (ms)"
+            value={refMinGapMs}
+            min={40}
+            max={400}
+            step={10}
+            onChange={setRefMinGapMs}
+            hint="reference stem"
+          />
+          <Slider
+            label="ref strength floor"
+            value={refMinRelStrength}
+            min={0.02}
+            max={0.6}
+            step={0.01}
+            onChange={setRefMinRelStrength}
+            hint="↓ for a quiet stem"
+          />
         </div>
       </div>
 
@@ -422,11 +478,11 @@ export function TimingMirrorPanel({
         {phase === 'error' && <span style={{ color: '#e0604a' }}>⛔ {error}</span>}
       </div>
 
-      {(phase === 'done' || refResult != null) && (
+      {phase === 'done' && (
         <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
           <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6 }}>
-            ONSET TUNING (re-scores the same take live — dial until “detected” ≈ the
-            notes you actually played; also re-analyze the reference stem)
+            PLAYER ONSET TUNING (your hot DI take — dial until “detected” ≈ the notes
+            you actually played; re-scores the same take live)
           </div>
           <Slider
             label="sensitivity"
@@ -637,6 +693,10 @@ const panel: React.CSSProperties = {
   background: '#13151b',
   color: '#e7e9ee',
   font: '13px/1.5 ui-monospace, Menlo, monospace',
+  // Keep the dev panel within the viewport and scrollable — it grows with results
+  // and was overflowing the page with no way to reach the bottom.
+  maxHeight: '85vh',
+  overflowY: 'auto',
 };
 const btn: React.CSSProperties = {
   background: '#2a2f3a',
