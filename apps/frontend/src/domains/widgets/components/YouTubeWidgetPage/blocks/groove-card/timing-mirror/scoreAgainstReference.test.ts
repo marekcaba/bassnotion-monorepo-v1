@@ -35,6 +35,20 @@ describe('scoreAgainstReference — the headline', () => {
     expect(res.grade.feel).toBe('dragging'); // a consistent lean behind the record
   });
 
+  it('calibrates out a LARGE constant offset (mic latency) — no false misses', () => {
+    // The real bug: a +76ms constant shift (mic latency) was bigger than half a
+    // sixteenth, so notes snapped to the wrong slot → coverage collapsed to ~62%,
+    // 14 false misses, on a tight take. The gross-offset calibration must restore
+    // full coverage and grade the (tight) feel correctly.
+    const player = reference.map((t) => t + 0.076); // uniformly 76ms late
+    const res = scoreAgainstReference(player, reference, grid);
+    expect(res.coverage).toBeCloseTo(1, 2); // NOT ~0.62
+    expect(res.missedCount).toBe(0); // NOT 14
+    expect(res.offsetMs).toBeCloseTo(76, 0); // reported as the constant lean
+    expect(res.jitterMs).toBeCloseTo(0, 1); // ...feel is tight once calibrated
+    expect(['locked', 'tight']).toContain(res.grade.tier);
+  });
+
   it('grades a sloppy player worse than a tight one (same reference)', () => {
     const wobble = [0.04, -0.05, 0.05, -0.04, 0.05, -0.05, 0.04, -0.04];
     const sloppy = reference.map((t, i) => t + wobble[i]!);

@@ -66,7 +66,17 @@ export function scoreAgainstReference(
     opts.referenceCountTolerance ?? DEFAULTS.referenceCountTolerance;
   const minCoverage = opts.minCoverage ?? DEFAULTS.minCoverage;
 
-  const alignment = alignToReference(playerOnsetsSec, referenceOnsetsSec, grid);
+  // GROSS-OFFSET CALIBRATION (essential): the player take carries a CONSTANT shift
+  // vs the reference — mic input latency + any reference lead-in. Observed ~+76ms,
+  // which is larger than half a sixteenth at 109bpm → notes snap to the WRONG slot
+  // → false misses (coverage collapses). A constant offset is CALIBRATION, not
+  // error. Estimate it (offset-robust: median nearest-neighbour delta), shift the
+  // player onsets by it BEFORE aligning, and report it separately. The feel grade
+  // is then the residual spread after this constant is removed.
+  const grossOffsetSec = estimateGrossOffset(playerOnsetsSec, referenceOnsetsSec);
+  const calibratedPlayer = playerOnsetsSec.map((t) => t - grossOffsetSec);
+
+  const alignment = alignToReference(calibratedPlayer, referenceOnsetsSec, grid);
   const matched = alignment.matched;
 
   const base = {
@@ -104,12 +114,16 @@ export function scoreAgainstReference(
     };
   }
 
-  // ── Score: offset/jitter split over matched-pair errors ──
-  const errsMs = matched.map((p) => p.errorSec * 1000);
-  const offsetMs = errsMs.reduce((a, b) => a + b, 0) / errsMs.length;
+  // ── Score: the matched errors are now POST-calibration residuals (the player was
+  // shifted by grossOffset before aligning). The reported offset = the gross
+  // constant lean vs the record; the jitter = the residual spread (feel). ──
+  const errsMs = matched.map((p) => p.errorSec * 1000); // residual after calibration
+  const residualMeanMs = errsMs.reduce((a, b) => a + b, 0) / errsMs.length;
   const variance =
-    errsMs.reduce((a, b) => a + (b - offsetMs) ** 2, 0) / errsMs.length;
+    errsMs.reduce((a, b) => a + (b - residualMeanMs) ** 2, 0) / errsMs.length;
   const jitterMs = Math.sqrt(variance);
+  // total offset vs the record = the calibrated-out gross lean + any residual mean.
+  const offsetMs = grossOffsetSec * 1000 + residualMeanMs;
 
   return {
     ...base,
@@ -119,4 +133,37 @@ export function scoreAgainstReference(
     untrustworthy: false,
     untrustworthyReason: null,
   };
+}
+
+/**
+ * Estimate the CONSTANT time offset between player and reference onset sequences,
+ * robustly (median of nearest-neighbour deltas). Offset-robust: it doesn't depend
+ * on grid slots, so it works even when the gross shift is large enough to break
+ * slot-alignment. Returns player − reference seconds (positive = player is late).
+ */
+function estimateGrossOffset(
+  playerOnsetsSec: number[],
+  referenceOnsetsSec: number[],
+): number {
+  if (playerOnsetsSec.length === 0 || referenceOnsetsSec.length === 0) return 0;
+  const ref = [...referenceOnsetsSec].sort((a, b) => a - b);
+  // for each player onset, the signed delta to the nearest reference onset
+  const deltas: number[] = [];
+  for (const p of playerOnsetsSec) {
+    let best = ref[0]!;
+    let bestAbs = Math.abs(p - best);
+    for (const r of ref) {
+      const d = Math.abs(p - r);
+      if (d < bestAbs) {
+        bestAbs = d;
+        best = r;
+      }
+    }
+    deltas.push(p - best);
+  }
+  deltas.sort((a, b) => a - b);
+  const mid = Math.floor(deltas.length / 2);
+  return deltas.length % 2
+    ? deltas[mid]!
+    : (deltas[mid - 1]! + deltas[mid]!) / 2;
 }
