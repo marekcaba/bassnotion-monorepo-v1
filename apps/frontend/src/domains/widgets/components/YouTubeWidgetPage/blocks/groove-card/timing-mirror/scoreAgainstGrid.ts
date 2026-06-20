@@ -126,6 +126,11 @@ export interface ScoreResult {
   slots: GridSlot[];
   /** Onsets dropped because they fell in the count-in (before bar 1). */
   skippedBeforeGrid: number;
+  /** G3 over-trigger signal: fraction of scored onsets that COLLIDED on a grid
+   *  subdivision already claimed by an earlier onset. A sustained note re-firing
+   *  lands several onsets on one sixteenth → collisions. High = the detector is
+   *  over-triggering and the score is untrustworthy (the panel refuses to grade). */
+  collisionRate: number;
 }
 
 /**
@@ -171,9 +176,22 @@ export function scoreOnsetsAgainstGrid(
     analyzer.recordBeat('user-bass', slot.subIndex, 0, onsetSec * 1000);
   }
 
+  // G3: collisions = onsets snapping to a subIndex an earlier onset already took.
+  // (Note: BeatTimingAnalyzer's own 100ms dedup may have dropped some of these
+  // from `stats`, but we count them on the raw slots to gauge over-trigger.)
+  const scored = slots.filter((s) => !s.beforeGrid);
+  const seen = new Set<number>();
+  let collisions = 0;
+  for (const s of scored) {
+    if (seen.has(s.subIndex)) collisions++;
+    else seen.add(s.subIndex);
+  }
+  const collisionRate = scored.length > 0 ? collisions / scored.length : 0;
+
   return {
     stats: analyzer.getStatistics('user-bass'),
     slots,
     skippedBeforeGrid,
+    collisionRate,
   };
 }

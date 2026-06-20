@@ -94,6 +94,21 @@ describe('subdivision snapping (the off-beat / 150ms-jitter fix)', () => {
   });
 });
 
+describe('collisionRate (G3 over-trigger signal)', () => {
+  it('is 0 when every onset lands on a distinct subdivision', () => {
+    const { collisionRate } = scoreOnsetsAgainstGrid(onGridQuarters(8), grid);
+    expect(collisionRate).toBe(0);
+  });
+
+  it('rises when many onsets pile onto the same subdivision (sustain re-trigger)', () => {
+    // 5 onsets within one sixteenth window → 4 collisions on 5 onsets = 0.8.
+    const sub = BEAT_SEC / 4;
+    const clustered = [T0, T0 + sub * 0.1, T0 + sub * 0.2, T0 + sub * 0.15, T0 + sub * 0.05];
+    const { collisionRate } = scoreOnsetsAgainstGrid(clustered, grid);
+    expect(collisionRate).toBeGreaterThan(0.5);
+  });
+});
+
 describe('scoreOnsetsAgainstGrid — the clock bridge', () => {
   it('perfectly on-grid onsets → jitter ≈ 0, syncScore ≈ 100, avgDrift ≈ 0', () => {
     const { stats, skippedBeforeGrid } = scoreOnsetsAgainstGrid(onGridQuarters(8), grid);

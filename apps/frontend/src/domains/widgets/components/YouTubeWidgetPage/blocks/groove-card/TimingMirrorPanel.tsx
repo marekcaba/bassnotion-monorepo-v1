@@ -28,7 +28,12 @@ import {
   scoreOnsetsAgainstGrid,
   type GridParams,
 } from './timing-mirror/scoreAgainstGrid';
+import { gradeTiming, type TimingGrade } from './timing-mirror/timingGrade';
 import type { TimingStatistics } from '@/domains/playback/utils/BeatTimingAnalyzer';
+
+// G3: if more than this fraction of onsets collide on a subdivision, the detector
+// is over-triggering and the score is untrustworthy → refuse to grade.
+const COLLISION_REFUSE_THRESHOLD = 0.2;
 
 interface TimingMirrorPanelProps {
   audioContext: AudioContext | null;
@@ -49,9 +54,12 @@ type Phase = 'idle' | 'arming' | 'armed' | 'recording' | 'scoring' | 'done' | 'e
 
 interface Outcome {
   stats: TimingStatistics;
+  grade: TimingGrade;
   detectedCount: number;
   scoredCount: number;
   skippedBeforeGrid: number;
+  collisionRate: number;
+  untrustworthy: boolean;
 }
 
 export function TimingMirrorPanel({
@@ -122,15 +130,17 @@ export function TimingMirrorPanel({
         minRelativeStrength: minRelStrength,
       });
       const absOnsets = onsets.map((o) => o.time + startedAt);
-      const { stats, slots, skippedBeforeGrid } = scoreOnsetsAgainstGrid(
-        absOnsets,
-        grid,
-      );
+      const { stats, slots, skippedBeforeGrid, collisionRate } =
+        scoreOnsetsAgainstGrid(absOnsets, grid);
+      const untrustworthy = collisionRate > COLLISION_REFUSE_THRESHOLD;
       setOutcome({
         stats,
+        grade: gradeTiming(stats.jitter, stats.averageDrift),
         detectedCount: onsets.length,
         scoredCount: slots.length - skippedBeforeGrid,
         skippedBeforeGrid,
+        collisionRate,
+        untrustworthy,
       });
     },
     [sensitivity, minGapMs, minRelStrength],
@@ -298,31 +308,59 @@ export function TimingMirrorPanel({
 
       {o && offsetMs != null && jitterMs != null && (
         <>
-          <div style={{ marginTop: 12, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <Stat
-              label="jitter (timing quality)"
-              value={`${jitterMs.toFixed(1)} ms`}
-              color={jitterMs < 25 ? '#6ad08c' : jitterMs < 45 ? '#e0b24a' : '#e0604a'}
-              sub={`syncScore ${o.stats.syncScore.toFixed(0)} · ${o.stats.driftTrend}`}
-            />
-            <Stat
-              label="offset (rig latency)"
-              value={`${offsetMs >= 0 ? '+' : ''}${offsetMs.toFixed(1)} ms`}
-              color="#9aa0ad"
-              sub="NOT player error — calibrate out (G2, step 5)"
-            />
-            <Stat
-              label="notes detected / scored"
-              value={`${o.detectedCount} / ${o.scoredCount}`}
-              color="#e7e9ee"
-              sub={o.skippedBeforeGrid > 0 ? `${o.skippedBeforeGrid} in count-in` : 'onsets → grid'}
-            />
-          </div>
-          <div style={{ marginTop: 10, fontSize: 11, color: '#9aa0ad', lineHeight: 1.5 }}>
-            ⚠️ Step 4 = pipeline proof only. The offset is uncalibrated rig latency
-            (round-trip calibration is step 5); the headline jitter number is not
-            trustworthy until note-count sanity (G3) + ear A/B (G4) are wired. Numbers
-            here are for validating the pipeline, not for showing a player yet.
+          {o.untrustworthy ? (
+            <div
+              style={{
+                marginTop: 12,
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: '#331a16',
+                border: '1px solid #6b352a',
+                color: '#e0b24a',
+                lineHeight: 1.5,
+              }}
+            >
+              ⛔ Can&apos;t trust this take — {Math.round(o.collisionRate * 100)}% of onsets
+              piled onto the same beats (the detector is over-triggering, likely sustain
+              or bleed). Nudge <b>sensitivity</b> up, or check the input, and re-record.
+              No score shown rather than a false one.
+            </div>
+          ) : (
+            <div style={{ marginTop: 14, display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'baseline' }}>
+              {/* HEADLINE — human grade, not the machine "erratic" */}
+              <div style={{ minWidth: 200 }}>
+                <div style={{ color: '#9aa0ad', fontSize: 11 }}>your timing</div>
+                <div style={{ fontSize: 30, fontWeight: 700, color: o.grade.color, lineHeight: 1.1 }}>
+                  {o.grade.label}
+                </div>
+                <div style={{ color: '#9aa0ad', fontSize: 12 }}>
+                  {jitterMs.toFixed(0)}ms spread
+                  {o.grade.feel !== 'centered' && ` · you tend to ${o.grade.feel}`}
+                </div>
+              </div>
+              <Stat
+                label="pocket score"
+                value={`${o.grade.score}`}
+                color={o.grade.color}
+                sub="human-scaled (0–100)"
+              />
+              <Stat
+                label="notes detected / scored"
+                value={`${o.detectedCount} / ${o.scoredCount}`}
+                color="#e7e9ee"
+                sub={o.skippedBeforeGrid > 0 ? `${o.skippedBeforeGrid} in count-in` : 'onsets → grid'}
+              />
+            </div>
+          )}
+
+          {/* honest detail (always shown, even when graded) */}
+          <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
+            raw: jitter {jitterMs.toFixed(1)}ms · offset{' '}
+            {offsetMs >= 0 ? '+' : ''}
+            {offsetMs.toFixed(1)}ms (rig latency, not player error — G2 calibration pending) ·
+            collisions {Math.round(o.collisionRate * 100)}%. The pocket grade is human-scaled;
+            BeatTimingAnalyzer&apos;s own &quot;{o.stats.driftTrend}&quot;/syncScore{' '}
+            {o.stats.syncScore.toFixed(0)} are machine-tuned and not used for the headline.
           </div>
         </>
       )}
