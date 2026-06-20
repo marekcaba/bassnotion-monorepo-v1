@@ -44,11 +44,14 @@ interface TimingMirrorPanelProps {
   isPlaying: boolean;
   isBassMuted: boolean;
   setStemMuted: (stem: 'audio-bass', muted: boolean) => void;
-  // Step 0 (bass coach): the reference stem + its authored note count, to validate
-  // that detectBassOnsets finds the right notes in a CLEAN stem (BASS_DEFAULTS were
+  // Step 0 (bass coach): the reference stem + the authored notes, to validate that
+  // detectBassOnsets finds the right ATTACKS in a CLEAN stem (BASS_DEFAULTS were
   // tuned for hot DI — a different signal class). See docs/BASS_COACH_BUILD_PLAN.md.
   bassBuffer: AudioBuffer | null;
-  authoredNoteCount: number | null;
+  /** Authored notes — we compare detected onsets to the count of notes that START
+   *  a fresh ATTACK (excluding legato continuations: hammer-on/pull-off/slide, which
+   *  sound with no new pluck), NOT the raw note count. */
+  authoredNotes: { techniques?: string[] }[] | null;
 }
 
 // Flow built around how a musician actually plays: you can't press a button on
@@ -77,7 +80,7 @@ export function TimingMirrorPanel({
   isBassMuted,
   setStemMuted,
   bassBuffer,
-  authoredNoteCount,
+  authoredNotes,
 }: TimingMirrorPanelProps) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +112,19 @@ export function TimingMirrorPanel({
     });
     setRefResult({ detected: onsets.length });
   }, [bassBuffer, sensitivity, minGapMs, minRelStrength]);
+
+  // Expected ATTACK count = authored notes MINUS legato continuations. A hammer-on /
+  // pull-off / slide sounds with NO fresh pluck, so it produces no onset — comparing
+  // detected onsets to the raw note count would always under-read. This is the honest
+  // target: how many notes actually start an attack.
+  const LEGATO = new Set(['hammer_on', 'pull_off', 'slide_up', 'slide_down']);
+  const expectedAttacks =
+    authoredNotes == null
+      ? null
+      : authoredNotes.filter(
+          (n) => !(n.techniques ?? []).some((t) => LEGATO.has(t)),
+        ).length;
+  const authoredTotal = authoredNotes?.length ?? null;
   // Grid captured at the play transition (loopStartAudioTime re-anchors / nulls on stop).
   const gridRef = useRef<GridParams | null>(null);
   // phase mirror for effects (avoids stale closures in the isPlaying watcher).
@@ -279,24 +295,31 @@ export function TimingMirrorPanel({
               <b
                 style={{
                   color:
-                    authoredNoteCount == null
+                    expectedAttacks == null
                       ? '#e7e9ee'
-                      : Math.abs(refResult.detected - authoredNoteCount) <= 2
+                      : Math.abs(refResult.detected - expectedAttacks) <= 2
                         ? '#6ad08c'
                         : '#e0b24a',
                 }}
               >
                 {refResult.detected}
               </b>
-              {authoredNoteCount != null && (
-                <span style={{ color: '#9aa0ad' }}> {' '}/ authored {authoredNoteCount}</span>
+              {expectedAttacks != null && (
+                <span style={{ color: '#9aa0ad' }}>
+                  {' '}/ ~{expectedAttacks} expected attacks
+                  {authoredTotal != null && authoredTotal !== expectedAttacks && (
+                    <span> ({authoredTotal} notes − {authoredTotal - expectedAttacks} legato)</span>
+                  )}
+                </span>
               )}
             </span>
           )}
         </div>
         <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>
-          Tune the sliders below, then re-analyze. If detected ≈ authored on real
-          stems, reference grading is de-risked (BASS_DEFAULTS were tuned for hot DI —
+          Compares to EXPECTED ATTACKS (notes minus hammer-on/pull-off/slide, which
+          sound with no fresh pluck), not the raw note count. Tune the sliders, then
+          re-analyze. If detected ≈ expected on real stems, reference grading is
+          de-risked (BASS_DEFAULTS were tuned for hot DI —
           the clean stem may need different values).
         </div>
       </div>
