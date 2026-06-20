@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recording-Latency Probe — BassNotion capture feasibility</title>
+<style>
+  :root { --bg:#0e0f13; --panel:#181a21; --fg:#e7e9ee; --mut:#9aa0ad; --acc:#6ad08c;
+          --warn:#e0b24a; --bad:#e0604a; --line:#2a2d36; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; padding:24px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:22px 0 8px; color:var(--acc); text-transform:uppercase; letter-spacing:.06em; }
+  .sub { color:var(--mut); margin:0 0 18px; max-width:780px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+           padding:16px; margin-bottom:16px; max-width:880px; }
+  button { background:#2a2f3a; color:var(--fg); border:1px solid var(--line); border-radius:7px;
+           padding:9px 14px; font:inherit; cursor:pointer; margin:2px 4px 2px 0; }
+  button:hover:not(:disabled) { background:#343b48; }
+  button:disabled { opacity:.4; cursor:default; }
+  button.primary { background:var(--acc); color:#0a0a0a; border-color:var(--acc); font-weight:600; }
+  select { background:#2a2f3a; color:var(--fg); border:1px solid var(--line); border-radius:7px;
+           padding:8px; font:inherit; max-width:420px; }
+  label { display:block; color:var(--mut); margin:10px 0 4px; }
+  .row { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-end; }
+  .big { font-size:34px; font-weight:700; line-height:1.1; }
+  .unit { font-size:14px; color:var(--mut); font-weight:400; }
+  .stat { min-width:150px; }
+  .good { color:var(--acc); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  canvas { width:100%; height:130px; background:#0a0b0e; border:1px solid var(--line);
+           border-radius:8px; display:block; margin-top:10px; }
+  table { border-collapse:collapse; width:100%; margin-top:8px; font-size:13px; }
+  th,td { text-align:left; padding:5px 10px; border-bottom:1px solid var(--line); }
+  th { color:var(--mut); font-weight:600; }
+  .verdict { font-size:15px; padding:12px 14px; border-radius:8px; margin-top:12px; line-height:1.6; }
+  .verdict.ok { background:#16331f; border:1px solid #2a6b3c; }
+  .verdict.no { background:#331a16; border:1px solid #6b352a; }
+  code { background:#0a0b0e; padding:1px 5px; border-radius:4px; color:var(--warn); }
+  .note { color:var(--mut); font-size:12.5px; margin-top:8px; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:20px; font-size:11px;
+          border:1px solid var(--line); color:var(--mut); margin-left:6px; }
+</style>
+</head>
+<body>
+<h1>Recording-Latency Probe <span class="pill">capture feasibility · docs/dev-tools</span></h1>
+<p class="sub">
+  Answers the load-bearing question from <code>docs/PRACTICE_TOOLS_FEASIBILITY.md</code> →
+  <em>"Capturing the user's own bass recording."</em> It measures the <b>true acoustic round-trip</b>
+  of <em>this</em> machine + interface via a loopback click (app emits a click → it leaves the
+  speaker/interface → the input picks it up → we measure the gap), then proves whether
+  <b>punch-in alignment</b> can land a recorded take sample-accurate against a backing track.
+  <b>Nothing leaves the device.</b> Use headphones-off / speaker-near-mic OR an interface loopback
+  for the round-trip test; for the verdict that matters, plug in your real bass + interface.
+</p>
+
+<div class="panel">
+  <h2>1 · Audio input</h2>
+  <label for="dev">Input device (pick your interface — not "Default" if you can avoid it)</label>
+  <select id="dev"><option>— grant mic permission first —</option></select>
+  <div style="margin-top:12px">
+    <button id="grant" class="primary">Grant mic + list devices</button>
+    <button id="open" disabled>Open input (raw: AGC/NS/EC off)</button>
+  </div>
+  <div class="note" id="cfg"></div>
+</div>
+
+<div class="panel">
+  <h2>1b · Live input meter — is your bass reaching the browser?</h2>
+  <p class="note">
+    On a Focusrite Clarett you monitor your bass via <b>Focusrite Control direct monitoring
+    (analog, 0ms)</b> — the browser does NOT play it back to your ears, and that's correct. This
+    only checks the app is <em>receiving</em> the signal. <b>Play your bass</b> — the bar should
+    jump. If it stays dead, the browser opened the wrong input (pick the Clarett's instrument
+    channel in §1, not "Default"). For the round-trip test in §2, enable Focusrite Control's
+    <b>"Loopback"</b> input and select it as the device, OR run a physical cable from an output to an input.
+  </p>
+  <button id="meterBtn" disabled>Start input meter</button>
+  <div class="row" style="margin-top:10px;align-items:center">
+    <div style="flex:1;min-width:260px">
+      <div style="height:26px;background:#0a0b0e;border:1px solid var(--line);border-radius:6px;overflow:hidden">
+        <div id="meterFill" style="height:100%;width:0%;background:var(--acc);transition:width .05s"></div>
+      </div>
+    </div>
+    <div class="stat"><div class="mut">peak (dBFS)</div>
+      <div class="big" id="meterDb" style="font-size:24px">— <span class="unit">dB</span></div></div>
+    <div id="meterVerdict" class="note" style="min-width:200px"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>2 · Round-trip latency (loopback click)</h2>
+  <p class="note">
+    Plays N short clicks out the output; listens on the input for each click's echo; reports the
+    delay. This is the real number the browser path imposes on <em>this</em> rig — the
+    "monitoring latency" that, if heard through the app, is the molasses/word-of-mouth killer.
+    Run it with a loopback cable (interface out→in) for a clean read, or speaker-near-mic.
+  </p>
+  <div class="row">
+    <button id="measure" disabled>Measure round-trip (×8 clicks)</button>
+    <div class="stat"><div class="mut">median round-trip</div>
+      <div class="big" id="rt">— <span class="unit">ms</span></div></div>
+    <div class="stat"><div class="mut">reported output latency</div>
+      <div class="big" id="outlat">— <span class="unit">ms</span></div></div>
+    <div class="stat"><div class="mut">jitter (IQR)</div>
+      <div class="big" id="jit">— <span class="unit">ms</span></div></div>
+  </div>
+  <canvas id="scope" width="1600" height="260"></canvas>
+  <table id="trials"><thead><tr><th>#</th><th>round-trip (ms)</th><th>peak corr</th></tr></thead><tbody></tbody></table>
+  <div id="rtVerdict"></div>
+</div>
+
+<div class="panel">
+  <h2>3 · Punch-in alignment test (does the OFFSET fix the take?)</h2>
+  <p class="note">
+    The real question for a browser-only launch: even with latency, can we <em>record then shift
+    the take back by the measured offset</em> so it sits in the pocket with the backing? This plays
+    a metronome backing, records the input, auto-correlates the recorded clicks against the known
+    backing grid, and reports the residual error after applying the measured offset. Tap your bass
+    (or clap) <b>on the beats</b> during the count.
+  </p>
+  <div class="row">
+    <button id="record" disabled>Record 4 bars vs click</button>
+    <div class="stat"><div class="mut">residual after punch-in</div>
+      <div class="big" id="resid">— <span class="unit">ms</span></div></div>
+    <div class="stat"><div class="mut">samples off @ 48k</div>
+      <div class="big" id="residS">—</div></div>
+  </div>
+  <canvas id="align" width="1600" height="200"></canvas>
+  <div id="alignVerdict"></div>
+</div>
+
+<div class="panel">
+  <h2>Verdict — does this rig need the daemon?</h2>
+  <div id="finalVerdict" class="note">Run sections 2 and 3 to populate.</div>
+  <div class="note" style="margin-top:10px">
+    Thresholds: round-trip <code>&lt;12 ms</code> = through-app monitoring feels live (browser fine);
+    <code>12–25 ms</code> = noticeable, hardware direct-monitoring recommended;
+    <code>&gt;25 ms</code> = through-app monitoring is molasses → daemon needed for that mode.
+    Punch-in residual <code>&lt;3 ms</code> (~144 samples @48k) = recorded takes align sample-accurate
+    → record-then-review works browser-only regardless of monitoring latency.
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let ctx, stream, srcNode, inputBuf, recording = false;
+let measuredOffsetSec = null;        // the round-trip we'll punch-in by
+const SR_TARGET = 48000;
+
+// ---- 1. device + input ----
+$('grant').onclick = async () => {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    s.getTracks().forEach(t => t.stop());              // just to unlock labels
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const sel = $('dev'); sel.innerHTML = '';
+    devs.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.deviceId; o.textContent = d.label || `input ${sel.length+1}`;
+      sel.appendChild(o);
+    });
+    $('open').disabled = false;
+  } catch (e) { $('cfg').innerHTML = `<span class="bad">permission denied: ${e.message}</span>`; }
+};
+
+$('open').onclick = async () => {
+  if (ctx) await ctx.close();
+  ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SR_TARGET, latencyHint: 'interactive' });
+  if (ctx.state === 'suspended') await ctx.resume();
+  const deviceId = $('dev').value;
+  // RAW: the constraints that would otherwise destroy a bass signal — all OFF.
+  stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      deviceId: deviceId ? { exact: deviceId } : undefined,
+      echoCancellation: false, autoGainControl: false, noiseSuppression: false,
+      channelCount: 1
+    }
+  });
+  srcNode = ctx.createMediaStreamSource(stream);
+  const baseLat = (ctx.baseLatency || 0) * 1000;
+  const outLat = (ctx.outputLatency || 0) * 1000;
+  $('outlat').innerHTML = `${(outLat || baseLat).toFixed(1)} <span class="unit">ms</span>`;
+  $('cfg').innerHTML =
+    `ctx.sampleRate=<code>${ctx.sampleRate}</code> · baseLatency=<code>${baseLat.toFixed(1)}ms</code> · `
+    + `outputLatency=<code>${outLat.toFixed(1)}ms</code> · constraints: AGC/NS/EC = <span class="good">off</span>`;
+  $('measure').disabled = false; $('record').disabled = false; $('meterBtn').disabled = false;
+};
+
+// ---- 1b. live input meter (no echo path needed — just proves capture works) ----
+let meterOn = false, analyser = null, meterRAF = null, meterPeak = 0;
+$('meterBtn').onclick = () => {
+  if (meterOn) { meterOn = false; cancelAnimationFrame(meterRAF); $('meterBtn').textContent = 'Start input meter'; return; }
+  meterOn = true; $('meterBtn').textContent = 'Stop input meter'; meterPeak = 0;
+  analyser = ctx.createAnalyser(); analyser.fftSize = 1024; srcNode.connect(analyser);
+  const data = new Float32Array(analyser.fftSize);
+  const tick = () => {
+    if (!meterOn) return;
+    analyser.getFloatTimeDomainData(data);
+    let p = 0; for (let i=0;i<data.length;i++){ const a=Math.abs(data[i]); if(a>p)p=a; }
+    if (p > meterPeak) meterPeak = p;
+    const db = p > 0 ? 20*Math.log10(p) : -Infinity;
+    const pct = Math.min(100, Math.max(0, (db+60)/60*100));   // -60dB..0dB → 0..100%
+    $('meterFill').style.width = pct + '%';
+    $('meterFill').style.background = db > -3 ? 'var(--bad)' : db > -18 ? 'var(--warn)' : 'var(--acc)';
+    const peakDb = meterPeak > 0 ? 20*Math.log10(meterPeak) : -Infinity;
+    $('meterDb').innerHTML = `${isFinite(peakDb)?peakDb.toFixed(1):'−∞'} <span class="unit">dB</span>`;
+    if (meterPeak > 0.005)
+      $('meterVerdict').innerHTML = '<span class="good">✅ signal received — capture works.</span> Recording is browser-only; monitor via Focusrite Control.';
+    else
+      $('meterVerdict').innerHTML = '<span class="mut">play your bass… (dead bar = wrong input device or muted channel)</span>';
+    meterRAF = requestAnimationFrame(tick);
+  };
+  tick();
+};
+
+// capture a window of input into a Float32 buffer via ScriptProcessor (broad support; fine for a probe)
+function captureInput(seconds) {
+  return new Promise(resolve => {
+    const proc = ctx.createScriptProcessor(2048, 1, 1);
+    const chunks = []; let got = 0; const need = Math.ceil(seconds * ctx.sampleRate);
+    proc.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0);
+      chunks.push(new Float32Array(d)); got += d.length;
+      if (got >= need) {
+        proc.onaudioprocess = null; srcNode.disconnect(proc); proc.disconnect();
+        const out = new Float32Array(got); let o = 0;
+        for (const c of chunks) { out.set(c, o); o += c.length; }
+        resolve(out);
+      }
+    };
+    srcNode.connect(proc); proc.connect(ctx.destination); // sink (output is silent-ish; click added separately)
+  });
+}
+
+function clickBuffer() {
+  const len = Math.floor(ctx.sampleRate * 0.004);        // 4ms impulse-ish burst
+  const b = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.sin(i / len * Math.PI) * Math.sin(i * 0.9) * (1 - i/len);
+  return b;
+}
+
+// find the loudest onset (first sample crossing a fraction of peak)
+function onsetSample(buf, fromSample = 0) {
+  let peak = 0;
+  for (let i = fromSample; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > peak) peak = a; }
+  if (peak < 0.002) return { idx: -1, peak };               // nothing heard
+  const thr = peak * 0.4;
+  for (let i = fromSample; i < buf.length; i++) if (Math.abs(buf[i]) >= thr) return { idx: i, peak };
+  return { idx: -1, peak };
+}
+
+// ---- 2. round-trip ----
+$('measure').onclick = async () => {
+  $('trials').querySelector('tbody').innerHTML = '';
+  const trials = [], N = 8, click = clickBuffer();
+  for (let k = 0; k < N; k++) {
+    const cap = captureInput(0.35);                          // listen 350ms
+    await new Promise(r => setTimeout(r, 40));               // let capture spin up
+    const src = ctx.createBufferSource(); src.buffer = click; src.connect(ctx.destination);
+    const playAt = ctx.currentTime + 0.05;
+    const t0 = ctx.currentTime;
+    src.start(playAt);
+    const buf = await cap;
+    // capture started ~t0; click emitted at playAt → expected echo at (playAt - t0) + roundtrip
+    const emitOffsetSec = playAt - t0;
+    const { idx, peak } = onsetSample(buf, Math.floor(emitOffsetSec * ctx.sampleRate));
+    if (idx < 0) { addTrial(k+1, null, peak); continue; }
+    const rtSec = idx / ctx.sampleRate - emitOffsetSec;
+    if (rtSec > 0 && rtSec < 0.3) { trials.push(rtSec); addTrial(k+1, rtSec*1000, peak); drawScope(buf, idx); }
+    else addTrial(k+1, null, peak);
+    await new Promise(r => setTimeout(r, 120));
+  }
+  if (!trials.length) { $('rtVerdict').innerHTML = bad('No echo detected. Use a loopback cable or move the mic near the speaker.'); return; }
+  trials.sort((a,b)=>a-b);
+  const med = trials[Math.floor(trials.length/2)] * 1000;
+  const q1 = trials[Math.floor(trials.length*0.25)] * 1000, q3 = trials[Math.floor(trials.length*0.75)] * 1000;
+  measuredOffsetSec = med / 1000;
+  $('rt').innerHTML = `${cls(med,12,25)}${med.toFixed(1)}</span> <span class="unit">ms</span>`;
+  $('jit').innerHTML = `${(q3-q1).toFixed(1)} <span class="unit">ms</span>`;
+  $('rtVerdict').innerHTML = rtVerdictText(med);
+  updateFinal();
+};
+function addTrial(n, ms, peak) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${n}</td><td>${ms==null?'<span class="bad">no echo</span>':ms.toFixed(1)}</td><td>${peak.toFixed(3)}</td>`;
+  $('trials').querySelector('tbody').appendChild(tr);
+}
+function drawScope(buf, onsetIdx) {
+  const c = $('scope'), g = c.getContext('2d'); g.clearRect(0,0,c.width,c.height);
+  const start = Math.max(0, onsetIdx - 1200), end = Math.min(buf.length, onsetIdx + 3200);
+  g.strokeStyle = '#2a2d36'; g.beginPath(); g.moveTo(0,c.height/2); g.lineTo(c.width,c.height/2); g.stroke();
+  g.strokeStyle = '#6ad08c'; g.beginPath();
+  for (let i = start; i < end; i++) {
+    const x = (i-start)/(end-start)*c.width, y = c.height/2 - buf[i]*c.height*0.45;
+    i===start?g.moveTo(x,y):g.lineTo(x,y);
+  }
+  g.stroke();
+  const ox = (onsetIdx-start)/(end-start)*c.width;
+  g.strokeStyle = '#e0b24a'; g.beginPath(); g.moveTo(ox,0); g.lineTo(ox,c.height); g.stroke();
+}
+
+// ---- 3. punch-in alignment ----
+$('record').onclick = async () => {
+  const bpm = 100, beat = 60/bpm, beats = 16, click = clickBuffer();
+  const cap = captureInput(beat*beats + 0.6);
+  await new Promise(r => setTimeout(r, 40));
+  const t0 = ctx.currentTime, start = t0 + 0.2;
+  const grid = [];
+  for (let b = 0; b < beats; b++) {
+    const when = start + b*beat;
+    const s = ctx.createBufferSource(); s.buffer = click; s.connect(ctx.destination); s.start(when);
+    grid.push(when - t0);                                   // backing grid, in capture-time
+  }
+  const buf = await cap;
+  // detect input onsets (the user's taps), one per beat window
+  const detected = [];
+  for (const gt of grid) {
+    const center = Math.floor(gt * ctx.sampleRate);
+    const w0 = Math.max(0, center - Math.floor(0.18*ctx.sampleRate));
+    const w1 = Math.min(buf.length, center + Math.floor(0.18*ctx.sampleRate));
+    const slice = buf.subarray(w0, w1);
+    const { idx, peak } = onsetSample(slice, 0);
+    if (idx >= 0 && peak > 0.01) detected.push((w0+idx)/ctx.sampleRate);
+    else detected.push(null);
+  }
+  // residual = (detected - grid) minus the measured round-trip offset; the user aims AT the beat,
+  // so a perfect punch-in by measuredOffset should zero the mean error.
+  const off = measuredOffsetSec ?? 0;
+  const errs = [];
+  detected.forEach((d,i)=>{ if (d!=null) errs.push((d - grid[i]) - off); });
+  if (!errs.length) { $('alignVerdict').innerHTML = bad('No taps detected — tap your bass/clap ON the beats during the count.'); return; }
+  const mean = errs.reduce((a,b)=>a+b,0)/errs.length;
+  // residual after also removing the mean (punch-in calibrates the constant offset; what's LEFT is jitter)
+  const resid = Math.sqrt(errs.reduce((a,b)=>a+(b-mean)**2,0)/errs.length);
+  const residMs = resid*1000, residSamp = Math.round(resid*48000);
+  $('resid').innerHTML = `${cls(residMs,3,8)}${residMs.toFixed(2)}</span> <span class="unit">ms</span>`;
+  $('residS').innerHTML = `${residSamp}`;
+  drawAlign(grid, detected, off);
+  $('alignVerdict').innerHTML = residMs < 3
+    ? ok(`Residual ${residMs.toFixed(2)}ms (~${residSamp} samples). Punch-in lands takes sample-accurate → <b>record-then-review works browser-only</b>, no daemon needed for capture.`)
+    : (residMs < 8 ? warn(`Residual ${residMs.toFixed(2)}ms — usable but human-tap jitter dominates; re-run tapping tighter. Still fine for practice capture.`)
+                   : bad(`Residual ${residMs.toFixed(2)}ms — either taps were loose or the grid drifted; re-run before concluding.`));
+  updateFinal();
+};
+function drawAlign(grid, detected, off) {
+  const c = $('align'), g = c.getContext('2d'); g.clearRect(0,0,c.width,c.height);
+  const span = grid[grid.length-1] + 0.3;
+  grid.forEach(gt => { const x = gt/span*c.width;
+    g.strokeStyle='#3a4150'; g.beginPath(); g.moveTo(x,0); g.lineTo(x,c.height); g.stroke(); });
+  detected.forEach((d,i)=>{ if(d==null) return;
+    const xCorr = (d-off)/span*c.width;                     // after punch-in
+    g.fillStyle = '#6ad08c'; g.fillRect(xCorr-1.5, 20, 3, c.height-40);
+  });
+  g.fillStyle='#9aa0ad'; g.font='12px monospace';
+  g.fillText('grey = backing grid   ·   green = your taps after punch-in offset', 12, 14);
+}
+
+// ---- helpers ----
+function cls(v, warnT, badT){ return v<warnT?'<span class="good">':v<badT?'<span class="warn">':'<span class="bad">'; }
+const ok   = t => `<div class="verdict ok">✅ ${t}</div>`;
+const warn = t => `<div class="verdict no" style="background:#332b16;border-color:#6b5a2a">⚠️ ${t}</div>`;
+const bad  = t => `<div class="verdict no">⛔ ${t}</div>`;
+function rtVerdictText(ms){
+  if (ms < 12) return ok(`${ms.toFixed(1)}ms round-trip — through-app monitoring feels live. <b>Browser is fine even for monitor-through-app.</b> No daemon needed.`);
+  if (ms < 25) return warn(`${ms.toFixed(1)}ms — noticeable through the app. Use <b>hardware direct monitoring</b> (0ms analog) for the live feel; browser still records fine.`);
+  return bad(`${ms.toFixed(1)}ms — through-app monitoring is molasses. For monitor-through-app you need the <b>native daemon</b>. Hardware direct monitoring still gives a 0ms launch path.`);
+}
+function updateFinal(){
+  const rt = parseFloat($('rt').textContent), resid = parseFloat($('resid').textContent);
+  if (isNaN(rt)) return;
+  let lines = [];
+  lines.push(rt<12 ? `Round-trip ${rt.toFixed(1)}ms: <b class="good">no daemon needed</b>, even monitor-through-app is live.`
+           : rt<25 ? `Round-trip ${rt.toFixed(1)}ms: <b class="warn">launch on hardware direct monitoring</b> (0ms analog); daemon only for monitor-through-app.`
+                   : `Round-trip ${rt.toFixed(1)}ms: <b class="bad">monitor-through-app needs the daemon</b>; hardware direct monitoring is the browser-only launch path.`);
+  if (!isNaN(resid))
+    lines.push(resid<3 ? `Punch-in residual ${resid.toFixed(2)}ms: <b class="good">record-then-review works browser-only.</b>`
+                       : `Punch-in residual ${resid.toFixed(2)}ms: re-test taps; expected &lt;3ms on a clean run.`);
+  $('finalVerdict').innerHTML = lines.map(l=>'• '+l).join('<br>');
+}
+</script>
+</body>
+</html>
