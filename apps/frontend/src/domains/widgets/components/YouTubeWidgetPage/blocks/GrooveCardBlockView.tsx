@@ -1140,6 +1140,9 @@ export function GrooveCardBlockView({
           isPlaying={playback.isPlaying}
           isBassMuted={isBassMuted}
           setStemMuted={(stem, muted) => playback.setStemMuted(stem, muted)}
+          // Step 0 (bass coach): the reference stem + its authored note count.
+          bassBuffer={playback.bassBuffer}
+          authoredNoteCount={config.bassNotation?.notes?.length ?? null}
         />
       )}
     </div>

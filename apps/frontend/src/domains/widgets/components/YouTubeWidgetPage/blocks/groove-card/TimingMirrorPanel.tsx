@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   startBassCapture,
+  toMono,
   type BassCapture,
 } from './timing-mirror/captureBassInput';
 import { detectBassOnsets } from './timing-mirror/bassOnsetDetector';
@@ -43,6 +44,11 @@ interface TimingMirrorPanelProps {
   isPlaying: boolean;
   isBassMuted: boolean;
   setStemMuted: (stem: 'audio-bass', muted: boolean) => void;
+  // Step 0 (bass coach): the reference stem + its authored note count, to validate
+  // that detectBassOnsets finds the right notes in a CLEAN stem (BASS_DEFAULTS were
+  // tuned for hot DI — a different signal class). See docs/BASS_COACH_BUILD_PLAN.md.
+  bassBuffer: AudioBuffer | null;
+  authoredNoteCount: number | null;
 }
 
 // Flow built around how a musician actually plays: you can't press a button on
@@ -70,6 +76,8 @@ export function TimingMirrorPanel({
   isPlaying,
   isBassMuted,
   setStemMuted,
+  bassBuffer,
+  authoredNoteCount,
 }: TimingMirrorPanelProps) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +92,23 @@ export function TimingMirrorPanel({
   const [minGapMs, setMinGapMs] = useState(120);
   const [minRelStrength, setMinRelStrength] = useState(0.25);
   const lastSignalRef = useRef<{ signal: Float32Array; sampleRate: number; startedAt: number } | null>(null);
+
+  // Step 0 (bass coach) — reference-stem onset check. Detected count vs the authored
+  // note count tells us whether detectBassOnsets is trustworthy on a CLEAN stem (the
+  // gate before building reference grading; BASS_DEFAULTS were tuned for hot DI).
+  const [refResult, setRefResult] = useState<{ detected: number } | null>(null);
+  const analyzeReference = useCallback(() => {
+    if (!bassBuffer) {
+      setRefResult(null);
+      return;
+    }
+    const onsets = detectBassOnsets(toMono(bassBuffer), bassBuffer.sampleRate, {
+      sensitivity,
+      minOnsetGapSeconds: minGapMs / 1000,
+      minRelativeStrength: minRelStrength,
+    });
+    setRefResult({ detected: onsets.length });
+  }, [bassBuffer, sensitivity, minGapMs, minRelStrength]);
   // Grid captured at the play transition (loopStartAudioTime re-anchors / nulls on stop).
   const gridRef = useRef<GridParams | null>(null);
   // phase mirror for effects (avoids stale closures in the isPlaying watcher).
@@ -236,6 +261,46 @@ export function TimingMirrorPanel({
         </span>
       </div>
 
+      {/* Step 0 (bass coach): does detectBassOnsets find the right notes in the
+          REFERENCE stem? Detected vs authored = the gate before reference grading. */}
+      <div style={{ marginTop: 10, padding: 10, background: '#0e1014', borderRadius: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button style={btn} onClick={analyzeReference} disabled={!bassBuffer}>
+            Analyze reference stem
+          </button>
+          {!bassBuffer && (
+            <span style={{ fontSize: 12, color: '#9aa0ad' }}>
+              no bass stem loaded (press ▶ Play once to preload it)
+            </span>
+          )}
+          {refResult && (
+            <span style={{ fontSize: 13 }}>
+              stem onsets detected:{' '}
+              <b
+                style={{
+                  color:
+                    authoredNoteCount == null
+                      ? '#e7e9ee'
+                      : Math.abs(refResult.detected - authoredNoteCount) <= 2
+                        ? '#6ad08c'
+                        : '#e0b24a',
+                }}
+              >
+                {refResult.detected}
+              </b>
+              {authoredNoteCount != null && (
+                <span style={{ color: '#9aa0ad' }}> {' '}/ authored {authoredNoteCount}</span>
+              )}
+            </span>
+          )}
+        </div>
+        <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>
+          Tune the sliders below, then re-analyze. If detected ≈ authored on real
+          stems, reference grading is de-risked (BASS_DEFAULTS were tuned for hot DI —
+          the clean stem may need different values).
+        </div>
+      </div>
+
       <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
           style={primaryBtn}
@@ -270,11 +335,11 @@ export function TimingMirrorPanel({
         {phase === 'error' && <span style={{ color: '#e0604a' }}>⛔ {error}</span>}
       </div>
 
-      {phase === 'done' && (
+      {(phase === 'done' || refResult != null) && (
         <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
           <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6 }}>
             ONSET TUNING (re-scores the same take live — dial until “detected” ≈ the
-            notes you actually played)
+            notes you actually played; also re-analyze the reference stem)
           </div>
           <Slider
             label="sensitivity"
