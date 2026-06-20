@@ -24,7 +24,10 @@ import {
   toMono,
   type BassCapture,
 } from './timing-mirror/captureBassInput';
-import { detectBassOnsets } from './timing-mirror/bassOnsetDetector';
+import {
+  detectBassOnsets,
+  detectBassOnsetsAdaptive,
+} from './timing-mirror/bassOnsetDetector';
 import {
   scoreOnsetsAgainstGrid,
   type GridParams,
@@ -134,6 +137,9 @@ export function TimingMirrorPanel({
   const [sensitivity, setSensitivity] = useState(2.1);
   const [minGapMs, setMinGapMs] = useState(120);
   const [minRelStrength, setMinRelStrength] = useState(0.25);
+  // v2: ADAPTIVE player detection (no slider — floor found from the take's own
+  // signal). On by default; the sliders below are a fallback for comparison.
+  const [adaptivePlayer, setAdaptivePlayer] = useState(true);
   // REFERENCE preset — the recorded stem (different signal class: a quiet stem
   // needs a lower strength floor, ~0.06). Player and reference CANNOT share one
   // preset — that was making the coach mis-align (low coverage, score 0).
@@ -216,12 +222,19 @@ export function TimingMirrorPanel({
       startedAt: number,
       grid: GridParams,
     ) => {
-      const onsetOpts = {
-        sensitivity,
-        minOnsetGapSeconds: minGapMs / 1000,
-        minRelativeStrength: minRelStrength,
-      };
-      const onsets = detectBassOnsets(signal, sampleRate, onsetOpts);
+      // PLAYER onsets — adaptive (floor from the take's own signal, no slider) or
+      // the manual slider preset as a fallback. expectedCount = the reference's
+      // attack count, which nudges the adaptive floor toward the right target.
+      const onsets = adaptivePlayer
+        ? detectBassOnsetsAdaptive(signal, sampleRate, {
+            minOnsetGapSeconds: minGapMs / 1000,
+            expectedCount: expectedAttacks ?? undefined,
+          })
+        : detectBassOnsets(signal, sampleRate, {
+            sensitivity,
+            minOnsetGapSeconds: minGapMs / 1000,
+            minRelativeStrength: minRelStrength,
+          });
       const absOnsets = onsets.map((o) => o.time + startedAt);
 
       // GRID score (always — the baseline, and the grid-mode result).
@@ -261,6 +274,7 @@ export function TimingMirrorPanel({
       sensitivity,
       minGapMs,
       minRelStrength,
+      adaptivePlayer,
       refSensitivity,
       refMinGapMs,
       refMinRelStrength,
@@ -315,6 +329,7 @@ export function TimingMirrorPanel({
     sensitivity,
     minGapMs,
     minRelStrength,
+    adaptivePlayer,
     refSensitivity,
     refMinGapMs,
     refMinRelStrength,
@@ -545,9 +560,27 @@ export function TimingMirrorPanel({
 
       {phase === 'done' && (
         <div style={{ marginTop: 12, padding: 10, background: '#0e1014', borderRadius: 8 }}>
-          <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6 }}>
-            PLAYER ONSET TUNING (your hot DI take — dial until “detected” ≈ the notes
-            you actually played; re-scores the same take live)
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: '#e7e9ee',
+              marginBottom: 8,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={adaptivePlayer}
+              onChange={(e) => setAdaptivePlayer(e.target.checked)}
+            />
+            <b>Adaptive player detection</b> (v2 — floor from the take&apos;s own signal,
+            no slider). Uncheck to use the manual sliders.
+          </label>
+          <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 6, opacity: adaptivePlayer ? 0.4 : 1 }}>
+            PLAYER ONSET TUNING (manual fallback — dial until “detected” ≈ the notes
+            you actually played; re-scores live)
           </div>
           <Slider
             label="sensitivity"
