@@ -160,23 +160,6 @@ export function TimingMirrorPanel({
   };
   const lastSignalRef = useRef<{ signal: Float32Array; sampleRate: number; startedAt: number } | null>(null);
 
-  // Step 0 (bass coach) — reference-stem onset check. Detected count vs the authored
-  // note count tells us whether detectBassOnsets is trustworthy on a CLEAN stem (the
-  // gate before building reference grading; BASS_DEFAULTS were tuned for hot DI).
-  const [refResult, setRefResult] = useState<{ detected: number } | null>(null);
-  const analyzeReference = useCallback(() => {
-    if (!bassBuffer) {
-      setRefResult(null);
-      return;
-    }
-    const onsets = detectBassOnsets(toMono(bassBuffer), bassBuffer.sampleRate, {
-      sensitivity: refSensitivity,
-      minOnsetGapSeconds: refMinGapMs / 1000,
-      minRelativeStrength: refMinRelStrength,
-    });
-    setRefResult({ detected: onsets.length });
-  }, [bassBuffer, refSensitivity, refMinGapMs, refMinRelStrength]);
-
   // Expected ATTACK count = authored notes MINUS legato continuations. A hammer-on /
   // pull-off / slide sounds with NO fresh pluck, so it produces no onset — comparing
   // detected onsets to the raw note count would always under-read. This is the honest
@@ -188,7 +171,6 @@ export function TimingMirrorPanel({
       : authoredNotes.filter(
           (n) => !(n.techniques ?? []).some((t) => LEGATO.has(t)),
         ).length;
-  const authoredTotal = authoredNotes?.length ?? null;
   // Grid captured at the play transition (loopStartAudioTime re-anchors / nulls on stop).
   const gridRef = useRef<GridParams | null>(null);
   // phase mirror for effects (avoids stale closures in the isPlaying watcher).
@@ -477,81 +459,22 @@ export function TimingMirrorPanel({
         ))}
       </div>
 
-      {/* Step 0 (bass coach): does detectBassOnsets find the right notes in the
-          REFERENCE stem? Detected vs authored = the gate before reference grading. */}
-      <div style={{ marginTop: 10, padding: 10, background: '#0e1014', borderRadius: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <button style={btn} onClick={analyzeReference} disabled={!bassBuffer}>
-            Analyze reference stem
-          </button>
-          {!bassBuffer && (
-            <span style={{ fontSize: 12, color: '#9aa0ad' }}>
-              no bass stem loaded (press ▶ Play once to preload it)
-            </span>
-          )}
-          {refResult && (
-            <span style={{ fontSize: 13 }}>
-              stem onsets detected:{' '}
-              <b
-                style={{
-                  color:
-                    expectedAttacks == null
-                      ? '#e7e9ee'
-                      : Math.abs(refResult.detected - expectedAttacks) <= 2
-                        ? '#6ad08c'
-                        : '#e0b24a',
-                }}
-              >
-                {refResult.detected}
-              </b>
-              {expectedAttacks != null && (
-                <span style={{ color: '#9aa0ad' }}>
-                  {' '}/ ~{expectedAttacks} expected attacks
-                  {authoredTotal != null && authoredTotal !== expectedAttacks && (
-                    <span> ({authoredTotal} notes − {authoredTotal - expectedAttacks} legato)</span>
-                  )}
-                </span>
-              )}
-            </span>
-          )}
-        </div>
-        <div style={{ marginTop: 6, fontSize: 11, color: '#6b7280' }}>
-          Compares to EXPECTED ATTACKS (notes minus hammer-on/pull-off/slide, which
-          sound with no fresh pluck), not the raw note count. Tune the REFERENCE
-          sliders below, then re-analyze, until detected ≈ expected (a quiet stem
-          needs a lower strength floor than your hot DI take).
-        </div>
-        {/* REFERENCE-stem onset preset — separate from the PLAYER preset because the
-            stem and your live DI are different signal classes. */}
-        <div style={{ marginTop: 8 }}>
-          <Slider
-            label="ref sensitivity"
-            value={refSensitivity}
-            min={0.5}
-            max={6}
-            step={0.1}
-            onChange={setRefSensitivity}
-            hint="reference stem"
-          />
-          <Slider
-            label="ref min gap (ms)"
-            value={refMinGapMs}
-            min={40}
-            max={400}
-            step={10}
-            onChange={setRefMinGapMs}
-            hint="reference stem"
-          />
-          <Slider
-            label="ref strength floor"
-            value={refMinRelStrength}
-            min={0.02}
-            max={0.6}
-            step={0.01}
-            onChange={setRefMinRelStrength}
-            hint="↓ for a quiet stem"
-          />
-        </div>
+      {/* The reference is the admin-APPROVED stored markers (authored in the block
+          editor). No live re-detection here — this just reports whether this
+          bassline has an approved set the coach will grade against. */}
+      <div style={{ marginTop: 10, padding: 10, background: '#0e1014', borderRadius: 8, fontSize: 13 }}>
+        {storedReferenceOnsets && storedReferenceOnsets.length > 0 ? (
+          <span style={{ color: '#6ad08c' }}>
+            ✓ Reference: {storedReferenceOnsets.length} approved markers — the coach
+            grades against these (authored in the admin block editor).
+          </span>
+        ) : (
+          <span style={{ color: '#e0b24a' }}>
+            ⚠ No approved reference for this bassline. The coach falls back to
+            live-detecting the stem (less reliable). Author + save markers in the
+            admin block editor (Bass coach → Reference) for ground-truth grading.
+          </span>
+        )}
       </div>
 
       <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
