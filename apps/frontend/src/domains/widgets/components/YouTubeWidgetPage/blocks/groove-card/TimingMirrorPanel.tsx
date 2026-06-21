@@ -35,6 +35,10 @@ import {
 } from './timing-mirror/bassOnsetDetector';
 import { detectOnsetsComplexDomain } from './timing-mirror/complexDomainOnsets';
 import {
+  measureAtMarkers,
+  scoreMarkerMeasurements,
+} from './timing-mirror/measureAtMarkers';
+import {
   scoreOnsetsAgainstGrid,
   type GridParams,
 } from './timing-mirror/scoreAgainstGrid';
@@ -290,54 +294,79 @@ export function TimingMirrorPanel({
         untrustworthy: collisionRate > COLLISION_REFUSE_THRESHOLD,
       });
 
-      // REFERENCE score (the coach) — grade vs the reference's note positions,
-      // mapped to ctx time via loopStart + t/R (R = currentBpm/originalBpm).
+      // REFERENCE score (the coach) — the Yousician mechanic: the coach's AUTHORED
+      // MARKERS are the only anchors. For each marker we search the PLAYER'S RAW AUDIO
+      // in a window around it for the player's transient, and measure the offset. NO
+      // global player-onset detection, NO two-list matching (that was the whole source
+      // of the missed/noise mess). One measurement per marker, always.
       if (coachMode === 'reference' && bassBuffer) {
         const R = originalBpm > 0 ? currentBpm / originalBpm : 1;
         const refMono = toMono(bassBuffer);
-        // GROUND TRUTH: if the admin approved a stored reference analysis for this
-        // bassline, grade against THOSE markers — deterministic, human-verified, no
-        // live re-detection (which was the source of every reference-side problem).
-        // Fall back to live detection only when nothing is approved yet.
         const refBufSec =
           storedReferenceOnsets && storedReferenceOnsets.length > 0
             ? storedReferenceOnsets
             : detectBassOnsets(refMono, bassBuffer.sampleRate, refOnsetOpts).map(
                 (o) => o.time,
               );
-        // reference onset (buffer-relative seconds) → ctx time: loopStart + t/R
+        // reference marker (buffer-relative seconds) → ctx time: loopStart + t/R
         const refAbs = refBufSec.map((t) => grid.loopStartAudioTime + t / R);
-        const usingStored =
-          storedReferenceOnsets != null && storedReferenceOnsets.length > 0;
-        const score = scoreAgainstReference(absOnsets, refAbs, grid, {
-          // the stored set is approved-by-definition → skip the ref-count trust guard
-          expectedReferenceCount: usingStored ? null : expectedAttacks,
-        });
+
+        // SEARCH the player audio at each marker. `signal` is the normalized raw take;
+        // `startedAt` is its sample-0 ctx time. Each measurement: where the player's
+        // transient is vs the marker, or null (missed).
+        const measurements = measureAtMarkers(signal, sampleRate, startedAt, refAbs);
+        const mScore = scoreMarkerMeasurements(measurements);
+
+        // Adapt to the existing ReferenceScore shape the UI consumes. No more "noise"
+        // (we never detect phantom onsets); matched = hits, missed = no transient found.
+        const grade = gradeTiming(mScore.jitterMs, mScore.offsetMs);
+        const untrustworthy = mScore.coverage < 0.5;
+        const score: ReferenceScore = {
+          grade,
+          offsetMs: mScore.offsetMs,
+          jitterMs: mScore.jitterMs,
+          coverage: mScore.coverage,
+          matchedCount: mScore.hitCount,
+          missedCount: mScore.missedCount,
+          noiseCount: 0,
+          untrustworthy,
+          untrustworthyReason: untrustworthy
+            ? `Only ${Math.round(mScore.coverage * 100)}% of the part was played — play more of it before scoring the timing.`
+            : null,
+          alignment: {
+            // hits become matched pairs (for the visualizer's connecting lines)
+            matched: measurements
+              .filter((m) => m.playerSec != null)
+              .map((m, i) => ({
+                subIndex: i,
+                referenceSec: m.markerSec,
+                playerSec: m.playerSec as number,
+                errorSec: m.errorSec as number,
+              })),
+            missed: measurements
+              .filter((m) => m.playerSec == null)
+              .map((m) => m.markerSec),
+            noise: [],
+            coverage: mScore.coverage,
+          },
+        };
         setRefScore(score);
-        // DEBUG DUMP 2 (the matching diagnostic): the authored reference markers, the
-        // player onsets, and the matcher's verdict per marker — so we can see EXACTLY
-        // which marker failed to connect to a nearby attack and why (tolerance too
-        // tight? attack missing? ripple stealing?). copy(window.__bassMatchDebug).
+        // DEBUG DUMP (per-marker diagnostic): every marker, where the player transient
+        // was found (or missed), and the offset. copy(window.__bassMatchDebug).
         try {
           const r2 = (n: number) => Math.round(n * 1000) / 1000;
           (window as unknown as Record<string, unknown>).__bassMatchDebug =
             JSON.stringify({
-              referenceMarkersSec: refAbs.map(r2),
-              playerOnsetsSec: absOnsets.map(r2),
-              matched: score.alignment.matched.map((m) => ({
-                ref: r2(m.referenceSec),
-                player: r2(m.playerSec),
-                errMs: Math.round(m.errorSec * 1000),
+              markers: measurements.map((m) => ({
+                marker: r2(m.markerSec),
+                player: m.playerSec == null ? null : r2(m.playerSec),
+                errMs: m.errorSec == null ? null : Math.round(m.errorSec * 1000),
+                strength: Math.round(m.strength * 100) / 100,
               })),
-              missedSec: score.alignment.missed.map(r2),
-              noiseSec: score.alignment.noise.map(r2),
-              // for each MISSED marker, the nearest player onset + distance — reveals
-              // whether an attack WAS there but fell outside the tolerance window.
-              missedNearest: score.alignment.missed.map((ms) => {
-                let best = Infinity;
-                for (const p of absOnsets) best = Math.min(best, Math.abs(p - ms));
-                return { ref: r2(ms), nearestPlayerMs: Math.round(best * 1000) };
-              }),
+              hitCount: mScore.hitCount,
+              missedCount: mScore.missedCount,
+              offsetMs: Math.round(mScore.offsetMs),
+              jitterMs: Math.round(mScore.jitterMs),
             });
         } catch {
           /* best-effort */
@@ -348,7 +377,12 @@ export function TimingMirrorPanel({
           playerSignal: signal,
           playerSampleRate: sampleRate,
           playerStartedAt: startedAt,
-          playerOnsetsSec: absOnsets,
+          // player ticks = where we FOUND the player's transient at each marker (the
+          // measured hits) — not a global detection. The blue ticks now sit exactly on
+          // what the matcher measured, so the by-eye comparison matches the verdict.
+          playerOnsetsSec: measurements
+            .filter((m) => m.playerSec != null)
+            .map((m) => m.playerSec as number),
           refSignal: refMono,
           refSampleRate: bassBuffer.sampleRate,
           refOnsetsSec: refAbs,
