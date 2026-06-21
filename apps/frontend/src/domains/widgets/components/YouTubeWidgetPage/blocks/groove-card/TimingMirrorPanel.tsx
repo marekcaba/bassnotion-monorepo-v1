@@ -12,10 +12,13 @@
  *
  * Step 4 is NUMBERS-ONLY (no visualization yet — that's Step 6) to prove the
  * pipeline end-to-end before investing in the canvas. Trust gate G1 (offset/jitter
- * split) is shown from the start: the constant offset (rig latency, punch-in
- * correctable) is reported SEPARATELY from the jitter (the timing-quality metric),
- * because raw onset−T0 is pure system latency and reporting it as "you drag" is the
- * impressive-but-wrong trap.
+ * split) is shown from the start: the constant offset (CAPTURE latency — the input
+ * round-trip that shifts the recorded file later than what the player monitored
+ * zero-latency through their interface; calibratable, not audible) is reported
+ * SEPARATELY from the jitter (the timing-quality metric), because that constant is
+ * pure system latency and reporting it as "you drag" is the impressive-but-wrong
+ * trap. The player hears themselves in sync in their phones; the lag exists only in
+ * the captured file.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -642,7 +645,8 @@ export function TimingMirrorPanel({
           <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
             raw: jitter {jitterMs.toFixed(1)}ms · offset{' '}
             {offsetMs >= 0 ? '+' : ''}
-            {offsetMs.toFixed(1)}ms (rig latency, not player error — G2 calibration pending) ·
+            {offsetMs.toFixed(1)}ms (capture latency — the recorded file lags what you
+            monitored; you can&apos;t hear it. Calibrated out, not your error) ·
             collisions {Math.round(o.collisionRate * 100)}%. The pocket grade is human-scaled;
             BeatTimingAnalyzer&apos;s own &quot;{o.stats.driftTrend}&quot;/syncScore{' '}
             {o.stats.syncScore.toFixed(0)} are machine-tuned and not used for the headline.
@@ -704,11 +708,14 @@ export function TimingMirrorPanel({
           {vizData && <TimingMirrorVisualizer data={vizData} />}
 
           <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
-            reference vs player onset-by-onset. offset{' '}
+            reference vs player onset-by-onset. capture offset{' '}
             {refScore.offsetMs >= 0 ? '+' : ''}
-            {refScore.offsetMs.toFixed(1)}ms (your constant lean vs the record — latency/anticipation,
-            calibratable). The grade is the de-meaned spread (feel). Step 4 = timing only;
-            length + dynamics are steps 5-6.
+            {refScore.offsetMs.toFixed(1)}ms — this is the CONSTANT lag of the recorded
+            file vs the reference. You monitor zero-latency through your interface, so
+            you can't hear it; it's the input round-trip (interface → OS → browser
+            capture) landing only on the take. It's CALIBRATED OUT before grading, never
+            counted as your error. The grade is the de-meaned spread (your actual feel).
+            Step 4 = timing only; length + dynamics are steps 5-6.
           </div>
         </div>
       )}
