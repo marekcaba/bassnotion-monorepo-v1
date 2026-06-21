@@ -61,6 +61,22 @@ describe('measureAtMarkers — search the player audio AT each coach marker', ()
     expect(m.filter((x) => x.playerSec != null)).toHaveLength(1);
   });
 
+  it('does NOT grab a NEIGHBOUR note when markers are close (~130ms apart)', () => {
+    // THE bimodal-error bug: two fast notes 130ms apart. Marker 2's wide window would
+    // reach back to note 1's (louder) attack and report a false ~-130ms "early". The
+    // neighbour-bounded window must keep marker 2 on note 2.
+    const buf = new Float32Array(sr);
+    note(buf, 0.5, 55, 0.18); // note 1
+    note(buf, 0.63, 73, 0.18); // note 2, 130ms later
+    // markers exactly on each note
+    const m = measureAtMarkers(buf, sr, 0, [0.5, 0.63]);
+    expect(m[0]!.playerSec).not.toBeNull();
+    expect(m[1]!.playerSec).not.toBeNull();
+    // each must measure its OWN note (small error), NOT grab the other (~±130ms)
+    expect(Math.abs(m[0]!.errorSec! * 1000)).toBeLessThan(40);
+    expect(Math.abs(m[1]!.errorSec! * 1000)).toBeLessThan(40);
+  });
+
   it('respects startedAtSec (window is in ctx time, audio is buffer time)', () => {
     const buf = new Float32Array(sr);
     note(buf, 0.5); // buffer time 0.5

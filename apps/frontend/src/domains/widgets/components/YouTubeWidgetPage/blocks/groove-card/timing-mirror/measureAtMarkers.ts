@@ -101,12 +101,29 @@ export function measureAtMarkers(
   }
   const absFloor = takePeak * minAbsLevel;
 
+  // Sort markers so we can bound each window by its neighbours (a marker must only search
+  // its OWN note's territory — never reach into an adjacent note and grab THAT attack).
+  const sorted = [...markersSec].sort((a, b) => a - b);
+  const indexOf = new Map(sorted.map((t, i) => [t, i]));
+
   return markersSec.map((markerSec) => {
     // window in BUFFER samples (marker is ctx time; buffer time = ctx − startedAt)
     const centerBuf = Math.round((markerSec - startedAtSec) * sampleRate);
-    const halfW = Math.round(windowSec * sampleRate);
-    const from = Math.max(0, centerBuf - halfW);
-    const to = Math.min(signal.length - envStep, centerBuf + halfW);
+    // NEIGHBOUR-BOUNDED window: half the distance to the nearest adjacent marker, capped
+    // at windowSec. THE FIX for the early/late bimodal bug — when notes are ~130ms apart,
+    // a fixed ±120ms window reached BACK into the previous note and grabbed its (louder)
+    // attack → false "early" measurement. Bounding to the midpoint keeps each marker in
+    // its own note. Asymmetric: the back and forward reach are clamped independently.
+    const i = indexOf.get(markerSec) ?? 0;
+    const prevGap = i > 0 ? markerSec - sorted[i - 1]! : Infinity;
+    const nextGap = i < sorted.length - 1 ? sorted[i + 1]! - markerSec : Infinity;
+    const backSec = Math.min(windowSec, prevGap / 2);
+    const fwdSec = Math.min(windowSec, nextGap / 2);
+    const from = Math.max(0, centerBuf - Math.round(backSec * sampleRate));
+    const to = Math.min(
+      signal.length - envStep,
+      centerBuf + Math.round(fwdSec * sampleRate),
+    );
     if (to <= from) {
       return { markerSec, playerSec: null, errorSec: null, strength: 0 };
     }
