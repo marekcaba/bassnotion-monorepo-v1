@@ -115,6 +115,14 @@ describe('measureAtMarkers — search the player audio AT each coach marker', ()
     expect(Math.abs(m[0]!.playerSec! - 0.5)).toBeLessThan(0.04);
   });
 
+  // NOTE on the ~-30ms early outliers on QUIET notes (real take, 2026-06-21): these sit
+  // at the FFT-window resolution limit — a finger-noise tick ≤43ms (one FFT window) before
+  // a soft pluck merges with it into a single df frame at the tick's position. The
+  // look-ahead jump (below, in measureAtMarkers) corrects cases where the events ARE
+  // resolvable; sub-window-merged ones can't be separated without a shorter window (which
+  // would hurt low-bass frequency resolution). Accepted: the grade is "Tight / 20ms" and
+  // only the quietest few notes carry it; it's a constant-ish small bias, not feel.
+
   it('respects startedAtSec (window is in ctx time, audio is buffer time)', () => {
     const buf = new Float32Array(sr);
     note(buf, 0.5); // buffer time 0.5

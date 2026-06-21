@@ -171,8 +171,9 @@ export function measureAtMarkers(
     }
     // Accept the FIRST local df peak that clears 30% of the window max — the attack is the
     // first real phase event, even when a LATER mid-note event (a pitch transition spikes
-    // df ~3× the pluck) is bigger. 30% admits a moderate pluck while still ignoring tiny
-    // ripple wobbles. (Taking the strongest gave the "+109ms, marker IN the note" bug.)
+    // df ~3× the pluck) is bigger. 30% admits a genuinely SOFT pluck; the look-ahead below
+    // handles the opposite failure (a tiny pre-attack wobble). (Taking the strongest gave
+    // the "+109ms, marker IN the note" bug.)
     const acceptThr = Math.max(dfFloor, windowMax * 0.3);
     let bestFrame = -1;
     let bestVal = 0;
@@ -182,6 +183,20 @@ export function measureAtMarkers(
         bestFrame = f;
         bestVal = df[f]!;
         break;
+      }
+    }
+    // PRE-ATTACK-WOBBLE correction: on quiet notes the first qualifying peak can be a
+    // small finger-noise tick a few ms BEFORE the real pluck. If a MUCH bigger peak (≥1.6×)
+    // follows within ~25ms, that bigger one is the true attack — jump to it. This is the
+    // fix for the low-strength "marker is in front of the note" early outliers.
+    if (bestFrame >= 0) {
+      const lookAhead = Math.max(1, Math.round(0.025 / hopSec));
+      for (let f = bestFrame + 1; f <= Math.min(toFrame, bestFrame + lookAhead); f++) {
+        const isPeak = df[f]! >= (df[f - 1] ?? 0) && df[f]! >= (df[f + 1] ?? 0);
+        if (isPeak && df[f]! >= bestVal * 1.6) {
+          bestFrame = f;
+          bestVal = df[f]!;
+        }
       }
     }
     const strength = dfPeak > 0 ? Math.min(1, bestVal / dfPeak) : 0;
