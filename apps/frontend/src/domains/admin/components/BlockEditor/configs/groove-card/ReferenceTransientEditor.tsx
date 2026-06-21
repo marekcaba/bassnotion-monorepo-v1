@@ -57,7 +57,12 @@ import type {
   TechniqueType,
   ReferenceAnalysis,
 } from '@bassnotion/contracts';
-import { sortMarkers, toAnalysis, fromAnalysis } from './refMarkers';
+import {
+  sortMarkers,
+  toAnalysis,
+  fromAnalysis,
+  flagStaleConnections,
+} from './refMarkers';
 import { ReferenceMarkerTable } from './ReferenceMarkerTable';
 
 /**
@@ -81,6 +86,12 @@ export interface RefMarker {
   techniques?: TechniqueType[];
   role?: MarkerRole | null;
   connectionFromPrev?: MarkerConnection | null;
+  /** Editor-only (not persisted): set when a drag changed this marker's predecessor, so
+   *  its connectionFromPrev now refers to a DIFFERENT previous note. The admin must
+   *  re-check it; we flag rather than auto-relink (a legato relationship is between two
+   *  specific notes, and the object-rides-the-sort guarantee does NOT cover a 2-marker
+   *  link). Cleared when the admin re-confirms the connection. */
+  connectionStale?: boolean;
 }
 
 interface Props {
@@ -219,10 +230,18 @@ export function ReferenceTransientEditor({
     [bassType],
   );
 
-  /** Patch one marker's authored fields (by id) and re-commit (saves). */
+  /** Patch one marker's authored fields (by id) and re-commit (saves). Re-setting the
+   *  connection (the admin re-confirming after a reorder) clears the stale flag. */
   const updateMarker = useCallback(
     (id: number, patch: Partial<RefMarker>) => {
-      commit(markersRef.current.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+      const clearsStale = 'connectionFromPrev' in patch;
+      commit(
+        markersRef.current.map((m) =>
+          m.id === id
+            ? { ...m, ...patch, ...(clearsStale ? { connectionStale: false } : {}) }
+            : m,
+        ),
+      );
     },
     [commit],
   );
@@ -375,6 +394,30 @@ export function ReferenceTransientEditor({
     }
     ctx.stroke();
 
+    // LEGATO connection arcs: a marker with `connectionFromPrev` is hammered/pulled/slid
+    // FROM the previous marker — draw a curved tie between them so legato pairs are visible.
+    // Drawn first so the marker lines render on top. A "⚠" tint flags a connection whose
+    // predecessor changed (reorder guard) so the admin re-checks it.
+    const arcY = WAVE_H * 0.32;
+    ctx.font = '10px ui-monospace, monospace';
+    for (let i = 1; i < markers.length; i++) {
+      const conn = markers[i]!.connectionFromPrev;
+      if (!conn) continue;
+      const x0 = (markers[i - 1]!.timeSec / duration) * w;
+      const x1 = (markers[i]!.timeSec / duration) * w;
+      const flagged = markers[i]!.connectionStale === true;
+      ctx.strokeStyle = flagged ? '#e0b24a' : '#7aa2ff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x0, arcY);
+      ctx.quadraticCurveTo((x0 + x1) / 2, arcY - 18, x1, arcY);
+      ctx.stroke();
+      // small label at the arc apex
+      const sym = conn === 'hammer_on' ? 'H' : conn === 'pull_off' ? 'P' : '↗';
+      ctx.fillStyle = flagged ? '#e0b24a' : '#7aa2ff';
+      ctx.fillText(flagged ? `${sym}⚠` : sym, (x0 + x1) / 2 - 4, arcY - 20);
+    }
+
     // transient markers: a line, a DELETE handle (red ×) at the TOP, and a DRAG
     // handle (green dot) at the BOTTOM — two clear, separate hit zones.
     for (const m of markers) {
@@ -418,6 +461,9 @@ export function ReferenceTransientEditor({
 
   // ---- interaction ----
   const dragRef = useRef<{ index: number; downX: number; moved: boolean } | null>(null);
+  /** Snapshot of the marker list at drag-start — for the reorder guard (compare
+   *  predecessors before vs after the drag). */
+  const markersBeforeDragRef = useRef<RefMarker[]>([]);
 
   const xToTime = useCallback(
     (clientX: number): number => {
@@ -471,6 +517,7 @@ export function ReferenceTransientEditor({
         // anywhere else on the marker (incl. the bottom drag dot) → drag, or PLAY
         // the note on a plain click (hear if it's a real attack or noise).
         dragRef.current = { index: hit, downX: e.clientX, moved: false };
+        markersBeforeDragRef.current = markers; // snapshot for the reorder guard
       } else {
         // empty space → ADD a marker here immediately (a fresh, unannotated marker)
         commit([...markers, { id: nextId(), timeSec: xToTime(e.clientX) }]);
@@ -500,7 +547,9 @@ export function ReferenceTransientEditor({
     dragRef.current = null;
     if (!d) return;
     if (d.moved) {
-      commit(markers); // persist the dragged position (objects sorted by time)
+      // a drag can change a marker's PREDECESSOR → flag any legato connection now
+      // pointing at a different previous note (reorder guard), then commit.
+      commit(flagStaleConnections(markersBeforeDragRef.current, markers));
     } else {
       // a click without a drag = PLAY this note AND SELECT it (sync the table row)
       const m = markers[d.index];

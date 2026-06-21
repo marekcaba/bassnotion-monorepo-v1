@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { sortMarkers, toOnsets, toAnalysis, fromAnalysis } from './refMarkers';
+import {
+  sortMarkers,
+  toOnsets,
+  toAnalysis,
+  fromAnalysis,
+  flagStaleConnections,
+} from './refMarkers';
 import type { RefMarker } from './ReferenceTransientEditor';
 
 let _id = 0;
@@ -98,5 +104,46 @@ describe('refMarkers — toAnalysis / fromAnalysis round-trip preserves alignmen
     expect(back).toHaveLength(2);
     expect(back[0]!.string).toBeNull();
     expect(back[0]!.techniques).toEqual([]);
+  });
+});
+
+describe('flagStaleConnections — reorder guard for hammer-on/pull-off pairs', () => {
+  it('flags a connection whose PREDECESSOR changed (a marker dragged between the pair)', () => {
+    const a = mk(0.1);
+    const b = mk(0.2, { connectionFromPrev: 'hammer_on' }); // hammered FROM a
+    const prev = [a, b];
+    // drag a NEW marker to 0.15 — now b's predecessor is the new marker, not a
+    const c = mk(0.15);
+    const next = [a, b, c];
+    const guarded = flagStaleConnections(prev, next);
+    const bAfter = guarded.find((m) => m.id === b.id)!;
+    expect(bAfter.connectionStale).toBe(true); // predecessor changed → re-check
+  });
+
+  it('does NOT flag when the predecessor is unchanged', () => {
+    const a = mk(0.1);
+    const b = mk(0.2, { connectionFromPrev: 'pull_off' });
+    const prev = [a, b];
+    // drag b slightly later (0.25) — a is STILL its predecessor
+    const next = [a, { ...b, timeSec: 0.25 }];
+    const guarded = flagStaleConnections(prev, next);
+    expect(guarded.find((m) => m.id === b.id)!.connectionStale).toBeFalsy();
+  });
+
+  it('flags when the connected marker is dragged to be FIRST (no previous note)', () => {
+    const a = mk(0.1);
+    const b = mk(0.2, { connectionFromPrev: 'hammer_on' });
+    const prev = [a, b];
+    // drag b BEFORE a (to 0.05) — b is now first, its connection is meaningless
+    const next = [{ ...b, timeSec: 0.05 }, a];
+    const guarded = flagStaleConnections(prev, next);
+    expect(guarded.find((m) => m.id === b.id)!.connectionStale).toBe(true);
+  });
+
+  it('leaves unconnected markers untouched', () => {
+    const a = mk(0.1);
+    const b = mk(0.2);
+    const guarded = flagStaleConnections([a, b], [a, b, mk(0.15)]);
+    expect(guarded.every((m) => !m.connectionStale)).toBe(true);
   });
 });

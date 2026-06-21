@@ -246,8 +246,18 @@ export function ReferenceMarkerTable({
                       }
                       onClick={(e) => e.stopPropagation()}
                       disabled={i === 0}
-                      style={{ ...sel, opacity: i === 0 ? 0.4 : 1 }}
-                      title={i === 0 ? 'the first marker has no previous note' : ''}
+                      style={{
+                        ...sel,
+                        opacity: i === 0 ? 0.4 : 1,
+                        borderColor: m.connectionStale ? '#e0b24a' : 'rgba(255,255,255,0.1)',
+                      }}
+                      title={
+                        i === 0
+                          ? 'the first marker has no previous note'
+                          : m.connectionStale
+                            ? '⚠ the previous note changed (you dragged a marker) — re-check this connection'
+                            : ''
+                      }
                     >
                       <option value="">—</option>
                       {CONNECTIONS.map((c) => (
@@ -256,6 +266,9 @@ export function ReferenceMarkerTable({
                         </option>
                       ))}
                     </select>
+                    {m.connectionStale && (
+                      <span style={{ color: '#e0b24a', marginLeft: 3 }} title="predecessor changed — re-check">⚠</span>
+                    )}
                   </td>
                 </tr>
               );

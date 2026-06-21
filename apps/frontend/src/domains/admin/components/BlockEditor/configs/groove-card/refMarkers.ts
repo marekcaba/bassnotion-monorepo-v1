@@ -18,6 +18,39 @@ export function sortMarkers(markers: RefMarker[]): RefMarker[] {
   return [...markers].sort((a, b) => a.timeSec - b.timeSec);
 }
 
+/**
+ * REORDER GUARD: after a sort, flag any marker whose `connectionFromPrev` now points at a
+ * DIFFERENT previous marker than it did before (a drag moved a marker between a legato
+ * pair, or moved one of the pair). A hammer-on/pull-off is a relationship between two
+ * SPECIFIC notes; the object-rides-the-sort guarantee does NOT cover that 2-marker link.
+ * We flag `connectionStale` (loud, re-checkable) rather than auto-relink onto the wrong
+ * notes. `prev` = the list BEFORE the edit (by id → predecessor id), `next` = after.
+ * A marker whose predecessor id is unchanged keeps its (clean) connection.
+ */
+export function flagStaleConnections(
+  prev: RefMarker[],
+  next: RefMarker[],
+): RefMarker[] {
+  const prevSorted = sortMarkers(prev);
+  const prevPredOf = new Map<number, number | null>();
+  prevSorted.forEach((m, i) => {
+    prevPredOf.set(m.id, i > 0 ? prevSorted[i - 1]!.id : null);
+  });
+  const nextSorted = sortMarkers(next);
+  return nextSorted.map((m, i) => {
+    if (!m.connectionFromPrev) {
+      // no connection → nothing to flag; also clear any stale flag.
+      return m.connectionStale ? { ...m, connectionStale: false } : m;
+    }
+    const nextPredId = i > 0 ? nextSorted[i - 1]!.id : null;
+    const hadPredId = prevPredOf.has(m.id) ? prevPredOf.get(m.id)! : null;
+    // predecessor changed (or this marker is now first, with no previous note)
+    const changed = nextPredId !== hadPredId || nextPredId === null;
+    if (changed && !m.connectionStale) return { ...m, connectionStale: true };
+    return m;
+  });
+}
+
 /** The onset times only (what the editor emits this step). */
 export function toOnsets(markers: RefMarker[]): number[] {
   return sortMarkers(markers).map((m) => m.timeSec);
