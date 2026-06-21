@@ -6,6 +6,7 @@ import {
   highPassInPlace,
   normalizePeak,
   snapOnsetTimesToAttack,
+  rejectBodyRipple,
   dedupNearbyOnsets,
 } from './bassOnsetDetector';
 
@@ -236,6 +237,47 @@ describe('snapOnsetTimesToAttack — lands on the attack EDGE, not the loud body
     const sig = quietAttackLoudBody();
     const [snapped] = snapOnsetTimesToAttack([0.108], sig, sr);
     expect(snapped!).toBeLessThan(0.108); // moved earlier, onto the rising edge
+  });
+});
+
+describe('rejectBodyRipple — drops mid-note pulses, keeps real attacks', () => {
+  const sr = 48000;
+  // A note that attacks from SILENCE at 0.20s, then its body RIPPLES (pulses up and
+  // down) at ~8Hz — the proven over-trigger: flux fires on each up-pulse ~125ms apart.
+  function noteWithRipplingBody(): Float32Array {
+    const x = new Float32Array(sr); // 1s, silent before 0.20
+    const atk = Math.floor(0.2 * sr);
+    for (let i = 0; atk + i < sr; i++) {
+      const tt = i / sr;
+      const decay = Math.exp(-tt / 0.4);
+      const ripple = 0.5 + 0.5 * Math.cos(2 * Math.PI * 8 * tt); // 8Hz body pulse
+      x[atk + i] = 0.9 * decay * ripple * Math.sin(2 * Math.PI * 60 * tt);
+    }
+    return x;
+  }
+
+  it('keeps the real attack (rises from silence), drops the body pulses', () => {
+    const sig = noteWithRipplingBody();
+    // candidates: the true attack + 3 ripple peaks deep in the body (all > silence-floor)
+    const candidates = [0.205, 0.33, 0.455, 0.58];
+    const kept = rejectBodyRipple(candidates, sig, sr);
+    // only the attack at ~0.205 survives — it's the one preceded by silence
+    expect(kept).toEqual([0.205]);
+  });
+
+  it('keeps two genuinely separate notes (each preceded by a gap)', () => {
+    const x = new Float32Array(sr);
+    const note = (start: number) => {
+      const s = Math.floor(start * sr);
+      for (let i = 0; i < Math.floor(0.15 * sr) && s + i < sr; i++) {
+        const tt = i / sr;
+        x[s + i] = 0.8 * Math.exp(-tt / 0.08) * Math.sin(2 * Math.PI * 60 * tt);
+      }
+    };
+    note(0.2);
+    note(0.6); // 400ms later, after the first fully decayed
+    const kept = rejectBodyRipple([0.205, 0.605], x, sr);
+    expect(kept).toHaveLength(2); // both real — each rises from a quiet gap
   });
 });
 

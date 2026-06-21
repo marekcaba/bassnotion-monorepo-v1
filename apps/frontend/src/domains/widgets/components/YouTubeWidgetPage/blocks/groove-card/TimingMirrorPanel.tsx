@@ -31,6 +31,7 @@ import {
   detectBassOnsets,
   detectBassOnsetsAdaptive,
   snapOnsetTimesToAttack,
+  rejectBodyRipple,
   dedupNearbyOnsets,
   normalizePeak,
 } from './timing-mirror/bassOnsetDetector';
@@ -249,7 +250,12 @@ export function TimingMirrorPanel({
         signal,
         sampleRate,
       );
-      const deduped = dedupNearbyOnsets(snapped);
+      // REJECT body ripple: a held bass note pulses (~7-8Hz), and flux fires on every
+      // up-pulse → 5+ false onsets per note (~125ms apart, just over the gap floor).
+      // PROVEN on real DI: real attacks rise from near-silence, ripples from already-
+      // loud. Keep only onsets preceded by a quiet lead-in. THEN dedup the rest.
+      const gated = rejectBodyRipple(snapped, signal, sampleRate);
+      const deduped = dedupNearbyOnsets(gated);
       const absOnsets = deduped.map((t) => t + startedAt);
 
       // DEBUG DUMP (dev probe): stash the take + each detection stage on window so we
@@ -273,6 +279,7 @@ export function TimingMirrorPanel({
           envPeakPerStep: env,
           rawOnsetsSec: onsets.map((o) => Math.round(o.time * 1000) / 1000),
           snappedSec: snapped.map((t) => Math.round(t * 1000) / 1000),
+          gatedSec: gated.map((t) => Math.round(t * 1000) / 1000),
           dedupedSec: deduped.map((t) => Math.round(t * 1000) / 1000),
         });
       } catch {

@@ -256,6 +256,59 @@ export function snapOnsetTimesToAttack(
 }
 
 /**
+ * Reject onsets that are BODY RIPPLE, not real attacks — the decisive over-trigger fix.
+ *
+ * PROVEN on a real Clarett DI take (2026-06-21, ogg-padding-probe sibling): a held bass
+ * note's body PULSES (~7-8 Hz amplitude ripple from the note's decay/beating), and
+ * spectral-flux fires on EVERY up-pulse → 5+ false onsets per note, spaced ~125ms (just
+ * over the 120ms gap floor, so the gap guard misses them). In the take, only 7 energy
+ * rises were preceded by near-silence (TRUE attacks) vs 211 preceded by loud energy
+ * (RIPPLES).
+ *
+ * THE PHYSICS: a real pluck rises from a QUIET/decaying lead-in (the gap or tail before
+ * the note); a body ripple rises from ALREADY-LOUD energy (the sustaining note). So keep
+ * an onset only if the energy in the window JUST BEFORE it is low relative to the energy
+ * AT it — i.e. there was a real quiet-to-loud jump. This separates attacks from ripples
+ * by physics, not by a timing threshold (which can't, since ripples clear the gap floor).
+ *
+ * @param preSec    how far back to look for the "before" energy (~40ms). 40 (not 25)
+ *                  because the snap lands the onset ON the attack edge, so a 25ms window
+ *                  clips into the note's own rise; 40ms reaches the genuine lead-in.
+ * @param riseRatio pre-energy must be below this fraction of onset-energy to qualify as a
+ *                  real attack. Calibrated on the real DI take: a true attack's 40ms-before
+ *                  is ~0.40× its onset energy; a body ripple's is ~0.93× (before≈onset, no
+ *                  jump). 0.6 sits cleanly between, with margin on both sides.
+ */
+export function rejectBodyRipple(
+  onsetsSec: number[],
+  signal: Float32Array,
+  sampleRate: number,
+  preSec = 0.04,
+  riseRatio = 0.6,
+): number[] {
+  const preSamples = Math.floor(preSec * sampleRate);
+  const atSamples = Math.floor(0.01 * sampleRate); // 10ms at-onset window
+  const rms = (from: number, len: number): number => {
+    const start = Math.max(0, from);
+    const end = Math.min(signal.length, start + len);
+    let s = 0;
+    for (let i = start; i < end; i++) {
+      const v = signal[i] ?? 0;
+      s += v * v;
+    }
+    return Math.sqrt(s / Math.max(1, end - start));
+  };
+  return onsetsSec.filter((t) => {
+    const at = Math.floor(t * sampleRate);
+    const before = rms(at - preSamples, preSamples);
+    const onset = rms(at, atSamples);
+    if (onset <= 1e-5) return false; // silence — not a note
+    // Real attack: the lead-in was clearly quieter than the attack (a true jump).
+    return before <= onset * riseRatio;
+  });
+}
+
+/**
  * Merge onsets that landed within `minGapSec` of each other — the cleanup after
  * snapping. Spectral-flux can fire 2-3 times across one bass note's swelling body;
  * the slope-snap pulls those back toward the SAME attack edge, so they become near-
