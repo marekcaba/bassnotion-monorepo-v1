@@ -16,12 +16,17 @@
  *   - A body ripple BETWEEN notes is never examined (no marker points at it).
  *   - The number of measurements is exactly the number of markers — always.
  *
- * The transient locator inside a window: a local complex-domain-style energy-rise search
- * (the steepest sustained rise = the attack). We reuse the proven attack-edge idea, run
- * locally and anchored, so it lands on the pluck regardless of body loudness.
+ * The transient locator inside a window: the COMPLEX-DOMAIN detection function (phase-
+ * aware, Bello/Duxbury — the Ableton lineage), computed once over the take. We take the
+ * strongest detection peak in each marker's window. Phase is what lets it find a new
+ * pluck even when it lands ON a previous note's sustain (where an energy envelope can't —
+ * there's no low→high rise). This fixed the "-45ms snap off the transient" on notes in
+ * succession that the energy-envelope search produced.
  *
  * Pure + offline: signal + marker times in, per-marker measurements out. Unit-tested.
  */
+
+import { complexDomainDetectionFunction } from './complexDomainOnsets';
 
 export interface MarkerMeasurement {
   /** The authored coach marker time (audio-ctx seconds). */
@@ -83,27 +88,19 @@ export function measureAtMarkers(
 ): MarkerMeasurement[] {
   const windowSec = opts.windowSec ?? DEFAULTS.windowSec;
   const minAbsLevel = opts.minAbsLevel ?? DEFAULTS.minAbsLevel;
-  const envStep = Math.max(1, Math.floor((opts.envStepSec ?? DEFAULTS.envStepSec) * sampleRate));
 
-  // Local RMS energy at sample i over [i, i+envStep).
-  const energyAt = (i: number): number => {
-    const start = Math.max(0, i);
-    const end = Math.min(signal.length, start + envStep);
-    let s = 0;
-    for (let k = start; k < end; k++) {
-      const v = signal[k] ?? 0;
-      s += v * v;
-    }
-    return Math.sqrt(s / Math.max(1, end - start));
-  };
-
-  // The TAKE's peak energy (for the absolute-level gate that rejects decayed ripple).
-  let takePeak = 0;
-  for (let i = 0; i < signal.length; i += envStep) {
-    const e = energyAt(i);
-    if (e > takePeak) takePeak = e;
-  }
-  const absFloor = takePeak * minAbsLevel;
+  // THE DETECTION FUNCTION: complex-domain (phase-aware), computed ONCE over the take.
+  // Why not an energy envelope: a new note played ON TOP of a previous note's sustain
+  // (notes in succession) is NOT a low→high energy rise — the energy just climbs from
+  // loud to louder, so an envelope-crossing search snaps to the window edge (the pinned
+  // ~-45ms bug). The complex-domain function spikes on the PHASE DISCONTINUITY of the new
+  // pluck even over a sustain, and stays low in the body/ripple — exactly what we need to
+  // locate the attack inside a marker window regardless of what came before.
+  const { df, hopSec } = complexDomainDetectionFunction(signal, sampleRate);
+  const frameToSec = (f: number) => f * hopSec + hopSec / 2;
+  let dfPeak = 0;
+  for (let f = 0; f < df.length; f++) if (df[f]! > dfPeak) dfPeak = df[f]!;
+  const dfFloor = dfPeak * minAbsLevel;
 
   // Sort markers so we can bound each window by its neighbours (a marker must only search
   // its OWN note's territory — never reach into an adjacent note and grab THAT attack).
@@ -111,72 +108,41 @@ export function measureAtMarkers(
   const indexOf = new Map(sorted.map((t, i) => [t, i]));
 
   return markersSec.map((markerSec) => {
-    // window in BUFFER samples (marker is ctx time; buffer time = ctx − startedAt)
-    const centerBuf = Math.round((markerSec - startedAtSec) * sampleRate);
-    // NEIGHBOUR-BOUNDED window: half the distance to the nearest adjacent marker, capped
-    // at windowSec. THE FIX for the early/late bimodal bug — when notes are ~130ms apart,
-    // a fixed ±120ms window reached BACK into the previous note and grabbed its (louder)
-    // attack → false "early" measurement. Bounding to the midpoint keeps each marker in
-    // its own note. Asymmetric: the back and forward reach are clamped independently.
-    // ASYMMETRIC reach: a player's attack lands AT or slightly before/after its marker —
-    // but the back-reach must stay SMALL so it doesn't catch the PREVIOUS note's still-
-    // ringing sustain (which would land the marker early on the wrong note). Forward reach
-    // can be larger (a dragged note is late). Both still neighbour-bounded so we never
-    // cross into the adjacent note's attack.
+    const markerBufSec = markerSec - startedAtSec; // marker in the take's own timeline
+    // NEIGHBOUR-BOUNDED, ASYMMETRIC window: a player's attack lands at/near its marker.
+    // Back-reach stays SMALL (so it can't catch the previous note) and forward-reach is
+    // larger (a dragged note is late). Both clamped to the neighbour midpoint so we never
+    // cross into the adjacent note. Expressed in the take's buffer-seconds.
     const i = indexOf.get(markerSec) ?? 0;
     const prevGap = i > 0 ? markerSec - sorted[i - 1]! : Infinity;
     const nextGap = i < sorted.length - 1 ? sorted[i + 1]! - markerSec : Infinity;
     const backSec = Math.min(BACK_REACH_SEC, prevGap * 0.4);
     const fwdSec = Math.min(windowSec, nextGap * 0.6);
-    const from = Math.max(0, centerBuf - Math.round(backSec * sampleRate));
-    const to = Math.min(
-      signal.length - envStep,
-      centerBuf + Math.round(fwdSec * sampleRate),
-    );
-    if (to <= from) {
+    const fromFrame = Math.max(0, Math.floor((markerBufSec - backSec) / hopSec));
+    const toFrame = Math.min(df.length - 1, Math.ceil((markerBufSec + fwdSec) / hopSec));
+    if (toFrame <= fromFrame) {
       return { markerSec, playerSec: null, errorSec: null, strength: 0 };
     }
 
-    // Build the local energy envelope and its PEAK. The attack is the FIRST place energy
-    // crosses a low fraction of the window peak — the foot of the rise where the note
-    // leaves the floor — NOT the steepest rise (a bass body often SWELLS louder than the
-    // pluck, so "steepest rise" lands in the body, putting the marker mid-note. This was
-    // the visible "blue marker is way in the waveform, not on the transient" bug).
-    const idxs: number[] = [];
-    const envs: number[] = [];
-    let envPeak = 0;
-    for (let i = from; i <= to; i += envStep) {
-      const e = energyAt(i);
-      idxs.push(i);
-      envs.push(e);
-      if (e > envPeak) envPeak = e;
-    }
-    if (envPeak <= 1e-6) {
-      return { markerSec, playerSec: null, errorSec: null, strength: 0 };
-    }
-
-    // FIRST crossing of 15% of the window peak = the attack edge. Scanning for the FIRST
-    // crossing (not the loudest/steepest) keeps the marker on the pluck and OFF the body.
-    const crossThr = envPeak * 0.15;
-    let attackIdx = -1;
-    for (let n = 0; n < envs.length; n++) {
-      if (envs[n]! >= crossThr) {
-        attackIdx = n > 0 ? idxs[n - 1]! : idxs[n]!; // step back to the foot of the rise
-        break;
+    // The attack = the STRONGEST detection-function peak in the window (the phase event
+    // of the player's pluck). A body ripple gives a weak df; the pluck gives the max.
+    let bestFrame = -1;
+    let bestVal = 0;
+    for (let f = fromFrame; f <= toFrame; f++) {
+      if (df[f]! > bestVal) {
+        bestVal = df[f]!;
+        bestFrame = f;
       }
     }
 
-    // Strength = window peak relative to the TAKE peak (a real note's window is loud; a
-    // decayed-tail window is quiet → low strength → missed).
-    const strength = Math.min(1, envPeak / (takePeak || 1));
-    // ABSOLUTE-LEVEL gate: the window's peak energy must clear the take-relative floor.
-    // Rejects a marker placed over a previous note's decaying ripple (loud-relative,
-    // quiet-absolute) → no phantom.
-    if (attackIdx < 0 || envPeak < absFloor) {
+    const strength = dfPeak > 0 ? Math.min(1, bestVal / dfPeak) : 0;
+    // MISSED gate: the strongest df peak in the window must clear the take-relative floor.
+    // A window over silence or a faded tail has only weak df → no real attack here.
+    if (bestFrame < 0 || bestVal < dfFloor) {
       return { markerSec, playerSec: null, errorSec: null, strength };
     }
 
-    const playerSec = startedAtSec + attackIdx / sampleRate;
+    const playerSec = startedAtSec + frameToSec(bestFrame);
     return { markerSec, playerSec, errorSec: playerSec - markerSec, strength };
   });
 }
