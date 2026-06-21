@@ -319,11 +319,18 @@ export function GrooveCardBlockForm({
         ]}
         referenceAnalysis={config.referenceAnalysis}
         onChangeMode={(m) => updateField('gradingMode', m)}
-        onChangeReferenceOnsets={(key, onsetsSec) =>
+        onChangeReferenceAnalysis={(key, analysis) =>
           updateField('referenceAnalysis', {
             ...config.referenceAnalysis,
-            [key]: { ...config.referenceAnalysis?.[key], onsetsSec },
-          })
+            // merge the whole authored analysis (onsetsSec + per-marker arrays),
+            // non-destructive to sibling fields (originalBpm/lengthsSec/dynamics).
+            // The merge always carries onsetsSec (toAnalysis always emits it), so the
+            // slot is a full ReferenceAnalysis — assert past the Partial union.
+            [key]: {
+              ...config.referenceAnalysis?.[key],
+              ...analysis,
+            } as ReferenceAnalysis,
+          } as Record<string, ReferenceAnalysis>)
         }
       />
 
@@ -588,14 +595,18 @@ function GradingModeFields({
   basslines,
   referenceAnalysis,
   onChangeMode,
-  onChangeReferenceOnsets,
+  onChangeReferenceAnalysis,
 }: {
   value?: GradingMode;
   /** Every bassline that can be graded: Bass A (key='main') + each variant. */
   basslines: { key: string; title: string; url: string }[];
   referenceAnalysis?: Record<string, ReferenceAnalysis>;
   onChangeMode: (m: GradingMode) => void;
-  onChangeReferenceOnsets: (key: string, onsetsSec: number[]) => void;
+  /** The editor emits the full authored analysis (onsetsSec + per-marker arrays). */
+  onChangeReferenceAnalysis: (
+    key: string,
+    analysis: Partial<ReferenceAnalysis>,
+  ) => void;
 }) {
   // Which bassline's transients are we editing? Default to Bass A.
   const [selectedKey, setSelectedKey] = useState<string>(REFERENCE_MAIN_BASS_KEY);
@@ -657,8 +668,10 @@ function GradingModeFields({
             <ReferenceTransientEditor
               key={selected.key /* remount on bassline switch */}
               stemUrl={selected.url}
-              value={referenceAnalysis?.[selected.key]?.onsetsSec}
-              onChange={(onsetsSec) => onChangeReferenceOnsets(selected.key, onsetsSec)}
+              value={referenceAnalysis?.[selected.key]}
+              onChange={(analysis) =>
+                onChangeReferenceAnalysis(selected.key, analysis)
+              }
             />
           )}
         </div>

@@ -55,8 +55,9 @@ import type {
   MarkerRole,
   MarkerConnection,
   TechniqueType,
+  ReferenceAnalysis,
 } from '@bassnotion/contracts';
-import { sortMarkers, toOnsets } from './refMarkers';
+import { sortMarkers, toAnalysis, fromAnalysis } from './refMarkers';
 
 /**
  * A marker as the EDITOR holds it internally: one OBJECT carrying its time AND its
@@ -84,10 +85,12 @@ export interface RefMarker {
 interface Props {
   /** The bass stem URL (config.stems.bass). */
   stemUrl: string;
-  /** Currently-saved approved onset times (stem-seconds), if any. */
-  value: number[] | undefined;
-  /** Called with the edited+approved onset list. */
-  onChange: (onsetsSec: number[]) => void;
+  /** Currently-saved approved reference analysis (onsets + per-marker authoring), if any. */
+  value: ReferenceAnalysis | undefined;
+  /** Called with the edited+approved analysis (onsetsSec + per-marker arrays). */
+  onChange: (analysis: Partial<ReferenceAnalysis>) => void;
+  /** Bass type the string/fret author against (default '4'). */
+  bassType?: '4' | '5' | '6';
 }
 
 const WAVE_H = 220;
@@ -102,12 +105,19 @@ function makeIdGen() {
   return () => ++n;
 }
 
-export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
+export function ReferenceTransientEditor({
+  stemUrl,
+  value,
+  onChange,
+  bassType = '4',
+}: Props) {
   const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
   const [status, setStatus] = useState<string>('');
   const nextId = useRef(makeIdGen()).current;
+  // markers carry their authored annotations; fromAnalysis unzips a stored blob and
+  // assigns fresh editor-local ids (and length-asserts the parallel arrays).
   const [markers, setMarkers] = useState<RefMarker[]>(() =>
-    (value ?? []).map((t) => ({ id: nextId(), timeSec: t })),
+    fromAnalysis(value, nextId),
   );
   const [zoom, setZoom] = useState(1); // 1 = fit; higher = wider (scrollable)
   const [clickOnMarkers, setClickOnMarkers] = useState(true);
@@ -147,7 +157,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
         if (cancelled) return;
         setBuffer(buf);
         // auto-detect only if nothing approved yet
-        if (!value || value.length === 0) {
+        if (!value || !value.onsetsSec?.length) {
           const mono = toMono(buf);
           const detected = snapOnsetTimesToAttack(
             detectBassOnsets(mono, buf.sampleRate).map((o) => o.time),
@@ -156,11 +166,11 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
           );
           const fresh = detected.map((t) => ({ id: nextId(), timeSec: t }));
           setMarkers(fresh);
-          onChangeRef.current(fresh.map((m) => m.timeSec));
+          onChangeRef.current(toAnalysis(fresh, bassType));
           setStatus(`Auto-detected ${detected.length} transients — drag/add/delete to correct, then it saves.`);
         } else {
-          setMarkers(value.map((t) => ({ id: nextId(), timeSec: t })));
-          setStatus(`Loaded ${value.length} approved transients.`);
+          setMarkers(fromAnalysis(value, nextId));
+          setStatus(`Loaded ${value.onsetsSec.length} approved transients.`);
         }
       } catch (err) {
         if (!cancelled) setStatus(`Failed to load stem: ${err instanceof Error ? err.message : String(err)}`);
@@ -186,19 +196,21 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     );
     const fresh = detected.map((t) => ({ id: nextId(), timeSec: t }));
     setMarkers(fresh);
-    onChangeRef.current(fresh.map((m) => m.timeSec));
+    onChangeRef.current(toAnalysis(fresh, bassType));
     setStatus(`Re-detected ${detected.length} transients (snapped to attack).`);
-  }, [buffer, mono, nextId]);
+  }, [buffer, mono, nextId, bassType]);
 
   /** Commit a marker list: sort OBJECTS by time (each carries its own annotations, so
-   *  nothing desyncs across the sort) and emit. THIS STEP emits only onsetsSec — the
-   *  annotation arrays are wired in a later step; behaviour is unchanged from before.
-   *  sortMarkers/toOnsets are the unit-tested pure helpers (refMarkers.ts). */
-  const commit = useCallback((next: RefMarker[]) => {
-    const sorted = sortMarkers(next);
-    setMarkers(sorted);
-    onChangeRef.current(toOnsets(sorted));
-  }, []);
+   *  nothing desyncs across the sort) and emit the FULL authored analysis (onsetsSec +
+   *  per-marker arrays). toAnalysis zips at this save boundary. */
+  const commit = useCallback(
+    (next: RefMarker[]) => {
+      const sorted = sortMarkers(next);
+      setMarkers(sorted);
+      onChangeRef.current(toAnalysis(sorted, bassType));
+    },
+    [bassType],
+  );
 
   // ---- playback ----
   const stop = useCallback(() => {
