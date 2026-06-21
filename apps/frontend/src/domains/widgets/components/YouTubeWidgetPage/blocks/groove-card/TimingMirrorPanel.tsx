@@ -330,6 +330,34 @@ export function TimingMirrorPanel({
           expectedReferenceCount: usingStored ? null : expectedAttacks,
         });
         setRefScore(score);
+        // DEBUG DUMP 2 (the matching diagnostic): the authored reference markers, the
+        // player onsets, and the matcher's verdict per marker — so we can see EXACTLY
+        // which marker failed to connect to a nearby attack and why (tolerance too
+        // tight? attack missing? ripple stealing?). copy(window.__bassMatchDebug).
+        try {
+          const r2 = (n: number) => Math.round(n * 1000) / 1000;
+          (window as unknown as Record<string, unknown>).__bassMatchDebug =
+            JSON.stringify({
+              referenceMarkersSec: refAbs.map(r2),
+              playerOnsetsSec: absOnsets.map(r2),
+              matched: score.alignment.matched.map((m) => ({
+                ref: r2(m.referenceSec),
+                player: r2(m.playerSec),
+                errMs: Math.round(m.errorSec * 1000),
+              })),
+              missedSec: score.alignment.missed.map(r2),
+              noiseSec: score.alignment.noise.map(r2),
+              // for each MISSED marker, the nearest player onset + distance — reveals
+              // whether an attack WAS there but fell outside the tolerance window.
+              missedNearest: score.alignment.missed.map((ms) => {
+                let best = Infinity;
+                for (const p of absOnsets) best = Math.min(best, Math.abs(p - ms));
+                return { ref: r2(ms), nearestPlayerMs: Math.round(best * 1000) };
+              }),
+            });
+        } catch {
+          /* best-effort */
+        }
         // Capture everything the visualizer needs to SHOW the analysis.
         setVizData({
           grid,
