@@ -246,6 +246,22 @@ export function ReferenceTransientEditor({
     [commit],
   );
 
+  /** Stamp a patch across many markers at once (fill-down). One commit. */
+  const bulkUpdateMarkers = useCallback(
+    (ids: number[], patch: Partial<RefMarker>) => {
+      const idSet = new Set(ids);
+      const clearsStale = 'connectionFromPrev' in patch;
+      commit(
+        markersRef.current.map((m) =>
+          idSet.has(m.id)
+            ? { ...m, ...patch, ...(clearsStale ? { connectionStale: false } : {}) }
+            : m,
+        ),
+      );
+    },
+    [commit],
+  );
+
   /** Change the bass type (4/5/6) and re-emit so the new tuning saves with the analysis.
    *  Markers are unchanged; a string number now out of range for the smaller bass is
    *  cleared so it can't resolve to a wrong pitch. */
@@ -637,6 +653,7 @@ export function ReferenceTransientEditor({
         selectedId={selectedId}
         onSelect={setSelectedId}
         onUpdate={updateMarker}
+        onBulkUpdate={bulkUpdateMarkers}
         onPlay={playNote}
       />
 

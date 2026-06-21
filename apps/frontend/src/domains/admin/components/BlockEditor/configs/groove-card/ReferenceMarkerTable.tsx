@@ -13,7 +13,7 @@
  * the canvas as plain DOM, so its controls physically cannot fire canvas pointer events.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   PluckStyle,
   MarkerRole,
@@ -58,6 +58,8 @@ interface Props {
   onSelect: (id: number) => void;
   /** Update a single field of one marker (by id). The editor handles re-commit/save. */
   onUpdate: (id: number, patch: Partial<RefMarker>) => void;
+  /** Stamp a patch across many markers at once (fill-down). One commit. */
+  onBulkUpdate: (ids: number[], patch: Partial<RefMarker>) => void;
   /** Play a marker's note (audition), by index. */
   onPlay: (index: number) => void;
 }
@@ -91,11 +93,73 @@ export function ReferenceMarkerTable({
   selectedId,
   onSelect,
   onUpdate,
+  onBulkUpdate,
   onPlay,
 }: Props) {
   const stringNames = useOpenStringNames(bassType);
   const stringCount = BASS_TUNINGS[bassType].length;
   const annotated = markers.filter((m) => m.string != null && m.fret != null).length;
+
+  // Multi-select (for fill-down): a set of marker ids; shift-click extends a range from
+  // the last single-clicked anchor. The single-selected marker (selectedId) is the anchor.
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [hideAnnotated, setHideAnnotated] = useState(false);
+
+  // The rows actually shown. Hide-annotated collapses a 35-row wall to the few that still
+  // need a pitch. We keep the ORIGINAL index (for ▶ playNote + the # column) alongside.
+  const rows = useMemo(() => {
+    return markers
+      .map((m, originalIndex) => ({ m, originalIndex }))
+      .filter(
+        ({ m }) => !hideAnnotated || m.string == null || m.fret == null,
+      );
+  }, [markers, hideAnnotated]);
+
+  /** Click a row: shift extends the multi-select range from the anchor; plain click sets
+   *  the single selection + resets the multi-select to just this row. */
+  const clickRow = useCallback(
+    (id: number, withShift: boolean) => {
+      if (withShift && selectedId != null) {
+        const aIdx = markers.findIndex((m) => m.id === selectedId);
+        const bIdx = markers.findIndex((m) => m.id === id);
+        if (aIdx >= 0 && bIdx >= 0) {
+          const [lo, hi] = aIdx < bIdx ? [aIdx, bIdx] : [bIdx, aIdx];
+          setSelectedIds(new Set(markers.slice(lo, hi + 1).map((m) => m.id)));
+          return;
+        }
+      }
+      onSelect(id);
+      setSelectedIds(new Set([id]));
+    },
+    [markers, selectedId, onSelect],
+  );
+
+  /** Move the single selection up/down by one VISIBLE row (keyboard nav). */
+  const moveSelection = useCallback(
+    (delta: 1 | -1) => {
+      if (rows.length === 0) return;
+      const cur = rows.findIndex((r) => r.m.id === selectedId);
+      const nextRow =
+        cur < 0 ? rows[0]! : rows[Math.max(0, Math.min(rows.length - 1, cur + delta))]!;
+      onSelect(nextRow.m.id);
+      setSelectedIds(new Set([nextRow.m.id]));
+    },
+    [rows, selectedId, onSelect],
+  );
+
+  /** Fill a field down across the multi-selected rows (or the single selection). */
+  const fillDown = useCallback(
+    (patch: Partial<RefMarker>) => {
+      const ids =
+        selectedIds.size > 0
+          ? [...selectedIds]
+          : selectedId != null
+            ? [selectedId]
+            : [];
+      if (ids.length > 0) onBulkUpdate(ids, patch);
+    },
+    [selectedIds, selectedId, onBulkUpdate],
+  );
 
   if (markers.length === 0) {
     return (
@@ -105,17 +169,40 @@ export function ReferenceMarkerTable({
     );
   }
 
+  const fillTarget = markers.find((m) => m.id === selectedId);
+
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 11, color: '#9aa0ad', marginBottom: 4 }}>
-        Markers: {markers.length} · Annotated: {annotated}/{markers.length}
-        {annotated < markers.length && (
-          <span style={{ color: '#e0b24a' }}>
-            {' '}· ⚠ {markers.length - annotated} missing pitch
-          </span>
-        )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 11, color: '#9aa0ad', marginBottom: 4 }}>
+        <span>
+          Markers: {markers.length} · Annotated: {annotated}/{markers.length}
+          {annotated < markers.length && (
+            <span style={{ color: '#e0b24a' }}>
+              {' '}· ⚠ {markers.length - annotated} missing pitch
+            </span>
+          )}
+        </span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <input type="checkbox" checked={hideAnnotated} onChange={(e) => setHideAnnotated(e.target.checked)} />
+          hide annotated
+        </label>
+        {/* FILL-DOWN: stamp the SELECTED row's value into all shift-selected rows. */}
+        <span style={{ color: '#6b7280' }}>
+          fill {selectedIds.size > 1 ? `${selectedIds.size} rows` : 'selection'} ▾
+        </span>
+        <button type="button" style={fillBtn} disabled={!fillTarget} onClick={() => fillDown({ string: fillTarget?.string ?? null })} title="fill the selected row's STRING down">str</button>
+        <button type="button" style={fillBtn} disabled={!fillTarget} onClick={() => fillDown({ fret: fillTarget?.fret ?? null })} title="fill the selected row's FRET down">fret</button>
+        <button type="button" style={fillBtn} disabled={!fillTarget} onClick={() => fillDown({ pluckStyle: fillTarget?.pluckStyle ?? null })} title="fill the selected row's PLUCK down">pluck</button>
+        <span style={{ color: '#6b7280' }}>· ↑/↓ to walk rows · shift-click to range-select</span>
       </div>
-      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}>
+      <div
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); moveSelection(-1); }
+        }}
+        style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, outline: 'none' }}
+      >
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
           <thead>
             <tr style={{ position: 'sticky', top: 0, background: '#14161b', color: '#9aa0ad' }}>
@@ -131,16 +218,21 @@ export function ReferenceMarkerTable({
             </tr>
           </thead>
           <tbody>
-            {markers.map((m, i) => {
+            {rows.map(({ m, originalIndex: i }) => {
               const isSel = m.id === selectedId;
+              const inMulti = selectedIds.has(m.id) && selectedIds.size > 1;
               const note = noteFor(m.string, m.fret, bassType);
               const missing = m.string == null || m.fret == null;
               return (
                 <tr
                   key={m.id}
-                  onClick={() => onSelect(m.id)}
+                  onClick={(e) => clickRow(m.id, e.shiftKey)}
                   style={{
-                    background: isSel ? 'rgba(106,208,140,0.12)' : 'transparent',
+                    background: isSel
+                      ? 'rgba(106,208,140,0.14)'
+                      : inMulti
+                        ? 'rgba(122,162,255,0.12)'
+                        : 'transparent',
                     borderBottom: '1px solid rgba(255,255,255,0.05)',
                     cursor: 'pointer',
                   }}
@@ -303,4 +395,13 @@ const playBtn: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: 12,
   padding: 0,
+};
+const fillBtn: React.CSSProperties = {
+  background: 'rgba(122,162,255,0.12)',
+  border: '1px solid rgba(122,162,255,0.3)',
+  borderRadius: 4,
+  color: '#aebfff',
+  fontSize: 10,
+  padding: '2px 6px',
+  cursor: 'pointer',
 };
