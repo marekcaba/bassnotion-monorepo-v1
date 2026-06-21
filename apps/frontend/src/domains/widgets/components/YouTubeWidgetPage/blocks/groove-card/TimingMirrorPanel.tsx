@@ -29,11 +29,11 @@ import {
 } from './timing-mirror/captureBassInput';
 import {
   detectBassOnsets,
-  detectBassOnsetsAdaptive,
   snapOnsetTimesToAttack,
   dedupNearbyOnsets,
   normalizePeak,
 } from './timing-mirror/bassOnsetDetector';
+import { detectOnsetsComplexDomain } from './timing-mirror/complexDomainOnsets';
 import {
   scoreOnsetsAgainstGrid,
   type GridParams,
@@ -226,37 +226,21 @@ export function TimingMirrorPanel({
       // near full-scale so detection + snapping work on a loud, punchy signal
       // regardless of input gain. (This is the "the waveform should be bigger" fix.)
       const signal = normalizePeak(rawSignal);
-      // PLAYER onsets — adaptive (floor from the take's own signal, no slider) or
-      // the manual slider preset as a fallback. expectedCount = the reference's
-      // attack count, which nudges the adaptive floor toward the right target.
-      const onsets = adaptivePlayer
-        ? detectBassOnsetsAdaptive(signal, sampleRate, {
-            minOnsetGapSeconds: minGapMs / 1000,
-            expectedCount: expectedAttacks ?? undefined,
-          })
-        : detectBassOnsets(signal, sampleRate, {
-            sensitivity,
-            minOnsetGapSeconds: minGapMs / 1000,
-            minRelativeStrength: minRelStrength,
-          });
-      // Snap player onsets to the ATTACK EDGE (steepest energy RISE), then DEDUP the
-      // ones that collapsed onto the same attack. Fixes (1) ticks landing in the loud
-      // note BODY instead of the sharp pluck, and (2) one note getting 2-3 ticks (the
-      // flux fires across the swelling body → snap pulls them to the same edge → merge).
-      // Same convention for reference markers + player take.
-      const snapped = snapOnsetTimesToAttack(
-        onsets.map((o) => o.time),
-        signal,
-        sampleRate,
-      );
-      // NO blind player dedup. The coach's HAND-AUTHORED reference markers are the
-      // source of truth for HOW MANY notes and WHERE — the matcher (alignToReference,
-      // coach-anchored) claims the nearest player attack per marker, with a tolerance
-      // derived from YOUR marker spacing. So:
-      //   - body ripples sit where NO marker is → they become NOISE (rejected), and
-      //   - fast authored notes (markers ~128ms apart) each get their OWN player attack
-      //     (a fixed dedup would have wrongly collapsed them — that ate real notes).
-      // The reference drives everything; the player onsets pass through raw (snapped).
+      // PLAYER onsets — COMPLEX-DOMAIN detection (Bello/Duxbury, the Ableton lineage).
+      // Phase-aware: a real new note breaks the phase prediction; a sustained note's
+      // BODY RIPPLE keeps the same phase evolving smoothly → not an onset. This replaced
+      // the energy/spectral-flux detector that MISSED soft attacks and OVER-TRIGGERED on
+      // ripple (proven on real DI; see memory bass-onset-complex-domain). Built-in
+      // recent-peak gate + adaptive median threshold + refractory — no downstream gap/
+      // energy band-aids needed.
+      const onsetTimes = detectOnsetsComplexDomain(signal, sampleRate);
+      // Light attack-snap for sub-frame precision (the FFT window localizes to ~10ms;
+      // snap nudges onto the exact pluck edge). Same convention as the reference markers.
+      const snapped = snapOnsetTimesToAttack(onsetTimes, signal, sampleRate);
+      // NO blind player dedup. The coach's HAND-AUTHORED reference markers are the source
+      // of truth for HOW MANY notes and WHERE — the matcher (alignToReference, coach-
+      // anchored) claims the nearest player attack per marker. The complex-domain detector
+      // already gives clean one-per-note onsets, so the matcher just measures distance.
       const absOnsets = snapped.map((t) => t + startedAt);
       // GRID mode has no reference to anchor on, so without a dedup it would score each
       // body ripple as a separate (colliding) onset against the grid. Give the grid
@@ -283,7 +267,7 @@ export function TimingMirrorPanel({
           sampleRate,
           envStepSec: dsStep / sampleRate,
           envPeakPerStep: env,
-          rawOnsetsSec: onsets.map((o) => Math.round(o.time * 1000) / 1000),
+          rawOnsetsSec: onsetTimes.map((t) => Math.round(t * 1000) / 1000),
           snappedSec: snapped.map((t) => Math.round(t * 1000) / 1000),
           // player onsets fed to the REFERENCE matcher = raw snapped (no dedup).
           playerForMatchSec: snapped.map((t) => Math.round(t * 1000) / 1000),
@@ -299,7 +283,7 @@ export function TimingMirrorPanel({
       setOutcome({
         stats,
         grade: gradeTiming(stats.jitter, stats.averageDrift),
-        detectedCount: onsets.length,
+        detectedCount: onsetTimes.length,
         scoredCount: slots.length - skippedBeforeGrid,
         skippedBeforeGrid,
         collisionRate,
