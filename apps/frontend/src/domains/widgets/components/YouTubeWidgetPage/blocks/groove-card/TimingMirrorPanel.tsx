@@ -157,6 +157,7 @@ export function TimingMirrorPanel({
     accuracy: number;
     right: number;
     graded: number;
+    wrong: number;
   } | null>(null);
   const [vizData, setVizData] = useState<VizData | null>(null);
   // The input latency we measured + already subtracted from the start anchor — so
@@ -330,7 +331,6 @@ export function TimingMirrorPanel({
         // `startedAt` is its sample-0 ctx time. Each measurement: where the player's
         // transient is vs the marker, or null (missed).
         const measurements = measureAtMarkers(signal, sampleRate, startedAt, refAbs);
-        const mScore = scoreMarkerMeasurements(measurements);
 
         // PITCH (the "WHAT"): for each HIT, detect the player's fundamental in a window
         // starting ~12ms after the found attack (skip the broadband pluck, land on the
@@ -369,6 +369,23 @@ export function TimingMirrorPanel({
           };
           return pitchVerdict(pitchPerMarker[i] ?? null, note, refBassType);
         });
+        // GATING RULE (user 2026-06-22): a note counts (and is timing-graded) UNLESS the
+        // detector is CONFIDENT it was the WRONG note. Ghosts (n/a) and pitch-unknown still
+        // count — the detector's own uncertainty never punishes the player; only a confident
+        // wrong-note breaks the slot.
+        const isWrong = (i: number) => verdictPerMarker[i]!.verdict === 'wrong';
+        // Timing is graded on the NON-wrong notes only. We NULL the errorSec of a wrong
+        // note (rather than drop the marker) so it (a) doesn't dilute the feel jitter — a
+        // wrong note isn't the right note — but (b) STILL counts in the coverage
+        // denominator: it's a marker the coach authored where the player played the wrong
+        // note, which is NOT a correctly-played note. Effectively a miss-for-coverage.
+        const timingMeasurements = measurements.map((m, i) =>
+          isWrong(i) ? { ...m, playerSec: null, errorSec: null } : m,
+        );
+        const wrongCount = measurements.filter(
+          (m, i) => m.playerSec != null && isWrong(i),
+        ).length;
+
         // Summary: of the markers that HAVE an authored pitch and a confident detection,
         // how many were the right note. (octave counts as right.)
         const pitchGraded = verdictPerMarker.filter(
@@ -380,6 +397,10 @@ export function TimingMirrorPanel({
         const pitchAccuracy =
           pitchGraded.length > 0 ? pitchRight / pitchGraded.length : null;
 
+        // TIMING score on the gated set: a confident wrong note doesn't dilute the feel
+        // grade (it's not the right note). Coverage/jitter/offset all from non-wrong notes.
+        const mScore = scoreMarkerMeasurements(timingMeasurements);
+
         // Adapt to the existing ReferenceScore shape the UI consumes. No more "noise"
         // (we never detect phantom onsets); matched = hits, missed = no transient found.
         const grade = gradeTiming(mScore.jitterMs, mScore.offsetMs);
@@ -389,9 +410,11 @@ export function TimingMirrorPanel({
           offsetMs: mScore.offsetMs,
           jitterMs: mScore.jitterMs,
           coverage: mScore.coverage,
-          matchedCount: mScore.hitCount,
-          missedCount: mScore.missedCount,
-          noiseCount: 0,
+          matchedCount: mScore.hitCount, // correctly-played notes (right pitch / n/a / unknown)
+          // genuine misses = nothing played in the slot. Wrong notes are nulled-for-timing
+          // so they're in mScore.missedCount too; split them out for an honest label.
+          missedCount: mScore.missedCount - wrongCount,
+          noiseCount: wrongCount, // shown as "wrong" in the sub-text (not phantom noise)
           untrustworthy,
           untrustworthyReason: untrustworthy
             ? `Only ${Math.round(mScore.coverage * 100)}% of the part was played — play more of it before scoring the timing.`
@@ -421,6 +444,7 @@ export function TimingMirrorPanel({
                 accuracy: Math.round(pitchAccuracy * 100),
                 right: pitchRight,
                 graded: pitchGraded.length,
+                wrong: wrongCount,
               },
         );
         // DEBUG DUMP (per-marker diagnostic): every marker, where the player transient
@@ -448,6 +472,7 @@ export function TimingMirrorPanel({
               }),
               hitCount: mScore.hitCount,
               missedCount: mScore.missedCount,
+              wrongNoteCount: wrongCount, // confident wrong notes — don't count as played
               offsetMs: Math.round(mScore.offsetMs),
               jitterMs: Math.round(mScore.jitterMs),
               pitchRight,
@@ -884,7 +909,7 @@ export function TimingMirrorPanel({
                 label="coverage"
                 value={`${Math.round(refScore.coverage * 100)}%`}
                 color={refScore.coverage > 0.85 ? '#6ad08c' : '#e0b24a'}
-                sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed · ${refScore.noiseCount} noise`}
+                sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed${refScore.noiseCount > 0 ? ` · ${refScore.noiseCount} wrong note` : ''}`}
               />
               {/* PITCH (the WHAT) — right-note % vs the authored string+fret. */}
               {pitchSummary && (
@@ -892,7 +917,11 @@ export function TimingMirrorPanel({
                   label="right notes"
                   value={`${pitchSummary.accuracy}%`}
                   color={pitchSummary.accuracy >= 85 ? '#6ad08c' : '#e0b24a'}
-                  sub={`${pitchSummary.right}/${pitchSummary.graded} notes (vs authored)`}
+                  sub={
+                    pitchSummary.wrong > 0
+                      ? `${pitchSummary.right}/${pitchSummary.graded} right · ${pitchSummary.wrong} wrong (excluded from timing)`
+                      : `${pitchSummary.right}/${pitchSummary.graded} notes (vs authored)`
+                  }
                 />
               )}
             </div>
