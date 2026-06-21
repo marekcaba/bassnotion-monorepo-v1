@@ -98,7 +98,14 @@ export function ReferenceMarkerTable({
 }: Props) {
   const stringNames = useOpenStringNames(bassType);
   const stringCount = BASS_TUNINGS[bassType].length;
-  const annotated = markers.filter((m) => m.string != null && m.fret != null).length;
+  // A marker is "annotated" when it has a pitch (string+fret) OR it's a pitchless
+  // ghost/dead note (complete without a fret — the muting IS the note).
+  const isComplete = useCallback(
+    (m: RefMarker) =>
+      m.role === 'ghost' || m.role === 'dead' || (m.string != null && m.fret != null),
+    [],
+  );
+  const annotated = markers.filter(isComplete).length;
 
   // Multi-select (for fill-down): a set of marker ids; shift-click extends a range from
   // the last single-clicked anchor. The single-selected marker (selectedId) is the anchor.
@@ -110,10 +117,8 @@ export function ReferenceMarkerTable({
   const rows = useMemo(() => {
     return markers
       .map((m, originalIndex) => ({ m, originalIndex }))
-      .filter(
-        ({ m }) => !hideAnnotated || m.string == null || m.fret == null,
-      );
-  }, [markers, hideAnnotated]);
+      .filter(({ m }) => !hideAnnotated || !isComplete(m));
+  }, [markers, hideAnnotated, isComplete]);
 
   /** Click a row: shift extends the multi-select range from the anchor; plain click sets
    *  the single selection + resets the multi-select to just this row. */
@@ -221,8 +226,16 @@ export function ReferenceMarkerTable({
             {rows.map(({ m, originalIndex: i }) => {
               const isSel = m.id === selectedId;
               const inMulti = selectedIds.has(m.id) && selectedIds.size > 1;
-              const note = noteFor(m.string, m.fret, bassType);
-              const missing = m.string == null || m.fret == null;
+              // A ghost/dead note is PITCHLESS — it's a muted percussive attack with no
+              // fretted pitch. Fret doesn't apply; the note is complete without it (string
+              // still matters — which string is thudded). So it's not "missing pitch".
+              const pitchless = m.role === 'ghost' || m.role === 'dead';
+              const note = pitchless
+                ? m.role === 'ghost'
+                  ? 'ghost'
+                  : 'muted'
+                : noteFor(m.string, m.fret, bassType);
+              const missing = !pitchless && (m.string == null || m.fret == null);
               return (
                 <tr
                   key={m.id}
@@ -278,17 +291,27 @@ export function ReferenceMarkerTable({
                       type="number"
                       min={0}
                       max={24}
-                      value={m.fret ?? ''}
+                      value={pitchless ? '' : m.fret ?? ''}
                       onChange={(e) =>
                         onUpdate(m.id, {
                           fret: e.target.value === '' ? null : Number(e.target.value),
                         })
                       }
                       onClick={(e) => e.stopPropagation()}
-                      style={{ ...sel, width: 44 }}
+                      disabled={pitchless}
+                      placeholder={pitchless ? '—' : ''}
+                      title={pitchless ? 'ghost/dead notes have no fretted pitch' : ''}
+                      style={{ ...sel, width: 44, opacity: pitchless ? 0.4 : 1 }}
                     />
                   </td>
-                  <td style={{ ...td, fontWeight: 600, color: missing ? '#e0b24a' : '#6ad08c' }}>
+                  <td
+                    style={{
+                      ...td,
+                      fontWeight: 600,
+                      fontStyle: pitchless ? 'italic' : 'normal',
+                      color: missing ? '#e0b24a' : pitchless ? '#9aa0ad' : '#6ad08c',
+                    }}
+                  >
                     {note}
                     {missing && <span title="pitch not set"> ⚠</span>}
                   </td>
@@ -314,9 +337,13 @@ export function ReferenceMarkerTable({
                   <td style={td}>
                     <select
                       value={m.role ?? ''}
-                      onChange={(e) =>
-                        onUpdate(m.id, { role: (e.target.value || null) as MarkerRole | null })
-                      }
+                      onChange={(e) => {
+                        const role = (e.target.value || null) as MarkerRole | null;
+                        // switching TO ghost/dead clears the fret (pitchless), keeping the
+                        // string (which string is thudded still matters).
+                        const clearsFret = role === 'ghost' || role === 'dead';
+                        onUpdate(m.id, clearsFret ? { role, fret: null } : { role });
+                      }}
                       onClick={(e) => e.stopPropagation()}
                       style={sel}
                     >
