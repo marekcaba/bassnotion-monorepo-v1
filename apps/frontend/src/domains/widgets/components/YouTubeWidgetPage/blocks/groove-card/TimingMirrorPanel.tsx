@@ -31,7 +31,6 @@ import {
   detectBassOnsets,
   detectBassOnsetsAdaptive,
   snapOnsetTimesToAttack,
-  rejectBodyRipple,
   dedupNearbyOnsets,
   normalizePeak,
 } from './timing-mirror/bassOnsetDetector';
@@ -250,12 +249,14 @@ export function TimingMirrorPanel({
         signal,
         sampleRate,
       );
-      // REJECT body ripple: a held bass note pulses (~7-8Hz), and flux fires on every
-      // up-pulse → 5+ false onsets per note (~125ms apart, just over the gap floor).
-      // PROVEN on real DI: real attacks rise from near-silence, ripples from already-
-      // loud. Keep only onsets preceded by a quiet lead-in. THEN dedup the rest.
-      const gated = rejectBodyRipple(snapped, signal, sampleRate);
-      const deduped = dedupNearbyOnsets(gated);
+      // KILL body-ripple over-trigger by GAP, not energy. PROVEN on the real DI take:
+      // a held bass note pulses at a FIXED ~128ms period (its ripple), so flux fires
+      // clusters spaced 122-144ms; REAL note spacing in the take is ≥200ms. There's a
+      // clean valley between them, so dedup at 155ms collapses each ripple cluster to
+      // its FIRST onset (the true attack) without touching real notes. (The earlier
+      // energy gate `rejectBodyRipple` mis-fired in busy passages — a new note after a
+      // loud TAIL looks like a ripple to it — so we rely on the gap, which doesn't.)
+      const deduped = dedupNearbyOnsets(snapped, 0.155);
       const absOnsets = deduped.map((t) => t + startedAt);
 
       // DEBUG DUMP (dev probe): stash the take + each detection stage on window so we
@@ -279,7 +280,6 @@ export function TimingMirrorPanel({
           envPeakPerStep: env,
           rawOnsetsSec: onsets.map((o) => Math.round(o.time * 1000) / 1000),
           snappedSec: snapped.map((t) => Math.round(t * 1000) / 1000),
-          gatedSec: gated.map((t) => Math.round(t * 1000) / 1000),
           dedupedSec: deduped.map((t) => Math.round(t * 1000) / 1000),
         });
       } catch {

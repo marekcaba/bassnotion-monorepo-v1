@@ -295,6 +295,25 @@ describe('dedupNearbyOnsets — collapses multi-trigger to one attack', () => {
     expect(dedupNearbyOnsets([0.3, 0.1, 0.32], 0.07)).toEqual([0.1, 0.3]);
     expect(dedupNearbyOnsets([])).toEqual([]);
   });
+
+  it('collapses real-DI ripple clusters (~128ms) but keeps real notes (≥200ms)', () => {
+    // Verbatim raw onsets from a real Clarett take (window.__bassTakeDebug, 2026-06-21):
+    // ripple clusters fire at a FIXED ~122-144ms period; real notes are ≥200ms apart.
+    // The default 155ms gap sits in the clean valley between them → 39 raw collapse to
+    // 23 (the true attack count). This pins the over-trigger fix against regression.
+    const realRaw = [
+      5.451, 5.579, 5.701, 6.597, 6.731, 6.944, 7.077, 7.461, 7.605, 8.773, 8.917,
+      9.451, 9.579, 9.867, 9.989, 10.981, 11.115, 11.84, 11.979, 13.141, 13.435,
+      13.557, 13.819, 13.941, 14.208, 14.597, 15.355, 15.477, 15.749, 16.176, 16.315,
+      17.141, 17.419, 18.085, 18.208, 18.629, 18.752, 20.309, 20.592,
+    ];
+    expect(dedupNearbyOnsets(realRaw).length).toBe(23); // default 155ms gap
+    // each kept onset must be ≥155ms from the previous (no ripple survivors)
+    const kept = dedupNearbyOnsets(realRaw);
+    for (let i = 1; i < kept.length; i++) {
+      expect(kept[i]! - kept[i - 1]!).toBeGreaterThanOrEqual(0.155);
+    }
+  });
 });
 
 describe('adaptiveConfidenceFloor', () => {

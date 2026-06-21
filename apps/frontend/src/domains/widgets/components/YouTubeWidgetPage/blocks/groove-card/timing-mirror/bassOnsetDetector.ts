@@ -316,7 +316,7 @@ export function rejectBodyRipple(
  * what kills the "one note, two or three blue ticks" over-trigger that read as noise.
  * Expects ascending input; returns ascending.
  */
-export function dedupNearbyOnsets(onsetsSec: number[], minGapSec = 0.07): number[] {
+export function dedupNearbyOnsets(onsetsSec: number[], minGapSec = 0.155): number[] {
   if (onsetsSec.length === 0) return [];
   const sorted = [...onsetsSec].sort((a, b) => a - b);
   const out: number[] = [sorted[0]!];
