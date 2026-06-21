@@ -38,6 +38,7 @@ import {
   measureAtMarkers,
   scoreMarkerMeasurements,
 } from './timing-mirror/measureAtMarkers';
+import { verifyPitch } from './timing-mirror/verifyPitch';
 import {
   scoreOnsetsAgainstGrid,
   type GridParams,
@@ -317,6 +318,19 @@ export function TimingMirrorPanel({
         const measurements = measureAtMarkers(signal, sampleRate, startedAt, refAbs);
         const mScore = scoreMarkerMeasurements(measurements);
 
+        // PITCH (the "WHAT"): for each HIT, detect the player's fundamental in a window
+        // starting ~12ms after the found attack (skip the broadband pluck, land on the
+        // steady tone). Null = no confident pitch (staccato/ghost). Stored per marker for
+        // the dump now; the chart-label compare ("right note?") is the next step.
+        const pitchPerMarker = measurements.map((m) => {
+          if (m.playerSec == null) return null;
+          const onsetBuf = Math.round((m.playerSec - startedAt) * sampleRate);
+          const winStart = onsetBuf + Math.round(0.012 * sampleRate);
+          const winLen = Math.round(0.09 * sampleRate); // ~90ms: ≥3 periods of low-B
+          if (winStart + winLen > signal.length) return null;
+          return verifyPitch(signal.subarray(winStart, winStart + winLen), sampleRate);
+        });
+
         // Adapt to the existing ReferenceScore shape the UI consumes. No more "noise"
         // (we never detect phantom onsets); matched = hits, missed = no transient found.
         const grade = gradeTiming(mScore.jitterMs, mScore.offsetMs);
@@ -357,12 +371,19 @@ export function TimingMirrorPanel({
           const r2 = (n: number) => Math.round(n * 1000) / 1000;
           (window as unknown as Record<string, unknown>).__bassMatchDebug =
             JSON.stringify({
-              markers: measurements.map((m) => ({
-                marker: r2(m.markerSec),
-                player: m.playerSec == null ? null : r2(m.playerSec),
-                errMs: m.errorSec == null ? null : Math.round(m.errorSec * 1000),
-                strength: Math.round(m.strength * 100) / 100,
-              })),
+              markers: measurements.map((m, i) => {
+                const p = pitchPerMarker[i];
+                return {
+                  marker: r2(m.markerSec),
+                  player: m.playerSec == null ? null : r2(m.playerSec),
+                  errMs: m.errorSec == null ? null : Math.round(m.errorSec * 1000),
+                  strength: Math.round(m.strength * 100) / 100,
+                  // pitch (the WHAT): detected MIDI + cents + confidence, or null.
+                  midi: p ? p.midi : null,
+                  cents: p ? p.cents : null,
+                  pConf: p ? Math.round(p.confidence * 100) / 100 : null,
+                };
+              }),
               hitCount: mScore.hitCount,
               missedCount: mScore.missedCount,
               offsetMs: Math.round(mScore.offsetMs),
