@@ -4,6 +4,7 @@ import {
   detectBassOnsetsAdaptive,
   adaptiveConfidenceFloor,
   highPassInPlace,
+  normalizePeak,
 } from './bassOnsetDetector';
 
 // Step 2 of the timing-mirror spike (docs/TIMING_MIRROR_SPIKE_PLAN.md): prove the
@@ -174,6 +175,26 @@ describe('detectBassOnsets — note-count accuracy', () => {
     renderNote(signal, 0.1, 41, 0.8, makeRng(0xb0ba));
     const onsets = detectBassOnsets(signal, SR);
     expect(onsets.length).toBe(1);
+  });
+});
+
+describe('normalizePeak', () => {
+  it('scales a quiet signal up to ~full-scale', () => {
+    const quiet = Float32Array.from([0.05, -0.1, 0.08, -0.03]);
+    const n = normalizePeak(quiet);
+    let peak = 0;
+    for (const s of n) peak = Math.max(peak, Math.abs(s));
+    expect(peak).toBeCloseTo(0.97, 2);
+  });
+  it('preserves shape (a copy, ratios intact) and does not mutate input', () => {
+    const sig = Float32Array.from([0.1, -0.2, 0.05]);
+    const n = normalizePeak(sig);
+    expect(sig[0]).toBe(0.1); // input untouched
+    expect(n[1]! / n[0]!).toBeCloseTo(-2, 5); // ratio preserved
+  });
+  it('is a no-op on silence', () => {
+    const z = new Float32Array(8);
+    expect(Array.from(normalizePeak(z))).toEqual(Array.from(z));
   });
 });
 

@@ -159,6 +159,25 @@ export function detectBassOnsets(
 }
 
 /**
+ * Peak-normalize a signal to near full-scale (a COPY — never mutates the input). A
+ * quiet take hurts onset detection AND the attack-snap (a soft attack ramps to its
+ * threshold late). Scaling to ~0.97 peak gives detection a loud, punchy signal
+ * regardless of input gain. No-op on silence.
+ */
+export function normalizePeak(signal: Float32Array, target = 0.97): Float32Array {
+  let peak = 0;
+  for (let i = 0; i < signal.length; i++) {
+    const a = Math.abs(signal[i] ?? 0);
+    if (a > peak) peak = a;
+  }
+  if (peak <= 1e-6) return Float32Array.from(signal);
+  const gain = target / peak;
+  const out = new Float32Array(signal.length);
+  for (let i = 0; i < signal.length; i++) out[i] = (signal[i] ?? 0) * gain;
+  return out;
+}
+
+/**
  * Snap onset TIMES to the actual ATTACK. Spectral-flux reports the FFT frame START
  * (the rising energy edge), ~0-21ms BEFORE the perceptual attack peak — markers/ticks
  * land too early (visible vs the waveform; Ableton lands on the peak). For each
@@ -183,7 +202,10 @@ export function snapOnsetTimesToAttack(
       if (a > peak) peak = a;
     }
     if (peak <= 0) return t;
-    const thr = peak * 0.7;
+    // 50% of the local peak catches the attack EDGE (the steep rise), not the peak
+    // itself — lands closer to the true pluck. (70% sat slightly late, esp. on soft
+    // attacks.) Same threshold for reference + player so the two stay comparable.
+    const thr = peak * 0.5;
     for (let i = start; i < end; i++) {
       if (Math.abs(signal[i] ?? 0) >= thr) return i / sampleRate;
     }

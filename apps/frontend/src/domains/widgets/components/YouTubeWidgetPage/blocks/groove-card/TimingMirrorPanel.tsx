@@ -28,6 +28,7 @@ import {
   detectBassOnsets,
   detectBassOnsetsAdaptive,
   snapOnsetTimesToAttack,
+  normalizePeak,
 } from './timing-mirror/bassOnsetDetector';
 import {
   scoreOnsetsAgainstGrid,
@@ -207,11 +208,17 @@ export function TimingMirrorPanel({
   // Re-runs on a slider change — no re-recording needed.
   const analyze = useCallback(
     (
-      signal: Float32Array,
+      rawSignal: Float32Array,
       sampleRate: number,
       startedAt: number,
       grid: GridParams,
     ) => {
+      // NORMALIZE the captured take: a DI/mic take is often quiet, and a quiet signal
+      // hurts BOTH detection AND attack-snap (the snap walks to 70% of the LOCAL peak
+      // — a soft attack ramps up slowly, so the onset lands LATE). Peak-normalize to
+      // near full-scale so detection + snapping work on a loud, punchy signal
+      // regardless of input gain. (This is the "the waveform should be bigger" fix.)
+      const signal = normalizePeak(rawSignal);
       // PLAYER onsets — adaptive (floor from the take's own signal, no slider) or
       // the manual slider preset as a fallback. expectedCount = the reference's
       // attack count, which nudges the adaptive floor toward the right target.
