@@ -60,6 +60,11 @@ const DEFAULTS: Required<MeasureOptions> = {
   envStepSec: 0.002,
 };
 
+/** Max look-BACK before a marker (seconds). Small, so a marker's window doesn't catch the
+ *  PREVIOUS note's still-ringing sustain and land early on the wrong note. A genuinely
+ *  early-played note is rare and small; the forward reach (windowSec) covers dragging. */
+const BACK_REACH_SEC = 0.045;
+
 /**
  * For each marker, find the player's transient in a window around it and measure the
  * offset. Returns one measurement per marker, in marker order.
@@ -77,7 +82,6 @@ export function measureAtMarkers(
   opts: MeasureOptions = {},
 ): MarkerMeasurement[] {
   const windowSec = opts.windowSec ?? DEFAULTS.windowSec;
-  const minStrength = opts.minStrength ?? DEFAULTS.minStrength;
   const minAbsLevel = opts.minAbsLevel ?? DEFAULTS.minAbsLevel;
   const envStep = Math.max(1, Math.floor((opts.envStepSec ?? DEFAULTS.envStepSec) * sampleRate));
 
@@ -114,11 +118,16 @@ export function measureAtMarkers(
     // a fixed ±120ms window reached BACK into the previous note and grabbed its (louder)
     // attack → false "early" measurement. Bounding to the midpoint keeps each marker in
     // its own note. Asymmetric: the back and forward reach are clamped independently.
+    // ASYMMETRIC reach: a player's attack lands AT or slightly before/after its marker —
+    // but the back-reach must stay SMALL so it doesn't catch the PREVIOUS note's still-
+    // ringing sustain (which would land the marker early on the wrong note). Forward reach
+    // can be larger (a dragged note is late). Both still neighbour-bounded so we never
+    // cross into the adjacent note's attack.
     const i = indexOf.get(markerSec) ?? 0;
     const prevGap = i > 0 ? markerSec - sorted[i - 1]! : Infinity;
     const nextGap = i < sorted.length - 1 ? sorted[i + 1]! - markerSec : Infinity;
-    const backSec = Math.min(windowSec, prevGap / 2);
-    const fwdSec = Math.min(windowSec, nextGap / 2);
+    const backSec = Math.min(BACK_REACH_SEC, prevGap * 0.4);
+    const fwdSec = Math.min(windowSec, nextGap * 0.6);
     const from = Math.max(0, centerBuf - Math.round(backSec * sampleRate));
     const to = Math.min(
       signal.length - envStep,
@@ -128,36 +137,46 @@ export function measureAtMarkers(
       return { markerSec, playerSec: null, errorSec: null, strength: 0 };
     }
 
-    // Build the local energy envelope and find the largest POSITIVE RISE (the attack
-    // edge) — and require it to clear the window's noise floor. The rise FOOT (where it
-    // leaves the floor) is the transient time. Loudness-invariant within the window.
-    let prevE = energyAt(from);
-    let envPeak = prevE;
-    let bestRise = 0;
-    let bestFoot = -1;
-    for (let i = from + envStep; i <= to; i += envStep) {
+    // Build the local energy envelope and its PEAK. The attack is the FIRST place energy
+    // crosses a low fraction of the window peak — the foot of the rise where the note
+    // leaves the floor — NOT the steepest rise (a bass body often SWELLS louder than the
+    // pluck, so "steepest rise" lands in the body, putting the marker mid-note. This was
+    // the visible "blue marker is way in the waveform, not on the transient" bug).
+    const idxs: number[] = [];
+    const envs: number[] = [];
+    let envPeak = 0;
+    for (let i = from; i <= to; i += envStep) {
       const e = energyAt(i);
+      idxs.push(i);
+      envs.push(e);
       if (e > envPeak) envPeak = e;
-      const rise = e - prevE;
-      if (rise > bestRise) {
-        bestRise = rise;
-        bestFoot = i - envStep; // foot of the steepest rise = the attack onset
-      }
-      prevE = e;
+    }
+    if (envPeak <= 1e-6) {
+      return { markerSec, playerSec: null, errorSec: null, strength: 0 };
     }
 
-    // Strength = the steepest rise relative to the window's peak energy. A real attack
-    // rises a large fraction of the note's energy fast; sustain/silence barely rises.
-    const strength = envPeak > 1e-6 ? Math.min(1, bestRise / envPeak) : 0;
-    // ABSOLUTE-LEVEL gate: the energy the attack rises TO must clear the take-relative
-    // floor. A real attack reaches a loud level; a decayed note's body ripple has high
-    // RELATIVE strength but LOW absolute energy → rejected (no phantom on a tail).
-    const levelAfter = bestFoot >= 0 ? energyAt(bestFoot + envStep) : 0;
-    if (bestFoot < 0 || strength < minStrength || levelAfter < absFloor) {
+    // FIRST crossing of 15% of the window peak = the attack edge. Scanning for the FIRST
+    // crossing (not the loudest/steepest) keeps the marker on the pluck and OFF the body.
+    const crossThr = envPeak * 0.15;
+    let attackIdx = -1;
+    for (let n = 0; n < envs.length; n++) {
+      if (envs[n]! >= crossThr) {
+        attackIdx = n > 0 ? idxs[n - 1]! : idxs[n]!; // step back to the foot of the rise
+        break;
+      }
+    }
+
+    // Strength = window peak relative to the TAKE peak (a real note's window is loud; a
+    // decayed-tail window is quiet → low strength → missed).
+    const strength = Math.min(1, envPeak / (takePeak || 1));
+    // ABSOLUTE-LEVEL gate: the window's peak energy must clear the take-relative floor.
+    // Rejects a marker placed over a previous note's decaying ripple (loud-relative,
+    // quiet-absolute) → no phantom.
+    if (attackIdx < 0 || envPeak < absFloor) {
       return { markerSec, playerSec: null, errorSec: null, strength };
     }
 
-    const playerSec = startedAtSec + bestFoot / sampleRate;
+    const playerSec = startedAtSec + attackIdx / sampleRate;
     return { markerSec, playerSec, errorSec: playerSec - markerSec, strength };
   });
 }
