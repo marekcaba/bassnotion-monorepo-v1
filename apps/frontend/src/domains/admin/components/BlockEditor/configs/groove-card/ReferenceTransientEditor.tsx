@@ -50,6 +50,37 @@ async function resolveStemUrl(refUrl: string): Promise<string> {
   return url;
 }
 
+import type {
+  PluckStyle,
+  MarkerRole,
+  MarkerConnection,
+  TechniqueType,
+} from '@bassnotion/contracts';
+import { sortMarkers, toOnsets } from './refMarkers';
+
+/**
+ * A marker as the EDITOR holds it internally: one OBJECT carrying its time AND its
+ * per-marker annotations, plus a stable editor-local `id`. This is the desync fix —
+ * because the editor re-sorts markers on every add/drag/delete, storing annotations in
+ * parallel arrays keyed by INDEX would scramble them the instant the sort permutes
+ * indices. With an object, every field rides the sort atomically and `id` keeps a
+ * selection stable across re-sorts. `id` is NOT persisted (assigned fresh on load); the
+ * annotations are zipped to ReferenceAnalysis parallel arrays only at the save boundary.
+ */
+export interface RefMarker {
+  /** Editor-local stable id (from a counter). Never persisted. */
+  id: number;
+  /** Marker time, stem-buffer seconds. (Was the bare number.) */
+  timeSec: number;
+  // ── per-marker authored annotation (all optional; null/empty = unannotated) ──
+  string?: 1 | 2 | 3 | 4 | 5 | 6 | null;
+  fret?: number | null;
+  pluckStyle?: PluckStyle | null;
+  techniques?: TechniqueType[];
+  role?: MarkerRole | null;
+  connectionFromPrev?: MarkerConnection | null;
+}
+
 interface Props {
   /** The bass stem URL (config.stems.bass). */
   stemUrl: string;
@@ -65,10 +96,19 @@ const DELETE_Y = 10; // y of the red × delete handle (top of each marker)
 const DRAG_Y = WAVE_H - 12; // y of the green drag handle (bottom of each marker)
 const HANDLE_R = 9; // hit radius for the top/bottom handles
 
+/** Monotonic editor-local id source for markers (stable across re-sorts). */
+function makeIdGen() {
+  let n = 0;
+  return () => ++n;
+}
+
 export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
   const [status, setStatus] = useState<string>('');
-  const [onsets, setOnsets] = useState<number[]>(value ?? []);
+  const nextId = useRef(makeIdGen()).current;
+  const [markers, setMarkers] = useState<RefMarker[]>(() =>
+    (value ?? []).map((t) => ({ id: nextId(), timeSec: t })),
+  );
   const [zoom, setZoom] = useState(1); // 1 = fit; higher = wider (scrollable)
   const [clickOnMarkers, setClickOnMarkers] = useState(true);
   const [playhead, setPlayhead] = useState<number | null>(null); // sec, null = stopped
@@ -80,8 +120,8 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const playCtxRef = useRef<AudioContext | null>(null);
   const playSrcRef = useRef<AudioBufferSourceNode | null>(null);
   const rafRef = useRef<number | null>(null);
-  const onsetsRef = useRef<number[]>(onsets);
-  onsetsRef.current = onsets;
+  const markersRef = useRef<RefMarker[]>(markers);
+  markersRef.current = markers;
 
   // Decode the stem + auto-detect transients whenever the URL changes. If the block
   // already has an approved set, KEEP it (don't clobber an admin's edits on reload);
@@ -114,11 +154,12 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
             mono,
             buf.sampleRate,
           );
-          setOnsets(detected);
-          onChangeRef.current(detected);
+          const fresh = detected.map((t) => ({ id: nextId(), timeSec: t }));
+          setMarkers(fresh);
+          onChangeRef.current(fresh.map((m) => m.timeSec));
           setStatus(`Auto-detected ${detected.length} transients — drag/add/delete to correct, then it saves.`);
         } else {
-          setOnsets(value);
+          setMarkers(value.map((t) => ({ id: nextId(), timeSec: t })));
           setStatus(`Loaded ${value.length} approved transients.`);
         }
       } catch (err) {
@@ -134,7 +175,8 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   const duration = buffer ? buffer.duration : 0;
   const mono = useMemo(() => (buffer ? toMono(buffer) : null), [buffer]);
 
-  // re-detect button (e.g. after replacing the stem, or to start over)
+  // re-detect button (e.g. after replacing the stem, or to start over). Fresh markers =
+  // any existing annotations are discarded (new transients are new notes).
   const redetect = useCallback(() => {
     if (!buffer || !mono) return;
     const detected = snapOnsetTimesToAttack(
@@ -142,15 +184,20 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       mono,
       buffer.sampleRate,
     );
-    setOnsets(detected);
-    onChangeRef.current(detected);
+    const fresh = detected.map((t) => ({ id: nextId(), timeSec: t }));
+    setMarkers(fresh);
+    onChangeRef.current(fresh.map((m) => m.timeSec));
     setStatus(`Re-detected ${detected.length} transients (snapped to attack).`);
-  }, [buffer, mono]);
+  }, [buffer, mono, nextId]);
 
-  const commit = useCallback((next: number[]) => {
-    const sorted = [...next].sort((a, b) => a - b);
-    setOnsets(sorted);
-    onChangeRef.current(sorted);
+  /** Commit a marker list: sort OBJECTS by time (each carries its own annotations, so
+   *  nothing desyncs across the sort) and emit. THIS STEP emits only onsetsSec — the
+   *  annotation arrays are wired in a later step; behaviour is unchanged from before.
+   *  sortMarkers/toOnsets are the unit-tested pure helpers (refMarkers.ts). */
+  const commit = useCallback((next: RefMarker[]) => {
+    const sorted = sortMarkers(next);
+    setMarkers(sorted);
+    onChangeRef.current(toOnsets(sorted));
   }, []);
 
   // ---- playback ----
@@ -188,7 +235,8 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
 
       // schedule a click on each marker in range
       if (clickOnMarkers) {
-        for (const t of onsetsRef.current) {
+        for (const m of markersRef.current) {
+          const t = m.timeSec;
           if (t < fromSec - 0.001 || t > end + 0.001) continue;
           const when = startAt + (t - fromSec);
           const osc = ctx.createOscillator();
@@ -231,9 +279,9 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
   /** Play just the note at a marker: from the marker to the next marker (or +0.5s). */
   const playNote = useCallback(
     (index: number) => {
-      const list = onsetsRef.current;
-      const from = list[index]!;
-      const next = list[index + 1];
+      const list = markersRef.current;
+      const from = list[index]!.timeSec;
+      const next = list[index + 1]?.timeSec;
       const to = Math.min(from + 0.6, next != null ? next : from + 0.6);
       play(from, to);
     },
@@ -286,8 +334,8 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
 
     // transient markers: a line, a DELETE handle (red ×) at the TOP, and a DRAG
     // handle (green dot) at the BOTTOM — two clear, separate hit zones.
-    for (const t of onsets) {
-      const px = (t / duration) * w;
+    for (const m of markers) {
+      const px = (m.timeSec / duration) * w;
       ctx.strokeStyle = '#6ad08c';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -321,7 +369,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       ctx.lineTo(px, WAVE_H);
       ctx.stroke();
     }
-  }, [mono, duration, onsets, zoom, playhead]);
+  }, [mono, duration, markers, zoom, playhead]);
 
   // ---- interaction ----
   const dragRef = useRef<{ index: number; downX: number; moved: boolean } | null>(null);
@@ -350,8 +398,8 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       const px = clientX - rect.left;
       let best = -1;
       let bestDist = 7; // grab radius px
-      onsets.forEach((t, i) => {
-        const mpx = (t / duration) * rect.width;
+      markers.forEach((m, i) => {
+        const mpx = (m.timeSec / duration) * rect.width;
         const d = Math.abs(mpx - px);
         if (d < bestDist) {
           bestDist = d;
@@ -360,7 +408,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       });
       return best >= 0 ? best : null;
     },
-    [onsets, duration],
+    [markers, duration],
   );
 
   const onPointerDown = useCallback(
@@ -370,19 +418,20 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       const y = canvasY(e.clientY);
       if (hit != null) {
         // TOP zone (the red ×) → DELETE. Also alt/right-click anywhere on a marker.
+        // Filter by index drops the object AND its annotations together — no off-by-one.
         if (Math.abs(y - DELETE_Y) < HANDLE_R || e.altKey || e.button === 2) {
-          commit(onsets.filter((_, i) => i !== hit));
+          commit(markers.filter((_, i) => i !== hit));
           return;
         }
         // anywhere else on the marker (incl. the bottom drag dot) → drag, or PLAY
         // the note on a plain click (hear if it's a real attack or noise).
         dragRef.current = { index: hit, downX: e.clientX, moved: false };
       } else {
-        // empty space → ADD a marker here immediately
-        commit([...onsets, xToTime(e.clientX)]);
+        // empty space → ADD a marker here immediately (a fresh, unannotated marker)
+        commit([...markers, { id: nextId(), timeSec: xToTime(e.clientX) }]);
       }
     },
-    [buffer, nearestMarker, canvasY, onsets, commit, xToTime],
+    [buffer, nearestMarker, canvasY, markers, commit, xToTime, nextId],
   );
 
   const onPointerMove = useCallback(
@@ -391,12 +440,14 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
       if (!d) return;
       if (Math.abs(e.clientX - d.downX) > CLICK_DELETE_PX) d.moved = true;
       if (d.moved) {
-        const next = [...onsets];
-        next[d.index] = xToTime(e.clientX);
-        setOnsets(next); // live update while dragging (commit on up)
+        // mutate only the dragged object's time; its annotations ride along untouched.
+        const next = markers.map((m, i) =>
+          i === d.index ? { ...m, timeSec: xToTime(e.clientX) } : m,
+        );
+        setMarkers(next); // live update while dragging (commit on up)
       }
     },
-    [onsets, xToTime],
+    [markers, xToTime],
   );
 
   const onPointerUp = useCallback(() => {
@@ -404,12 +455,12 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
     dragRef.current = null;
     if (!d) return;
     if (d.moved) {
-      commit(onsets); // persist the dragged position (sorted)
+      commit(markers); // persist the dragged position (objects sorted by time)
     } else {
       // a click without a drag = PLAY this note (hear if it's a real attack)
       playNote(d.index);
     }
-  }, [onsets, commit, playNote]);
+  }, [markers, commit, playNote]);
 
   if (!stemUrl) {
     return (
@@ -433,7 +484,7 @@ export function ReferenceTransientEditor({ stemUrl, value, onChange }: Props) {
           <input type="checkbox" checked={clickOnMarkers} onChange={(e) => setClickOnMarkers(e.target.checked)} />
           click on markers
         </label>
-        <span style={{ fontSize: 12, color: '#9aa0ad' }}>{onsets.length} transients</span>
+        <span style={{ fontSize: 12, color: '#9aa0ad' }}>{markers.length} transients</span>
         <button type="button" onClick={redetect} style={smallBtn}>
           Re-detect
         </button>
