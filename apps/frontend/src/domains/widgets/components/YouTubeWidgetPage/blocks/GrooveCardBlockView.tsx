@@ -1158,6 +1158,11 @@ export function GrooveCardBlockView({
             config.referenceAnalysis?.[playback.activeBassVariantId ?? 'main']
               ?.onsetsSec ?? null
           }
+          // the FULL authored analysis (string+fret+technique per marker) — the coach
+          // reads it to grade pitch ("right note?") + route technique per marker.
+          storedReferenceAnalysis={
+            config.referenceAnalysis?.[playback.activeBassVariantId ?? 'main'] ?? null
+          }
         />
       )}
     </div>

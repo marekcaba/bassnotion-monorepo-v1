@@ -39,6 +39,8 @@ import {
   scoreMarkerMeasurements,
 } from './timing-mirror/measureAtMarkers';
 import { verifyPitch } from './timing-mirror/verifyPitch';
+import { pitchVerdict } from './timing-mirror/pitchVerdict';
+import type { ReferenceAnalysis } from '@bassnotion/contracts';
 import {
   scoreOnsetsAgainstGrid,
   type GridParams,
@@ -79,6 +81,9 @@ interface TimingMirrorPanelProps {
   // active bassline. When present, the coach grades against THESE (ground truth),
   // not a live re-detection of the stem.
   storedReferenceOnsets: number[] | null;
+  // The FULL authored analysis (string+fret+technique per marker), for grading PITCH
+  // ("right note?") and routing technique. null when nothing authored.
+  storedReferenceAnalysis: ReferenceAnalysis | null;
 }
 
 // Flow built around how a musician actually plays: you can't press a button on
@@ -111,6 +116,7 @@ export function TimingMirrorPanel({
   currentBpm,
   originalBpm,
   storedReferenceOnsets,
+  storedReferenceAnalysis,
 }: TimingMirrorPanelProps) {
   // Coach mode: grade vs the ideal GRID, or vs the REFERENCE stem (the bass coach).
   const [coachMode, setCoachMode] = useState<'grid' | 'reference'>('grid');
@@ -144,6 +150,13 @@ export function TimingMirrorPanel({
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [refScore, setRefScore] = useState<ReferenceScore | null>(null);
+  // Pitch summary (the WHAT): right-note % across markers with an authored pitch + a
+  // confident detection. null = nothing to grade (no authored pitches yet).
+  const [pitchSummary, setPitchSummary] = useState<{
+    accuracy: number;
+    right: number;
+    graded: number;
+  } | null>(null);
   const [vizData, setVizData] = useState<VizData | null>(null);
   // The input latency we measured + already subtracted from the start anchor — so
   // we can SEE how much of the old +77ms was capture latency (vs real anticipation).
@@ -320,8 +333,7 @@ export function TimingMirrorPanel({
 
         // PITCH (the "WHAT"): for each HIT, detect the player's fundamental in a window
         // starting ~12ms after the found attack (skip the broadband pluck, land on the
-        // steady tone). Null = no confident pitch (staccato/ghost). Stored per marker for
-        // the dump now; the chart-label compare ("right note?") is the next step.
+        // steady tone). Null = no confident pitch (staccato/ghost).
         const pitchPerMarker = measurements.map((m) => {
           if (m.playerSec == null) return null;
           const onsetBuf = Math.round((m.playerSec - startedAt) * sampleRate);
@@ -330,6 +342,28 @@ export function TimingMirrorPanel({
           if (winStart + winLen > signal.length) return null;
           return verifyPitch(signal.subarray(winStart, winStart + winLen), sampleRate);
         });
+
+        // COMPARE detected pitch to the AUTHORED note (string+fret per marker → expected
+        // pitch). Verdict: correct / octave (slip, graded right) / wrong / unknown / n/a.
+        const refBassType = storedReferenceAnalysis?.bassType ?? '4';
+        const verdictPerMarker = measurements.map((_m, i) => {
+          const note = {
+            string: storedReferenceAnalysis?.stringNumbers?.[i] ?? null,
+            fret: storedReferenceAnalysis?.frets?.[i] ?? null,
+            role: storedReferenceAnalysis?.roles?.[i] ?? null,
+          };
+          return pitchVerdict(pitchPerMarker[i] ?? null, note, refBassType);
+        });
+        // Summary: of the markers that HAVE an authored pitch and a confident detection,
+        // how many were the right note. (octave counts as right.)
+        const pitchGraded = verdictPerMarker.filter(
+          (v) => v.verdict === 'correct' || v.verdict === 'octave' || v.verdict === 'wrong',
+        );
+        const pitchRight = pitchGraded.filter(
+          (v) => v.verdict === 'correct' || v.verdict === 'octave',
+        ).length;
+        const pitchAccuracy =
+          pitchGraded.length > 0 ? pitchRight / pitchGraded.length : null;
 
         // Adapt to the existing ReferenceScore shape the UI consumes. No more "noise"
         // (we never detect phantom onsets); matched = hits, missed = no transient found.
@@ -365,6 +399,15 @@ export function TimingMirrorPanel({
           },
         };
         setRefScore(score);
+        setPitchSummary(
+          pitchAccuracy == null
+            ? null
+            : {
+                accuracy: Math.round(pitchAccuracy * 100),
+                right: pitchRight,
+                graded: pitchGraded.length,
+              },
+        );
         // DEBUG DUMP (per-marker diagnostic): every marker, where the player transient
         // was found (or missed), and the offset. copy(window.__bassMatchDebug).
         try {
@@ -373,21 +416,28 @@ export function TimingMirrorPanel({
             JSON.stringify({
               markers: measurements.map((m, i) => {
                 const p = pitchPerMarker[i];
+                const v = verdictPerMarker[i]!;
                 return {
                   marker: r2(m.markerSec),
                   player: m.playerSec == null ? null : r2(m.playerSec),
                   errMs: m.errorSec == null ? null : Math.round(m.errorSec * 1000),
                   strength: Math.round(m.strength * 100) / 100,
-                  // pitch (the WHAT): detected MIDI + cents + confidence, or null.
+                  // pitch (the WHAT): detected MIDI vs the AUTHORED expected MIDI + verdict.
                   midi: p ? p.midi : null,
                   cents: p ? p.cents : null,
                   pConf: p ? Math.round(p.confidence * 100) / 100 : null,
+                  expectedMidi: v.expected,
+                  pitch: v.verdict, // correct/octave/wrong/unknown/n/a
                 };
               }),
               hitCount: mScore.hitCount,
               missedCount: mScore.missedCount,
               offsetMs: Math.round(mScore.offsetMs),
               jitterMs: Math.round(mScore.jitterMs),
+              pitchRight,
+              pitchGraded: pitchGraded.length,
+              pitchAccuracy:
+                pitchAccuracy == null ? null : Math.round(pitchAccuracy * 100),
             });
         } catch {
           /* best-effort */
@@ -413,6 +463,7 @@ export function TimingMirrorPanel({
       } else {
         setRefScore(null);
         setVizData(null);
+        setPitchSummary(null);
       }
     },
     [
@@ -429,6 +480,7 @@ export function TimingMirrorPanel({
       originalBpm,
       expectedAttacks,
       storedReferenceOnsets,
+      storedReferenceAnalysis,
     ],
   );
 
@@ -818,6 +870,15 @@ export function TimingMirrorPanel({
                 color={refScore.coverage > 0.85 ? '#6ad08c' : '#e0b24a'}
                 sub={`${refScore.matchedCount} hit · ${refScore.missedCount} missed · ${refScore.noiseCount} noise`}
               />
+              {/* PITCH (the WHAT) — right-note % vs the authored string+fret. */}
+              {pitchSummary && (
+                <Stat
+                  label="right notes"
+                  value={`${pitchSummary.accuracy}%`}
+                  color={pitchSummary.accuracy >= 85 ? '#6ad08c' : '#e0b24a'}
+                  sub={`${pitchSummary.right}/${pitchSummary.graded} notes (vs authored)`}
+                />
+              )}
             </div>
           )}
           {/* THE VISUALIZER — see the take over the reference, the transients, the
