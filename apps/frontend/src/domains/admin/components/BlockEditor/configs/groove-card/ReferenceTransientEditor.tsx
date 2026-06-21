@@ -110,10 +110,15 @@ export function ReferenceTransientEditor({
   stemUrl,
   value,
   onChange,
-  bassType = '4',
+  bassType: bassTypeProp = '4',
 }: Props) {
   const [buffer, setBuffer] = useState<AudioBuffer | null>(null);
   const [status, setStatus] = useState<string>('');
+  // Bass type the string/fret author against (4/5/6-string). Admin-chosen here and stored
+  // in the analysis so it self-describes (no config-level bassType field exists yet).
+  const [bassType, setBassType] = useState<'4' | '5' | '6'>(
+    value?.bassType ?? bassTypeProp,
+  );
   const nextId = useRef(makeIdGen()).current;
   // markers carry their authored annotations; fromAnalysis unzips a stored blob and
   // assigns fresh editor-local ids (and length-asserts the parallel arrays).
@@ -220,6 +225,22 @@ export function ReferenceTransientEditor({
       commit(markersRef.current.map((m) => (m.id === id ? { ...m, ...patch } : m)));
     },
     [commit],
+  );
+
+  /** Change the bass type (4/5/6) and re-emit so the new tuning saves with the analysis.
+   *  Markers are unchanged; a string number now out of range for the smaller bass is
+   *  cleared so it can't resolve to a wrong pitch. */
+  const changeBassType = useCallback(
+    (bt: '4' | '5' | '6') => {
+      const max = bt === '4' ? 4 : bt === '5' ? 5 : 6;
+      setBassType(bt);
+      const next = markersRef.current.map((m) =>
+        m.string != null && m.string > max ? { ...m, string: null } : m,
+      );
+      setMarkers(next);
+      onChangeRef.current(toAnalysis(next, bt));
+    },
+    [],
   );
 
   // ---- playback ----
@@ -511,6 +532,19 @@ export function ReferenceTransientEditor({
           click on markers
         </label>
         <span style={{ fontSize: 12, color: '#9aa0ad' }}>{markers.length} transients</span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#9aa0ad' }}>
+          bass
+          <select
+            value={bassType}
+            onChange={(e) => changeBassType(e.target.value as '4' | '5' | '6')}
+            style={{ ...smallBtn, padding: '2px 4px' }}
+            title="how many strings the string/fret author against"
+          >
+            <option value="4">4-string</option>
+            <option value="5">5-string (low B)</option>
+            <option value="6">6-string (low B + high C)</option>
+          </select>
+        </label>
         <button type="button" onClick={redetect} style={smallBtn}>
           Re-detect
         </button>

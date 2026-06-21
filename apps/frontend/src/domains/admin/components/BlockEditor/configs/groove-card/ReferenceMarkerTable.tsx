@@ -211,8 +211,8 @@ export function ReferenceMarkerTable({
                       onClick={(e) => e.stopPropagation()}
                       style={sel}
                     >
-                      <option value="">finger</option>
-                      {PLUCK_STYLES.map((p) => (
+                      <option value="">finger (default)</option>
+                      {PLUCK_STYLES.filter((p) => p !== 'finger').map((p) => (
                         <option key={p} value={p}>
                           {PLUCK_LABEL[p]}
                         </option>
