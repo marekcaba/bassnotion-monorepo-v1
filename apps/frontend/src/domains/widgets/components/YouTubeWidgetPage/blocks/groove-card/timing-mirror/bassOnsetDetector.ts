@@ -178,12 +178,21 @@ export function normalizePeak(signal: Float32Array, target = 0.97): Float32Array
 }
 
 /**
- * Snap onset TIMES to the actual ATTACK. Spectral-flux reports the FFT frame START
- * (the rising energy edge), ~0-21ms BEFORE the perceptual attack peak — markers/ticks
- * land too early (visible vs the waveform; Ableton lands on the peak). For each
- * onset, walk forward a short window and move it to where the amplitude first reaches
- * a high fraction of the window's peak — the attack edge. Used for BOTH the reference
- * (admin editor) and the live player take, so the two align on the same convention.
+ * Snap onset TIMES to the actual ATTACK EDGE — the point of STEEPEST ENERGY RISE.
+ *
+ * THE BUG this replaces: the old version walked FORWARD to "50% of the window's PEAK
+ * sample". On a sustaining bass note the BODY swells LOUDER than the pluck (the
+ * fundamental builds after the transient), so "50% of peak" landed DEEP IN THE BODY,
+ * not on the attack — the visible "blue ticks sit in the middle of the note" bug.
+ * Same flaw produced multiple ticks reading as noise.
+ *
+ * THE FIX: a transient is where energy RISES FASTEST, regardless of how loud the body
+ * later becomes. We build a short-time energy envelope around the onset and return the
+ * sample of MAXIMUM POSITIVE SLOPE (the leading edge of the pluck). The window is
+ * CENTERED on the detector's onset (look back a little + forward), so the snap can pull
+ * the tick EARLIER toward the true pluck — not only later. Loudness-invariant: a quiet
+ * pluck before a loud body still wins on slope. Used for BOTH the reference (admin
+ * editor) and the live player take, so the two align on the same convention.
  */
 export function snapOnsetTimesToAttack(
   onsetsSec: number[],
@@ -191,26 +200,82 @@ export function snapOnsetTimesToAttack(
   sampleRate: number,
   lookSec = 0.03,
 ): number[] {
-  const lookSamples = Math.floor(lookSec * sampleRate);
-  return onsetsSec.map((t) => {
-    const start = Math.floor(t * sampleRate);
-    const end = Math.min(signal.length, start + lookSamples);
-    if (end <= start) return t;
-    let peak = 0;
-    for (let i = start; i < end; i++) {
-      const a = Math.abs(signal[i] ?? 0);
-      if (a > peak) peak = a;
+  // Short-time energy envelope step (~1ms) — smooths sample-to-sample wobble so the
+  // slope reflects the note's RISE, not zero-crossing noise.
+  const envStep = Math.max(1, Math.floor(0.001 * sampleRate));
+  const lookFwd = Math.floor(lookSec * sampleRate);
+  // Look BACK ~12ms too: the detector's flux peak can sit just AFTER the true pluck
+  // edge, so the steepest rise may be slightly before the reported onset.
+  const lookBack = Math.floor(0.012 * sampleRate);
+
+  // Local RMS energy at sample i (over [i, i+envStep)).
+  const energyAt = (i: number): number => {
+    let s = 0;
+    const end = Math.min(signal.length, i + envStep);
+    for (let k = i; k < end; k++) {
+      const v = signal[k] ?? 0;
+      s += v * v;
     }
-    if (peak <= 0) return t;
-    // 50% of the local peak catches the attack EDGE (the steep rise), not the peak
-    // itself — lands closer to the true pluck. (70% sat slightly late, esp. on soft
-    // attacks.) Same threshold for reference + player so the two stay comparable.
-    const thr = peak * 0.5;
-    for (let i = start; i < end; i++) {
-      if (Math.abs(signal[i] ?? 0) >= thr) return i / sampleRate;
+    return Math.sqrt(s / Math.max(1, end - i));
+  };
+
+  return onsetsSec.map((t) => {
+    const center = Math.floor(t * sampleRate);
+    const start = Math.max(0, center - lookBack);
+    const end = Math.min(signal.length - envStep, center + lookFwd);
+    if (end <= start) return t;
+
+    // Build the envelope across the window + find its PEAK (so the threshold is
+    // relative to THIS note, loudness-invariant).
+    const idxs: number[] = [];
+    const envs: number[] = [];
+    let envMax = 0;
+    for (let i = start; i <= end; i += envStep) {
+      const e = energyAt(i);
+      idxs.push(i);
+      envs.push(e);
+      if (e > envMax) envMax = e;
+    }
+    if (envMax <= 0) return t;
+
+    // The attack EDGE = the FIRST place energy crosses a low fraction of the note's
+    // own peak (the foot of the rise). Scanning for the FIRST crossing — not the
+    // steepest/loudest — is what keeps us on the sharp pluck and OFF the louder body
+    // swell that comes after it. 12% of the note peak clears the pre-note floor while
+    // still catching the very start of the transient.
+    const thr = envMax * 0.12;
+    for (let n = 0; n < envs.length; n++) {
+      if (envs[n]! >= thr) {
+        // step back one env-hop to the foot of the rise (where it left the floor)
+        const foot = n > 0 ? idxs[n - 1]! : idxs[n]!;
+        return foot / sampleRate;
+      }
     }
     return t;
   });
+}
+
+/**
+ * Merge onsets that landed within `minGapSec` of each other — the cleanup after
+ * snapping. Spectral-flux can fire 2-3 times across one bass note's swelling body;
+ * the slope-snap pulls those back toward the SAME attack edge, so they become near-
+ * duplicates. Collapse each cluster to its EARLIEST member (the true attack). This is
+ * what kills the "one note, two or three blue ticks" over-trigger that read as noise.
+ * Expects ascending input; returns ascending.
+ */
+export function dedupNearbyOnsets(onsetsSec: number[], minGapSec = 0.07): number[] {
+  if (onsetsSec.length === 0) return [];
+  const sorted = [...onsetsSec].sort((a, b) => a - b);
+  const out: number[] = [sorted[0]!];
+  let lastSeen = sorted[0]!;
+  for (let i = 1; i < sorted.length; i++) {
+    // Chain against the PREVIOUS onset (last seen), not the last KEPT one: a slow
+    // multi-trigger across one note (0.10, 0.135, 0.17 — each ~35ms apart) is one
+    // note and must fully collapse, even though 0.17 is >minGap from the kept 0.10.
+    if (sorted[i]! - lastSeen >= minGapSec) out.push(sorted[i]!);
+    lastSeen = sorted[i]!;
+  }
+  return out;
 }
 
 /**

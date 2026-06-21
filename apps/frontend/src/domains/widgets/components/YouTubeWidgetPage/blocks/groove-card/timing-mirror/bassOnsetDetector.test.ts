@@ -5,6 +5,8 @@ import {
   adaptiveConfidenceFloor,
   highPassInPlace,
   normalizePeak,
+  snapOnsetTimesToAttack,
+  dedupNearbyOnsets,
 } from './bassOnsetDetector';
 
 // Step 2 of the timing-mirror spike (docs/TIMING_MIRROR_SPIKE_PLAN.md): prove the
@@ -195,6 +197,61 @@ describe('normalizePeak', () => {
   it('is a no-op on silence', () => {
     const z = new Float32Array(8);
     expect(Array.from(normalizePeak(z))).toEqual(Array.from(z));
+  });
+});
+
+describe('snapOnsetTimesToAttack — lands on the attack EDGE, not the loud body', () => {
+  const sr = 48000;
+  // A bass note: a SHARP but QUIET pluck transient at 0.100s, then a LOUDER sustaining
+  // body that swells to its peak ~40ms later. The old "50% of peak" snap walked into
+  // the body; the slope-snap must stay on the pluck edge.
+  function quietAttackLoudBody(): Float32Array {
+    const x = new Float32Array(sr); // 1s
+    const atk = Math.floor(0.1 * sr);
+    // pluck: fast rise to 0.3 over ~3ms, the EDGE we want to snap to
+    for (let i = 0; i < Math.floor(0.003 * sr); i++) {
+      x[atk + i] = 0.3 * (i / Math.floor(0.003 * sr));
+    }
+    // body: from the pluck, swell to 0.9 (LOUDER than the attack) over ~40ms, then decay
+    const bodyStart = atk + Math.floor(0.003 * sr);
+    const bodyLen = Math.floor(0.2 * sr);
+    for (let i = 0; i < bodyLen; i++) {
+      const swell = Math.min(1, i / Math.floor(0.04 * sr));
+      const decay = Math.exp(-i / (0.15 * sr));
+      x[bodyStart + i] = 0.9 * swell * decay * Math.sin((2 * Math.PI * 60 * i) / sr);
+    }
+    return x;
+  }
+
+  it('snaps to the pluck edge (~0.100s), NOT the louder body 40ms later', () => {
+    const sig = quietAttackLoudBody();
+    // detector reports the onset a touch late (as spectral-flux does): 0.108s
+    const [snapped] = snapOnsetTimesToAttack([0.108], sig, sr);
+    // must land near the 0.100s pluck, well before the 0.143s body peak
+    expect(snapped!).toBeGreaterThan(0.09);
+    expect(snapped!).toBeLessThan(0.115);
+  });
+
+  it('can pull an onset EARLIER toward the pluck (looks back, not only forward)', () => {
+    const sig = quietAttackLoudBody();
+    const [snapped] = snapOnsetTimesToAttack([0.108], sig, sr);
+    expect(snapped!).toBeLessThan(0.108); // moved earlier, onto the rising edge
+  });
+});
+
+describe('dedupNearbyOnsets — collapses multi-trigger to one attack', () => {
+  it('merges onsets within the gap, keeping the earliest (the true attack)', () => {
+    // one note that fired 3 times across its body: 0.100, 0.135, 0.170
+    const merged = dedupNearbyOnsets([0.1, 0.135, 0.17], 0.07);
+    expect(merged).toEqual([0.1]); // all within 70ms chain → one attack kept
+  });
+  it('keeps genuinely separate notes', () => {
+    const merged = dedupNearbyOnsets([0.1, 0.35, 0.6], 0.07);
+    expect(merged).toEqual([0.1, 0.35, 0.6]);
+  });
+  it('is order-independent (sorts first) and handles empty', () => {
+    expect(dedupNearbyOnsets([0.3, 0.1, 0.32], 0.07)).toEqual([0.1, 0.3]);
+    expect(dedupNearbyOnsets([])).toEqual([]);
   });
 });
 

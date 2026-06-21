@@ -31,6 +31,7 @@ import {
   detectBassOnsets,
   detectBassOnsetsAdaptive,
   snapOnsetTimesToAttack,
+  dedupNearbyOnsets,
   normalizePeak,
 } from './timing-mirror/bassOnsetDetector';
 import {
@@ -238,15 +239,45 @@ export function TimingMirrorPanel({
             minOnsetGapSeconds: minGapMs / 1000,
             minRelativeStrength: minRelStrength,
           });
-      // Snap player onsets to the ATTACK (spectral-flux fires on the early rising
-      // edge — the same correction the reference markers get, so both align on one
-      // convention; this was the visible "blue ticks land before the attack" bug).
+      // Snap player onsets to the ATTACK EDGE (steepest energy RISE), then DEDUP the
+      // ones that collapsed onto the same attack. Fixes (1) ticks landing in the loud
+      // note BODY instead of the sharp pluck, and (2) one note getting 2-3 ticks (the
+      // flux fires across the swelling body → snap pulls them to the same edge → merge).
+      // Same convention for reference markers + player take.
       const snapped = snapOnsetTimesToAttack(
         onsets.map((o) => o.time),
         signal,
         sampleRate,
       );
-      const absOnsets = snapped.map((t) => t + startedAt);
+      const deduped = dedupNearbyOnsets(snapped);
+      const absOnsets = deduped.map((t) => t + startedAt);
+
+      // DEBUG DUMP (dev probe): stash the take + each detection stage on window so we
+      // can verify where attacks vs ticks land on the REAL signal instead of guessing.
+      // In console: copy(window.__bassTakeDebug) → paste back. Downsampled envelope +
+      // raw onset/snap/dedup times. No-op unless the probe flag is on (panel is gated).
+      try {
+        const dsStep = Math.max(1, Math.floor(sampleRate * 0.002)); // ~2ms env
+        const env: number[] = [];
+        for (let i = 0; i + dsStep <= signal.length; i += dsStep) {
+          let p = 0;
+          for (let k = i; k < i + dsStep; k++) {
+            const a = Math.abs(signal[k] ?? 0);
+            if (a > p) p = a;
+          }
+          env.push(Math.round(p * 1000) / 1000);
+        }
+        (window as unknown as Record<string, unknown>).__bassTakeDebug = JSON.stringify({
+          sampleRate,
+          envStepSec: dsStep / sampleRate,
+          envPeakPerStep: env,
+          rawOnsetsSec: onsets.map((o) => Math.round(o.time * 1000) / 1000),
+          snappedSec: snapped.map((t) => Math.round(t * 1000) / 1000),
+          dedupedSec: deduped.map((t) => Math.round(t * 1000) / 1000),
+        });
+      } catch {
+        /* dump is best-effort */
+      }
 
       // GRID score (always — the baseline, and the grid-mode result).
       const { stats, slots, skippedBeforeGrid, collisionRate } =
