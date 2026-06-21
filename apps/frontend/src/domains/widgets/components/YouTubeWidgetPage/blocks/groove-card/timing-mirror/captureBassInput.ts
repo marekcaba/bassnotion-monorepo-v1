@@ -42,8 +42,18 @@ export interface BassCapture {
   /** The engine AudioContext the capture is bound to (the groove clock). */
   ctx: AudioContext;
   /** audioContext.currentTime at the moment recording started — the offset that
-   *  turns buffer-relative onset times into absolute engine-clock times. */
+   *  turns buffer-relative onset times into absolute engine-clock times.
+   *  ALREADY latency-compensated: see inputLatencySec. A note plucked at real
+   *  ctx-time T lands in the recorded buffer at offset (T − startedAtCtxTime),
+   *  because we PULLED this anchor BACK by inputLatencySec so the file's sample-0
+   *  maps to the real moment the audio entered the interface, not the later moment
+   *  the recorder received it. */
   startedAtCtxTime: number;
+  /** The input round-trip latency (seconds) we subtracted from the start anchor —
+   *  the interface→OS→browser-capture delay that the recorded file carries but the
+   *  player can't HEAR (they monitor zero-latency through the interface). This is
+   *  what made every detected onset land LATE vs the (latency-free) reference. */
+  inputLatencySec: number;
   /** Stop recording and return the captured mono samples + the engine sample rate.
    *  Resolves with null if nothing was captured. */
   stop: () => Promise<{ signal: Float32Array; sampleRate: number } | null>;
@@ -87,6 +97,23 @@ export async function startBassCapture(
 
   const source = ctx.createMediaStreamSource(stream);
   const recorder = new MediaRecorder(stream);
+
+  // INPUT-LATENCY compensation — the fix for "my transients show up late even
+  // though I played spot-on". The recorded file carries the input round-trip
+  // delay (interface buffer → OS → browser capture graph). The player NEVER hears
+  // this: they monitor zero-latency through the interface, so bass + backing are
+  // in sync in their phones. But that delay shifts every captured sample LATER in
+  // real time than `ctx.currentTime` at recorder.start() assumes → every detected
+  // onset lands late vs the latency-free reference. We measure it and PULL the
+  // start anchor back by it, so the buffer's sample-0 maps to the real moment the
+  // audio entered the rig.
+  //
+  //   inputLatency ≈ ctx.baseLatency (the capture-graph processing buffer)
+  //                + the device's own input latency (track.getSettings().latency,
+  //                  seconds — present on Chromium for many interfaces).
+  // Both are best-effort: absent values default to 0 and we fall back to the
+  // per-take gross-offset calibration that already runs downstream.
+  const inputLatencySec = measureInputLatency(ctx, stream);
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
@@ -129,8 +156,14 @@ export async function startBassCapture(
     }
   });
 
-  const startedAtCtxTime = ctx.currentTime;
+  // Pull the anchor BACK by the input latency so buffer-time 0 = the real moment
+  // the audio entered the interface (not the later moment the recorder saw it).
+  const startedAtCtxTime = ctx.currentTime - inputLatencySec;
   recorder.start();
+  logger.info('Bass capture armed', {
+    inputLatencyMs: Math.round(inputLatencySec * 1000),
+    baseLatencyMs: Math.round((ctx.baseLatency ?? 0) * 1000),
+  });
 
   const stop = (): Promise<{ signal: Float32Array; sampleRate: number } | null> =>
     new Promise((resolve) => {
@@ -168,7 +201,45 @@ export async function startBassCapture(
       recorder.stop();
     });
 
-  return { ctx, startedAtCtxTime, stop, dispose };
+  return { ctx, startedAtCtxTime, inputLatencySec, stop, dispose };
+}
+
+/**
+ * Best-effort input round-trip latency (seconds) for a capture: the delay between
+ * audio entering the interface and the recorder/graph receiving it. We subtract
+ * this from the start anchor so detected onsets land on the real play-time, not
+ * `latency` later.
+ *
+ *   ctx.baseLatency            — the AudioContext's own processing buffer (output
+ *                                side, but it's the graph's block latency and the
+ *                                closest proxy the spec gives us for the capture
+ *                                graph; typically ~3–12ms).
+ *   track.getSettings().latency — the input DEVICE's latency in SECONDS (Media
+ *                                Track spec; Chromium reports it for many real
+ *                                interfaces — a Clarett commonly ~20–40ms). This
+ *                                is the big one and the part that varies by rig.
+ *
+ * Anything unavailable contributes 0; the downstream per-take gross-offset
+ * calibration still mops up whatever this can't measure, so over/under-shoot here
+ * degrades gracefully rather than breaking the score.
+ */
+function measureInputLatency(ctx: AudioContext, stream: MediaStream): number {
+  const base = typeof ctx.baseLatency === 'number' ? ctx.baseLatency : 0;
+  let deviceLatency = 0;
+  try {
+    const track = stream.getAudioTracks()[0];
+    // `latency` is in SECONDS per the MediaTrackSettings spec; not in the TS lib's
+    // MediaTrackSettings type yet, so read it through a widened view.
+    const settings = track?.getSettings() as
+      | (MediaTrackSettings & { latency?: number })
+      | undefined;
+    if (settings && typeof settings.latency === 'number' && settings.latency > 0) {
+      deviceLatency = settings.latency;
+    }
+  } catch {
+    /* getSettings unsupported — fall back to baseLatency only */
+  }
+  return base + deviceLatency;
 }
 
 /** Read ctx.state as a runtime value WITHOUT TS's control-flow narrowing. Earlier

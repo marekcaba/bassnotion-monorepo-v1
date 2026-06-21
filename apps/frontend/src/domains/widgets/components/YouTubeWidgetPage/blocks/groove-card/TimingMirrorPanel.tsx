@@ -139,6 +139,9 @@ export function TimingMirrorPanel({
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [refScore, setRefScore] = useState<ReferenceScore | null>(null);
   const [vizData, setVizData] = useState<VizData | null>(null);
+  // The input latency we measured + already subtracted from the start anchor — so
+  // we can SEE how much of the old +77ms was capture latency (vs real anticipation).
+  const [measuredLatencyMs, setMeasuredLatencyMs] = useState<number | null>(null);
   const captureRef = useRef<BassCapture | null>(null);
   // Live-tunable onset params — a real hot DI bass over-triggers vs the synthetic
   // test signal, so we dial these against the ACTUAL bass (ear-first) instead of
@@ -335,6 +338,8 @@ export function TimingMirrorPanel({
         setPhase('error');
         return;
       }
+      // Record how much input latency we compensated (for the debug readout).
+      setMeasuredLatencyMs(Math.round(capture.inputLatencySec * 1000));
       // Keep the raw take so slider changes re-score instantly.
       lastSignalRef.current = {
         signal: captured.signal,
@@ -708,14 +713,22 @@ export function TimingMirrorPanel({
           {vizData && <TimingMirrorVisualizer data={vizData} />}
 
           <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>
-            reference vs player onset-by-onset. capture offset{' '}
+            {measuredLatencyMs != null && (
+              <>
+                <span style={{ color: '#7aa2ff' }}>
+                  input latency auto-corrected: −{measuredLatencyMs}ms
+                </span>{' '}
+                (subtracted from the take BEFORE detection — this is why the blue ticks
+                should now sit ON your attacks, not after them). <br />
+              </>
+            )}
+            residual offset{' '}
             {refScore.offsetMs >= 0 ? '+' : ''}
-            {refScore.offsetMs.toFixed(1)}ms — this is the CONSTANT lag of the recorded
-            file vs the reference. You monitor zero-latency through your interface, so
-            you can't hear it; it's the input round-trip (interface → OS → browser
-            capture) landing only on the take. It's CALIBRATED OUT before grading, never
-            counted as your error. The grade is the de-meaned spread (your actual feel).
-            Step 4 = timing only; length + dynamics are steps 5-6.
+            {refScore.offsetMs.toFixed(1)}ms — what's LEFT after the auto-correction.
+            Near 0 = the latency fully explained the lag. A real non-zero residual =
+            genuine anticipation/drag in your playing. It's still calibrated out before
+            grading. The grade is the de-meaned spread (your actual feel). Step 4 =
+            timing only; length + dynamics are steps 5-6.
           </div>
         </div>
       )}
