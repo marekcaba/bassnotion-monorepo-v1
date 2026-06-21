@@ -189,7 +189,7 @@ describe('normalizePeak', () => {
   it('preserves shape (a copy, ratios intact) and does not mutate input', () => {
     const sig = Float32Array.from([0.1, -0.2, 0.05]);
     const n = normalizePeak(sig);
-    expect(sig[0]).toBe(0.1); // input untouched
+    expect(sig[0]).toBeCloseTo(0.1, 5); // input untouched (Float32 precision)
     expect(n[1]! / n[0]!).toBeCloseTo(-2, 5); // ratio preserved
   });
   it('is a no-op on silence', () => {
