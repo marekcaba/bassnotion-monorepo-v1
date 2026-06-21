@@ -6,6 +6,50 @@ Build-ready, layered on the sync-proven timing+pitch base
 
 ---
 
+## 0. THE AUTHORED-ANNOTATION MODEL (decided 2026-06-21 — supersedes auto-classification)
+
+**Two product decisions reshape this plan and make it easier + more real-world possible:**
+
+1. **Recording + the coach's per-onset labels = the ground truth.** The teacher records the take
+   AND annotates each onset at authoring time ("this is a ghost, this is a hammer-on start, this is
+   a pull-off, this note is muted"). The MIDI chart drops to an OPTIONAL authoring-time cross-check
+   (catch a slip), never a grade-time source. This is what makes "play it exactly like me" literally
+   what the system measures — the recording carries the coach's exact feel/push/ghost/length, and
+   the labels tell the scorer which dimension matters per note.
+
+2. **Outcome-first technique grading.** A hammered/pulled/slid note is graded on whether the RIGHT
+   PITCH arrived at the RIGHT TIME/LENGTH (verification against a known target — reliable), with the
+   MECHANISM (hammered vs re-plucked) reported as a bonus "detected" hint only when confident. A
+   hammer-on that lands the note clean *is* a good hammer-on.
+
+**Why this is the big simplification:** it moves the hard CLASSIFICATION problem from grade-time
+(automatic, on an unknown student signal — ~coin-flip on a DI) to authoring-time (the human teacher,
+once, on their own recording where they know the truth). The detector stops needing to be smart; it
+only MEASURES the student against a known, hand-blessed answer. This:
+- removes the two worst auto-detection risks — technique and ghost become LABELS not detections;
+- makes the chart optional (recording + labels are truth; MIDI is a nice-to-have cross-check) →
+  the fragile chart↔recording index-pairing problem largely evaporates;
+- promotes hammer/pull/slide from "aspirational, deferred" (old §4) to **gradeable on OUTCOME now**,
+  in the $34 tier — the mechanism is a bonus, the outcome (pitch+time+length) is the grade.
+
+**The scorer becomes LABEL-DRIVEN:** each onset's authored label selects which measurements apply.
+`'normal'` → timing+pitch (+length/dynamics if premium). `'ghost'` → timing + dynamics-contrast
+(don't expect strong pitch). `'hammer-start'`/`'pull-start'` → did the target pitch arrive at the
+right time/length (outcome); mechanism hint if confident. `'muted'` → percussive character, lenient
+pitch. The label is the teacher's instruction to the grader.
+
+**Data:** add `technique?: OnsetTechnique[]` to `ReferenceAnalysis` (index-aligned to `onsetsSec`),
+`OnsetTechnique = 'normal'|'ghost'|'hammer-start'|'pull-start'|'slide'|'muted'`. Authored + approved
+in the reference editor (Step 4 gets a per-marker technique dropdown). All optional → no migration.
+
+**The one honest catch (unchanged by labels):** even with your label, detecting whether the STUDENT
+actually hammered vs re-plucked is the same coin-flip on their DI. But your label narrows it from
+blind classification to "did the target pitch arrive near here (with/without a strong transient)" —
+a verification, not a classification. Where even that's unreliable, we grade the OUTCOME and skip the
+mechanism. Never claim mechanism precision we can't deliver.
+
+---
+
 ## 1. THE LAYERED MODEL
 
 One **base grader** ($24, `bass_coach_basic`) scores **timing + pitch** vs the real recorded
@@ -92,13 +136,30 @@ low `dynamics` + short `lengthsSec`. Chart = `is_ghost_note`/`is_muted`/`mute_ty
 
 ---
 
-## 4. HAMMER / PULL / SLIDE — DEFER to a separate "Technique" tier
-NOT $24, NOT $34. Reasons: (1) breaks the one-transient→one-pair invariant (legato = 1 transient / 2+
-pitches; needs a parallel continuous-f0 contour machine + a `legatoSegments?` field + a new admin
-contour-approval UI). (2) Fast H/P vs fast re-pluck = ASPIRATIONAL (~coin-flip-70%, can't signal when
-guessing); `minOnsetGapSeconds:0.12` (`bassOnsetDetector.ts:63`) can't place two events <120ms apart.
-(3) Brand risk — advanced players catch wrong calls instantly. Label a future tier "Technique, beta,"
-slides-first.
+## 4. HAMMER / PULL / SLIDE — graded ON OUTCOME in $34 (revised per §0 decisions)
+
+**Revised:** the authored-annotation + outcome-first decisions (§0) move the *outcome* grade of
+hammer/pull/slide INTO the $34 premium tier; only the *mechanism* grade (did they hammer vs re-pluck)
+stays deferred. The teacher LABELS the technique onset (`'hammer-start'`/`'pull-start'`/`'slide'`) and
+names the target — so we grade a VERIFICATION, not a classification:
+
+- **OUTCOME (graded in $34, RELIABLE):** did the target pitch arrive at the right time + length?
+  This is just the base pitch-verify (`verifyPitch`) + length measurement applied at the labeled
+  position — reuses machinery we're already building. A clean-landing hammer-on scores well; a flubbed
+  one (wrong pitch / late / didn't ring) scores poorly. Musically this IS the grade that matters.
+- **MECHANISM (bonus hint, NOT a grade):** "hammered" vs "re-plucked" reported only when confident —
+  i.e. when the detector clearly sees a pitch change WITHOUT a fresh transient (hammer) vs WITH one
+  (re-pluck). When ambiguous (the common fast case) → show nothing, never guess. `minOnsetGapSeconds:
+  0.12` (`bassOnsetDetector.ts:63`) bounds how close two events resolve, so mechanism is genuinely
+  best-effort; the OUTCOME grade does not depend on it.
+
+**Still deferred to a future "Technique/Pro" tier:** continuous-f0 contour grading (how smooth the
+slide glide is, mid-note pitch trajectory) — needs the parallel sliding-window-f0 contour machine +
+a `legatoSegments?` field + contour-approval UI. The point-pitch outcome grade above does NOT need
+that; it just checks the target pitch landed.
+
+**Brand-safe by construction:** we grade only what we can verify (outcome), and the mechanism hint is
+explicitly best-effort/optional — never a confident wrong call an advanced player would catch.
 
 ---
 
@@ -133,16 +194,28 @@ recomputed server-side behind the `bass_coach_premium` gate.
 
 ## 6. DATA MODEL + ADMIN
 `ReferenceAnalysis` (`block.ts:531-545`) gains: `onsetMidi?`, `onsetCents?` (net-new),
-`ghostMuteClass?: ('full'|'ghost'|'muted'|null)[]` (net-new), wires dormant `lengthsSec?`/`dynamics?`,
-uses `originalBpm?` for length-ratio tempo-map. `legatoSegments?` DEFERRED. All optional → no migration
-(JSON blob). `ReferenceScore`/`ReferenceScoreOptions` (`scoreAgainstReference.ts:20-53`) gain optional
-sub-score fields + a `premium?` bag (present only when granted).
+**`technique?: OnsetTechnique[]`** (net-new, the AUTHORED label per onset — §0;
+`OnsetTechnique = 'normal'|'ghost'|'hammer-start'|'pull-start'|'slide'|'muted'`), wires dormant
+`lengthsSec?`/`dynamics?`, uses `originalBpm?` for length-ratio tempo-map. `ghostMuteClass?` from the
+earlier auto-classify design is now SUBSUMED by the authored `technique?` (the teacher labels ghost/
+muted directly — no auto-derivation needed; keep an optional auto-*proposal* in the editor as a
+starting point the human approves). `legatoSegments?` (continuous contour) DEFERRED. All optional →
+no migration (JSON blob). `ReferenceScore`/`ReferenceScoreOptions` (`scoreAgainstReference.ts:20-53`)
+gain optional sub-score fields + a `premium?` bag (present only when granted).
 
-Admin (the real cost): `ReferenceTransientEditor.tsx` today only draws onset markers. Add an
-"analyze reference" offline pass computing all per-onset arrays + a **chart cross-check** (detected
-`onsetMidi` vs chart note/string/fret → flag legato/tie/sub-floor-ghost desync for admin review), then
-hand-correct + approve (detect-once-then-approve, never live re-detect). Author ghost references with a
-lowered onset floor.
+**The scorer is LABEL-DRIVEN (§0):** `scoreAgainstReference` reads `technique[subIndex]` per matched
+pair and dispatches which measurements apply (normal→timing+pitch; ghost→timing+dynamics-contrast;
+hammer/pull/slide→outcome = target-pitch-arrived + length, mechanism-hint best-effort; muted→
+percussive, lenient pitch). No label / `'normal'` → today's timing+pitch path exactly.
+
+Admin (the real cost, now richer per §0): `ReferenceTransientEditor.tsx` today only draws onset
+markers. Add (1) an "analyze reference" offline pass computing `onsetMidi`/`onsetCents`/`dynamics`/
+`lengthsSec` + an OPTIONAL technique *proposal* (ghost-from-low-dynamics etc.) the human can accept;
+(2) **a per-marker TECHNIQUE control** (dropdown: normal/ghost/hammer-start/pull-start/slide/muted) —
+the teacher's hand-authored label, the heart of the §0 model; (3) the optional chart cross-check
+(detected `onsetMidi` vs chart note/string/fret → flag desync) — now a nicety, not load-bearing, since
+recording+labels are truth. Then hand-correct + approve (detect-once, never live re-detect). Author
+ghost references with a lowered onset floor so sub-floor ghosts land in the arrays.
 
 ---
 
@@ -154,17 +227,26 @@ lowered onset floor.
 3. **`verifyPitch.ts`** [NET-NEW DSP — only new estimator] — YIN `{midi,confidence,cents}`, full MIDI
    (not `%12`). Unit-test E1…G2, null below floor, octave preserved.
 4. **Admin reference-analysis authoring pass** [NET-NEW UI — load-bearing prereq for ALL dims] —
-   compute+approve `onsetMidi`/`onsetCents`/`dynamics`/`lengthsSec`/`ghostMuteClass` + chart-desync
-   warnings.
+   compute+approve `onsetMidi`/`onsetCents`/`dynamics`/`lengthsSec`; **per-marker TECHNIQUE dropdown**
+   (`technique[]`, the §0 authored label) with optional auto-proposal; optional chart cross-check.
 5. **Base pitch wiring** — post-loop annotate over `matched` (no `verify?`); `pitchAccuracy`/
    `pitchCoverage` excluding nulls; call at `TimingMirrorPanel.tsx:283-286`. Base timing unchanged.
-6. **DYNAMICS** (premium #1) [REUSE] — median-relative relDb, shape-correlation, accent hits, refusal
-   guards. Gate `_premium`.
-7. **NOTE-LENGTH** (premium #2) [REUSE + NET-NEW VALIDATION] — ratio, 2-band; ear-calibrate
+6. **Label-driven scorer dispatch** — `scoreAgainstReference` reads `technique[subIndex]` per pair,
+   selects which dims apply (§0/§6). `'normal'`/no-label = today's path exactly. Each dim's gate +
+   measurement attaches per the label. *Test: a `'ghost'` onset grades dynamics not pitch; a `'normal'`
+   onset is byte-identical to pre-label scoring.*
+7. **DYNAMICS** (premium #1) [REUSE] — median-relative relDb, shape-correlation, accent hits, refusal
+   guards. Gate `_premium`. (Also the `'ghost'`-label contrast grade.)
+8. **TECHNIQUE OUTCOME** (premium #2 — newly in-tier per §4) [REUSE] — for `'hammer-start'`/
+   `'pull-start'`/`'slide'` labels: grade target-pitch-arrived (verifyPitch at the labeled position) +
+   length; mechanism-hint best-effort only when confident. No new DSP — reuses pitch + length.
+9. **NOTE-LENGTH** (premium #3) [REUSE + NET-NEW VALIDATION] — ratio, 2-band; ear-calibrate
    release/endFraction before any precision claim. Ship coarse.
-8. **GHOST/MUTE** (premium #3) [REUSE + ZCR wrapper] — graded on amplitude contrast; lenient sub-floor
-   miss; mute-type display-only.
-9. **(LATER, separate tier)** Technique/Pro — contour f0 + `legatoSegments?` + contour UI + 3rd key.
+10. **MUTE character** (premium #4) [REUSE + ZCR wrapper] — `'muted'`-label percussive hint; mute-type
+    display-only, never graded.
+11. **(LATER, separate Technique/Pro tier)** continuous-f0 CONTOUR grading (slide-glide smoothness,
+    mid-note trajectory) — `legatoSegments?` + contour-approval UI + 3rd key. The point-pitch OUTCOME
+    grade (step 8) does NOT need this.
 
 ---
 
