@@ -334,14 +334,28 @@ export function TimingMirrorPanel({
 
         // PITCH (the "WHAT"): for each HIT, detect the player's fundamental in a window
         // starting ~12ms after the found attack (skip the broadband pluck, land on the
-        // steady tone). Null = no confident pitch (staccato/ghost).
-        const pitchPerMarker = measurements.map((m) => {
+        // steady tone). The window is BOUNDED BY THE NEXT MARKER so a fast cluster's note
+        // can't bleed into its neighbour (the cause of harmonic/neighbour mis-reads on
+        // quiet runs). Up to ~90ms (≥3 low-B periods) when there's room, but never past
+        // ~85% of the gap to the next note. A window too short for a clean read → null.
+        const pitchPerMarker = measurements.map((m, i) => {
           if (m.playerSec == null) return null;
           const onsetBuf = Math.round((m.playerSec - startedAt) * sampleRate);
           const winStart = onsetBuf + Math.round(0.012 * sampleRate);
-          const winLen = Math.round(0.09 * sampleRate); // ~90ms: ≥3 periods of low-B
-          if (winStart + winLen > signal.length) return null;
-          return verifyPitch(signal.subarray(winStart, winStart + winLen), sampleRate);
+          // gap to the next marker's player onset (or the take end)
+          const nextSec =
+            measurements
+              .slice(i + 1)
+              .find((n) => n.playerSec != null)?.playerSec ?? null;
+          const gapSec =
+            nextSec != null ? Math.max(0, nextSec - (m.playerSec as number)) : Infinity;
+          const maxLen = Math.min(
+            Math.round(0.09 * sampleRate),
+            Math.round(gapSec * 0.85 * sampleRate),
+          );
+          if (maxLen < Math.round(0.04 * sampleRate)) return null; // too short to trust
+          if (winStart + maxLen > signal.length) return null;
+          return verifyPitch(signal.subarray(winStart, winStart + maxLen), sampleRate);
         });
 
         // COMPARE detected pitch to the AUTHORED note (string+fret per marker → expected

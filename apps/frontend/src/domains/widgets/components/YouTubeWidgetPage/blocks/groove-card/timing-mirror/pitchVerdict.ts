@@ -55,6 +55,12 @@ export function pitchVerdict(
   detected: PitchResult | null,
   note: AuthoredNote,
   bassType: '4' | '5' | '6' = '4',
+  /** Below this detector confidence, a NON-matching pitch is reported 'unknown' rather
+   *  than 'wrong' — a quiet note the detector barely heard must not be a confident
+   *  wrong-note accusation (the harmonic/neighbour slips on quiet fast notes). A MATCHING
+   *  pitch is still accepted at lower confidence (agreeing with the authored note is
+   *  evidence the read is real). */
+  minWrongConf = 0.85,
 ): { verdict: PitchVerdict; expected: number | null; centsOff: number | null } {
   const expected = expectedPitch(note, bassType);
   if (expected == null) return { verdict: 'n/a', expected: null, centsOff: null };
@@ -70,6 +76,11 @@ export function pitchVerdict(
   // octave (or two) off but same pitch-class = a detector octave slip, common on low bass.
   if (semisOff % 12 === 0) {
     return { verdict: 'octave', expected, centsOff: detected.cents };
+  }
+  // a NON-matching pitch the detector wasn't confident about → 'unknown', not a wrong-note
+  // accusation. Only call 'wrong' when the detector was sure it heard a different note.
+  if (detected.confidence < minWrongConf) {
+    return { verdict: 'unknown', expected, centsOff: detected.cents };
   }
   return { verdict: 'wrong', expected, centsOff: detected.cents };
 }

@@ -42,6 +42,18 @@ describe('pitchVerdict — student detection vs authored note', () => {
   it('UNKNOWN when no confident detection — not penalised', () => {
     expect(pitchVerdict(null, note, '4').verdict).toBe('unknown');
   });
+  it('UNKNOWN (not WRONG) for a LOW-confidence non-matching pitch — no false accusation', () => {
+    const lowConf = { ...det(38), confidence: 0.6 }; // wrong note, but unsure
+    expect(pitchVerdict(lowConf, note, '4').verdict).toBe('unknown');
+  });
+  it('WRONG only when the detector is CONFIDENT about a different note', () => {
+    const sureWrong = { ...det(38), confidence: 0.95 };
+    expect(pitchVerdict(sureWrong, note, '4').verdict).toBe('wrong');
+  });
+  it('a MATCHING pitch is accepted even at low confidence (agreement = evidence)', () => {
+    const lowConfMatch = { ...det(33), confidence: 0.55 };
+    expect(pitchVerdict(lowConfMatch, note, '4').verdict).toBe('correct');
+  });
   it('N/A for a pitchless ghost note — pitch not graded', () => {
     expect(pitchVerdict(det(99), { string: 3, fret: 0, role: 'ghost' }, '4').verdict).toBe('n/a');
   });
