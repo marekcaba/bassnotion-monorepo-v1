@@ -242,6 +242,38 @@ export const grooveCardBlockConfigSchema = z
           lengthsSec: z.array(z.number().nonnegative()).optional(),
           dynamics: z.array(z.number().min(0).max(1)).optional(),
           originalBpm: z.number().positive().optional(),
+          // Per-marker authored reference (string+fret+technique). All index-aligned
+          // to onsetsSec, all nullable per slot. MUST be declared or the non-passthrough
+          // schema strips them on save (the load-bearing failure for authoring).
+          bassType: z.enum(['4', '5', '6']).optional(),
+          stringNumbers: z
+            .array(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.null()]))
+            .optional(),
+          frets: z.array(z.union([z.number().int().min(0).max(24), z.null()])).optional(),
+          pluckStyles: z
+            .array(
+              z.union([
+                z.enum(['finger', 'pick', 'slap_thumb', 'pop', 'mute_thumb', 'tap']),
+                z.null(),
+              ]),
+            )
+            .optional(),
+          techniques: z
+            .array(
+              z.array(
+                z.enum([
+                  'hammer_on', 'pull_off', 'slide_up', 'slide_down', 'slap', 'pop',
+                  'tap', 'harmonic', 'vibrato', 'bend',
+                ]),
+              ),
+            )
+            .optional(),
+          roles: z
+            .array(z.union([z.enum(['normal', 'ghost', 'dead', 'accent']), z.null()]))
+            .optional(),
+          connectionsFromPrev: z
+            .array(z.union([z.enum(['hammer_on', 'pull_off', 'slide']), z.null()]))
+            .optional(),
         }),
       )
       .optional(),

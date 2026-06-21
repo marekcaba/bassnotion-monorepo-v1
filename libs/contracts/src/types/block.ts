@@ -9,7 +9,7 @@ import type {
   UnderstandQuestion,
   UnderstandQuestionOption,
 } from './tutorial.js';
-import type { ExerciseNote } from './exercise.js';
+import type { ExerciseNote, TechniqueType } from './exercise.js';
 import type { TimeSignature } from './musical-timing.js';
 
 // =====================================================
@@ -528,7 +528,44 @@ export const REFERENCE_MAIN_BASS_KEY = 'main';
 /** Bass-coach grading frame. See `gradingMode`. */
 export type GradingMode = 'grid' | 'reference';
 
-/** The admin-approved reference performance analysis (bass coach ground truth). */
+/**
+ * Pluck-hand attack style for an authored reference marker. Fills the gap that
+ * `TechniqueType` (a fretting-hand / output vocabulary) does NOT cover: a teacher
+ * needs to author "played with a pick" and "mute thumb", which describe HOW the note
+ * is struck, not what the fretting hand does.
+ */
+export type PluckStyle =
+  | 'finger' // default fingerstyle
+  | 'pick' // plectrum
+  | 'slap_thumb' // slapped with the thumb
+  | 'pop' // popped (slap partner)
+  | 'mute_thumb' // muted / palm-rest thumb articulation ("mute thumb")
+  | 'tap'; // two-hand tap attack
+
+/** Note role on the dynamics/output axis. A marker has exactly ONE role. */
+export type MarkerRole = 'normal' | 'ghost' | 'dead' | 'accent';
+
+/**
+ * Adjacent-marker legato relationship: marker i is connected FROM marker i-1 (no /
+ * soft re-attack on i). POSITIONAL (refers to the previous marker in time order), not
+ * an id pointer, so it survives the editor's re-sort/splice without dangling.
+ */
+export type MarkerConnection = 'hammer_on' | 'pull_off' | 'slide';
+
+/**
+ * The admin-approved reference performance analysis (bass coach ground truth).
+ *
+ * The per-marker authored fields below are how the admin labels their OWN recording —
+ * string+fret (the pitch to listen for; NO MIDI in authoring), pluck style, role, and
+ * legato connections. All are OPTIONAL parallel arrays INDEX-ALIGNED to `onsetsSec`
+ * (marker N is always X[N]); a `null` slot = that field not yet authored for marker N.
+ * The student's take is later graded against this rich reference.
+ *
+ * NOTE: the editor must keep these aligned through add/delete/drag (it re-sorts markers
+ * on every edit). It does so by holding a marker as an OBJECT carrying its annotations
+ * and only zipping to these parallel arrays at the save boundary — see the marker
+ * authoring plan (docs/BASS_COACH_MARKER_AUTHORING_PLAN.md).
+ */
 export interface ReferenceAnalysis {
   /** Onset (transient) times in the STEM buffer's own seconds, ascending. The
    *  human-verified attack positions the player is graded against. */
@@ -542,6 +579,28 @@ export interface ReferenceAnalysis {
   /** The stem's original tempo (BPM) the onset times were measured at. The engine
    *  maps stem-seconds → live-tempo via currentBpm / originalBpm. */
   originalBpm?: number;
+
+  // ── Per-marker authored reference (bass-coach ground truth) ──────────────
+  // ALL index-aligned to onsetsSec. Full-length arrays (never ragged): marker N is X[N].
+
+  /** Bass type the string/fret are authored against. Self-describes the answer key so
+   *  author-time and grade-time can't disagree on the tuning array. Default '4'. */
+  bassType?: '4' | '5' | '6';
+  /** String the note is fretted on, 1-based. ORIENTATION = BASS_TUNINGS / calculatePitch:
+   *  **string 1 = HIGHEST (G on a 4-string), N = lowest (E/B)**. This is NOT the
+   *  ExerciseNote.string "1=E" convention (that one is reversed) — pinned by a test. */
+  stringNumbers?: (1 | 2 | 3 | 4 | 5 | 6 | null)[];
+  /** Fret 0..24 (0 = open). With stringNumbers fully determines pitch + octave. */
+  frets?: (number | null)[];
+  /** Pluck-hand attack per marker. null = unannotated (graded as 'finger'). */
+  pluckStyles?: (PluckStyle | null)[];
+  /** Fretting-hand / output techniques per marker (slide_up/down, harmonic, vibrato,
+   *  bend, …), reusing TechniqueType. Empty array = none. Legato lives on connection. */
+  techniques?: TechniqueType[][];
+  /** Note role per marker. null = 'normal'. */
+  roles?: (MarkerRole | null)[];
+  /** This marker is connected FROM the previous marker (i-1). null = struck/separate. */
+  connectionsFromPrev?: (MarkerConnection | null)[];
 }
 
 /** Admin-tuned onset-detection params for a reference stem (bass coach). Mirrors

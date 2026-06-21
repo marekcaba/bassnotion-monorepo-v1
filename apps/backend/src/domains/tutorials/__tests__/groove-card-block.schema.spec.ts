@@ -248,3 +248,63 @@ describe('validateGrooveCardBlocks — top-level validator', () => {
     expect(validateGrooveCardBlocks(blocks)).toBe(blocks);
   });
 });
+
+describe('referenceAnalysis — per-marker authored fields survive parse (no strip)', () => {
+  it('KEEPS string+fret+technique+role+connection on a parsed config', () => {
+    // The load-bearing check: the schema is non-passthrough, so any field NOT declared
+    // is silently stripped on save. If the admin authors string/fret/technique and the
+    // schema doesn't declare them, they vanish — and the coach has no answer key. This
+    // asserts the authored per-marker fields round-trip through .parse() intact.
+    const config = validConfig({
+      gradingMode: 'reference',
+      referenceAnalysis: {
+        main: {
+          onsetsSec: [0.5, 1.0, 1.5],
+          bassType: '4',
+          stringNumbers: [3, 3, null], // open A on string 3, then null (unannotated)
+          frets: [0, 5, null],
+          pluckStyles: ['finger', 'slap_thumb', null],
+          techniques: [[], ['vibrato'], []],
+          roles: ['normal', 'accent', 'ghost'],
+          connectionsFromPrev: [null, 'hammer_on', null],
+        },
+      },
+    } as Partial<GrooveCardBlockConfig>);
+
+    const parsed = grooveCardBlockConfigSchema.parse(config);
+    const ra = (parsed as GrooveCardBlockConfig).referenceAnalysis!.main!;
+    expect(ra.onsetsSec).toEqual([0.5, 1.0, 1.5]);
+    expect(ra.bassType).toBe('4');
+    expect(ra.stringNumbers).toEqual([3, 3, null]);
+    expect(ra.frets).toEqual([0, 5, null]);
+    expect(ra.pluckStyles).toEqual(['finger', 'slap_thumb', null]);
+    expect(ra.techniques).toEqual([[], ['vibrato'], []]);
+    expect(ra.roles).toEqual(['normal', 'accent', 'ghost']);
+    expect(ra.connectionsFromPrev).toEqual([null, 'hammer_on', null]);
+  });
+
+  it('still accepts a legacy analysis with ONLY onsetsSec (backward-compatible)', () => {
+    const config = validConfig({
+      gradingMode: 'reference',
+      referenceAnalysis: { main: { onsetsSec: [0.5, 1.0] } },
+    } as Partial<GrooveCardBlockConfig>);
+    const parsed = grooveCardBlockConfigSchema.parse(config);
+    const ra = (parsed as GrooveCardBlockConfig).referenceAnalysis!.main!;
+    expect(ra.onsetsSec).toEqual([0.5, 1.0]);
+    expect(ra.stringNumbers).toBeUndefined();
+  });
+
+  it('REJECTS an out-of-range fret (25) and an unknown pluck style', () => {
+    const badFret = validConfig({
+      referenceAnalysis: { main: { onsetsSec: [0.5], frets: [25] } },
+    } as Partial<GrooveCardBlockConfig>);
+    expect(grooveCardBlockConfigSchema.safeParse(badFret).success).toBe(false);
+
+    const badPluck = validConfig({
+      referenceAnalysis: {
+        main: { onsetsSec: [0.5], pluckStyles: ['bowed' as never] },
+      },
+    } as Partial<GrooveCardBlockConfig>);
+    expect(grooveCardBlockConfigSchema.safeParse(badPluck).success).toBe(false);
+  });
+});
