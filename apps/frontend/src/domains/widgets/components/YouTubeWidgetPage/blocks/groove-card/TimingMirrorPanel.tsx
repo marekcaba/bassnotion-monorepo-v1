@@ -249,15 +249,20 @@ export function TimingMirrorPanel({
         signal,
         sampleRate,
       );
-      // KILL body-ripple over-trigger by GAP, not energy. PROVEN on the real DI take:
-      // a held bass note pulses at a FIXED ~128ms period (its ripple), so flux fires
-      // clusters spaced 122-144ms; REAL note spacing in the take is ≥200ms. There's a
-      // clean valley between them, so dedup at 155ms collapses each ripple cluster to
-      // its FIRST onset (the true attack) without touching real notes. (The earlier
-      // energy gate `rejectBodyRipple` mis-fired in busy passages — a new note after a
-      // loud TAIL looks like a ripple to it — so we rely on the gap, which doesn't.)
-      const deduped = dedupNearbyOnsets(snapped, 0.155);
-      const absOnsets = deduped.map((t) => t + startedAt);
+      // NO blind player dedup. The coach's HAND-AUTHORED reference markers are the
+      // source of truth for HOW MANY notes and WHERE — the matcher (alignToReference,
+      // coach-anchored) claims the nearest player attack per marker, with a tolerance
+      // derived from YOUR marker spacing. So:
+      //   - body ripples sit where NO marker is → they become NOISE (rejected), and
+      //   - fast authored notes (markers ~128ms apart) each get their OWN player attack
+      //     (a fixed dedup would have wrongly collapsed them — that ate real notes).
+      // The reference drives everything; the player onsets pass through raw (snapped).
+      const absOnsets = snapped.map((t) => t + startedAt);
+      // GRID mode has no reference to anchor on, so without a dedup it would score each
+      // body ripple as a separate (colliding) onset against the grid. Give the grid
+      // scorer a deduped set — but NEVER the reference matcher (which protects fast
+      // authored notes itself). 155ms = above the ~128ms ripple period.
+      const gridOnsets = dedupNearbyOnsets(snapped, 0.155).map((t) => t + startedAt);
 
       // DEBUG DUMP (dev probe): stash the take + each detection stage on window so we
       // can verify where attacks vs ticks land on the REAL signal instead of guessing.
@@ -280,15 +285,17 @@ export function TimingMirrorPanel({
           envPeakPerStep: env,
           rawOnsetsSec: onsets.map((o) => Math.round(o.time * 1000) / 1000),
           snappedSec: snapped.map((t) => Math.round(t * 1000) / 1000),
-          dedupedSec: deduped.map((t) => Math.round(t * 1000) / 1000),
+          // player onsets fed to the REFERENCE matcher = raw snapped (no dedup).
+          playerForMatchSec: snapped.map((t) => Math.round(t * 1000) / 1000),
         });
       } catch {
         /* dump is best-effort */
       }
 
-      // GRID score (always — the baseline, and the grid-mode result).
+      // GRID score (always — the baseline, and the grid-mode result). Uses the DEDUPED
+      // set (no reference to protect fast notes here, so ripples must be collapsed).
       const { stats, slots, skippedBeforeGrid, collisionRate } =
-        scoreOnsetsAgainstGrid(absOnsets, grid);
+        scoreOnsetsAgainstGrid(gridOnsets, grid);
       setOutcome({
         stats,
         grade: gradeTiming(stats.jitter, stats.averageDrift),
