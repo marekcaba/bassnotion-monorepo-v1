@@ -195,7 +195,15 @@ export function measureAtMarkers(
   // ~-45ms bug). The complex-domain function spikes on the PHASE DISCONTINUITY of the new
   // pluck even over a sustain, and stays low in the body/ripple — exactly what we need to
   // locate the attack inside a marker window regardless of what came before.
-  const { df, hopSec } = complexDomainDetectionFunction(signal, sampleRate);
+  // HIGH-RES df: hop 128 (~2.7ms steps) instead of the default 512 (~10.7ms). The FFT
+  // window stays 2048 (43ms) — we only SLIDE it 4× finer, which un-quantizes the peak
+  // LOCATION (the dominant detector-side loss was the ±5.3ms grid, not the 43ms smear).
+  // Measured on real bass.wav: within-pitch placement scatter −43% (21.3ms → 11.0ms),
+  // reaching ~3ms above the player's own ~8ms timing floor. ~3.8× df compute (~1s on a
+  // 14s take, fully offline). Source: bass-coach-onset-precision-soa workflow.
+  const { df, hopSec } = complexDomainDetectionFunction(signal, sampleRate, {
+    hopSize: 128,
+  });
   const frameToSec = (f: number) => f * hopSec + hopSec / 2;
   let dfPeak = 0;
   for (let f = 0; f < df.length; f++) if (df[f]! > dfPeak) dfPeak = df[f]!;
