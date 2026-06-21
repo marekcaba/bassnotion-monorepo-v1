@@ -82,6 +82,13 @@ const REFINE_FWD_SEC = 0.03;
 /** RMS envelope window for the refine (seconds). ~4ms smooths the carrier so the rise is
  *  the note's ATTACK edge, not an individual cycle's zero-crossing. */
 const REFINE_ENV_SEC = 0.004;
+/** The visible attack edge = where the envelope reaches this fraction of the note's local
+ *  peak (the eye reads the attack at the loud part of the rise, not the foot). On a SHARP
+ *  attack this crossing is ~at the steepest rise (no move); on a SOFT/slow ramp it lands
+ *  LATER, pulling the marker onto the visible edge. The soft-note fix lever. Tuned on real
+ *  bass.wav: 0.6 moves only the genuinely-soft ~12% of notes (modestly, ≤~7ms), sharp notes
+ *  ~0 — conservative so it can't overshoot the accurate majority. Ear/eye is the final judge. */
+const EDGE_PEAK_FRACTION = 0.6;
 
 /**
  * Move a coarse df-frame onset onto the AUDIBLE transient: the sample where a short-time
@@ -126,17 +133,38 @@ function refineToEnvelopeRise(
     return Math.sqrt(acc / (2 * envHalf + 1));
   };
 
+  // 1) steepest-rise sample = the foot of the climb (the cue that's accurate on SHARP
+  //    attacks but ~10-40ms EARLY on soft/slow ones — measured on real bass.wav).
   let bestSample = dfSampleCenter;
   let bestRise = -Infinity;
+  let localPeak = 0;
   let prevRms = rmsAt(lo);
   for (let s = lo + 1; s <= hi; s++) {
     const curRms = rmsAt(s);
+    if (curRms > localPeak) localPeak = curRms;
     const rise = curRms - prevRms; // positive only on a rising edge
     if (rise > bestRise) {
       bestRise = rise;
       bestSample = s;
     }
     prevRms = curRms;
+  }
+
+  // 2) SOFT-NOTE correction (workflow bass-coach-onset-fusion-design, 2026-06-22): fusion
+  //    can't fix the early soft-note marker (all three cues fire EARLY; nothing later to
+  //    anchor to). The real lever is HERE: walk FORWARD from the steepest rise to where the
+  //    envelope reaches a fraction of the note's LOCAL PEAK — the point the EYE reads as the
+  //    attack edge. On a SHARP note the rise is near-vertical so the crossing is ~at the
+  //    steepest-rise sample (no move). On a SOFT note the ramp is gradual, so the crossing
+  //    lands LATER, on the visible edge. Only ever moves the marker LATER (never before the
+  //    note) and stays inside the window. Self-gating by attack shape — no strength knob.
+  if (localPeak > 1e-6) {
+    const crossThr = localPeak * EDGE_PEAK_FRACTION;
+    for (let s = bestSample; s <= hi; s++) {
+      if (rmsAt(s) >= crossThr) {
+        return s; // first sample reaching EDGE_PEAK_FRACTION of the local peak, ≥ rise
+      }
+    }
   }
   return bestSample;
 }

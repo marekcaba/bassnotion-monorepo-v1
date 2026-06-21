@@ -225,3 +225,40 @@ describe('measureAtMarkers — STRENGTH-INVARIANT marker placement on the transi
     expect(Math.abs(eLoud - eQuiet)).toBeLessThan(8);
   });
 });
+
+describe('measureAtMarkers — soft-note edge correction (0.6 peak-fraction)', () => {
+  /** A note with a controllable attack RAMP length. A long ramp = a soft/slow attack
+   *  whose visible edge is well after the foot of the rise. */
+  function ramped(buf: Float32Array, atSec: number, rampSec: number, freq = 60) {
+    const s = Math.floor(atSec * sr);
+    for (let i = 0; i < 0.4 * sr && s + i < buf.length; i++) {
+      const tt = i / sr;
+      const attack = Math.min(1, tt / rampSec);
+      buf[s + i]! += 0.8 * attack * Math.exp(-tt / 0.4) * Math.sin(2 * Math.PI * freq * tt);
+    }
+  }
+
+  it('a SOFT (slow-ramp) note lands LATER than a sharp one, both on/after their attack', () => {
+    const sharp = new Float32Array(sr);
+    ramped(sharp, 0.5, 0.002); // 2ms ramp — sharp
+    const soft = new Float32Array(sr);
+    ramped(soft, 0.5, 0.04); // 40ms ramp — soft/slow
+
+    const tSharp = measureAtMarkers(sharp, sr, 0, [0.5])[0]!.playerSec!;
+    const tSoft = measureAtMarkers(soft, sr, 0, [0.5])[0]!.playerSec!;
+
+    // both must be on/after the attack (never early)
+    expect(tSharp).toBeGreaterThan(0.49);
+    expect(tSoft).toBeGreaterThan(0.49);
+    // the soft note's marker is pulled LATER onto its visible edge (the fix); the sharp
+    // note barely moves (its rise ~= its edge). So soft lands later than sharp.
+    expect(tSoft).toBeGreaterThan(tSharp);
+  });
+
+  it('does not push a SHARP note materially late (≤ ~10ms past its attack)', () => {
+    const sharp = new Float32Array(sr);
+    ramped(sharp, 0.5, 0.002);
+    const t = measureAtMarkers(sharp, sr, 0, [0.5])[0]!.playerSec!;
+    expect(Math.abs(t - 0.5) * 1000).toBeLessThan(12);
+  });
+})
