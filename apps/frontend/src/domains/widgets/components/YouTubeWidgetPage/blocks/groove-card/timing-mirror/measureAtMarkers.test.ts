@@ -160,3 +160,68 @@ describe('scoreMarkerMeasurements — offset/jitter/coverage', () => {
     expect(s.coverage).toBeCloseTo(2 / 3, 3);
   });
 });
+
+/** A note with a controllable amplitude + a sharp 1ms attack at a KNOWN sample, plus an
+ *  optional faint pre-attack finger tick (the synthetic reproduction of the real-bass df
+ *  shoulder that fired production ~21ms early — bass-coach-early-marker-investigation). */
+function pluck(
+  buf: Float32Array,
+  atSec: number,
+  amp: number,
+  freq = 60,
+  preTick = false,
+) {
+  const s = Math.round(atSec * sr);
+  if (preTick) {
+    // faint broadband tick ~3ms BEFORE the attack — what makes the df shoulder fire early.
+    // Deterministic (no Math.random — unavailable in this env): a short decaying burst.
+    const ps = s - Math.round(0.003 * sr);
+    for (let i = 0; i < Math.round(0.001 * sr) && ps + i >= 0; i++) {
+      buf[ps + i]! += amp * 0.12 * Math.sin(2 * Math.PI * 900 * (i / sr));
+    }
+  }
+  for (let i = 0; i < 0.5 * sr && s + i < buf.length; i++) {
+    const tt = i / sr;
+    const attack = Math.min(1, tt / 0.001); // sharp 1ms rise — attack edge AT sample s
+    const decay = Math.exp(-tt / 0.4);
+    buf[s + i]! += amp * attack * decay * Math.sin(2 * Math.PI * freq * tt);
+  }
+}
+
+describe('measureAtMarkers — STRENGTH-INVARIANT marker placement on the transient', () => {
+  // The marker must land on the AUDIBLE attack (sample `atSec`) and NEVER before it, for
+  // BOTH a loud and a quiet note. The property the pre-refine code lacked: weak notes
+  // landed −28.8ms early on real bass.wav, strong −12.6ms.
+  const TOL_MS = 8;
+  const EARLY_GUARD_MS = 6; // the hard "never before the note" requirement
+
+  it('LOUD note: marker on the attack, not early', () => {
+    const buf = new Float32Array(sr);
+    pluck(buf, 0.5, 0.9);
+    const m = measureAtMarkers(buf, sr, 0, [0.5]);
+    expect(m[0]!.playerSec).not.toBeNull();
+    const errMs = (m[0]!.playerSec! - 0.5) * 1000;
+    expect(Math.abs(errMs)).toBeLessThan(TOL_MS);
+    expect(errMs).toBeGreaterThan(-EARLY_GUARD_MS);
+  });
+
+  it('QUIET note (with pre-attack tick): marker STILL on the attack, not 30ms early', () => {
+    const buf = new Float32Array(sr);
+    pluck(buf, 0.5, 0.18, 60, true);
+    const m = measureAtMarkers(buf, sr, 0, [0.5]);
+    expect(m[0]!.playerSec).not.toBeNull();
+    const errMs = (m[0]!.playerSec! - 0.5) * 1000;
+    expect(Math.abs(errMs)).toBeLessThan(TOL_MS);
+    expect(errMs).toBeGreaterThan(-EARLY_GUARD_MS);
+  });
+
+  it('STRENGTH-INVARIANCE: loud and quiet land within a few ms of each other', () => {
+    const loud = new Float32Array(sr);
+    pluck(loud, 0.5, 0.9);
+    const quiet = new Float32Array(sr);
+    pluck(quiet, 0.5, 0.18, 60, true);
+    const eLoud = (measureAtMarkers(loud, sr, 0, [0.5])[0]!.playerSec! - 0.5) * 1000;
+    const eQuiet = (measureAtMarkers(quiet, sr, 0, [0.5])[0]!.playerSec! - 0.5) * 1000;
+    expect(Math.abs(eLoud - eQuiet)).toBeLessThan(8);
+  });
+});

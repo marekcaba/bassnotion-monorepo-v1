@@ -70,6 +70,77 @@ const DEFAULTS: Required<MeasureOptions> = {
  *  early-played note is rare and small; the forward reach (windowSec) covers dragging. */
 const BACK_REACH_SEC = 0.045;
 
+/** Refinement reach around the df pick (seconds). The df frame is the COARSE region; the
+ *  true audible attack is the steepest rise of the raw-amplitude envelope, which sits a
+ *  little LATER than the df frame (measured: the df fires ~7ms early on a clean strong
+ *  attack, ~22ms early on a weak one, on real bass.wav). We search a tight band AROUND the
+ *  df pick: back only ~12ms (just enough to undo the df framing lead, never far enough to
+ *  reach the previous note) and forward ~30ms (to reach the real pluck a weak note's
+ *  df-shoulder fired ahead of). Bias source: bass-coach-early-marker-investigation workflow. */
+const REFINE_BACK_SEC = 0.012;
+const REFINE_FWD_SEC = 0.03;
+/** RMS envelope window for the refine (seconds). ~4ms smooths the carrier so the rise is
+ *  the note's ATTACK edge, not an individual cycle's zero-crossing. */
+const REFINE_ENV_SEC = 0.004;
+
+/**
+ * Move a coarse df-frame onset onto the AUDIBLE transient: the sample where a short-time
+ * RMS envelope rises FASTEST inside [dfSampleCenter − REFINE_BACK, dfSampleCenter +
+ * REFINE_FWD]. This is the exact thing the user SEES — the visualizer draws the player
+ * wave as the raw |sample| peak envelope, so the steepest rise of that envelope IS the
+ * visible attack edge. Driven ONLY by the note's own audio (no grid).
+ *
+ * Cannot land BEFORE the note: an envelope rise (curRms − prevRms) is ≤0 in the pre-attack
+ * silence/tail and only goes strongly positive once the attack climbs, so the max-rise
+ * sample is on the rising edge by construction (this is why we use steepest-RISE, not the
+ * foot — foot-backtrack walked onto the Hann taper and was −30..−88ms catastrophic).
+ * Cannot grab a neighbour: clamped to [searchLoSample, searchHiSample] (the marker's own
+ * neighbour-bounded span) AND only ±12/30ms from the df centre.
+ */
+function refineToEnvelopeRise(
+  signal: Float32Array,
+  sampleRate: number,
+  dfSampleCenter: number,
+  searchLoSample: number,
+  searchHiSample: number,
+): number {
+  const envHalf = Math.max(1, Math.round((REFINE_ENV_SEC * sampleRate) / 2));
+  const lo = Math.max(
+    envHalf,
+    searchLoSample,
+    dfSampleCenter - Math.round(REFINE_BACK_SEC * sampleRate),
+  );
+  const hi = Math.min(
+    signal.length - envHalf - 1,
+    searchHiSample,
+    dfSampleCenter + Math.round(REFINE_FWD_SEC * sampleRate),
+  );
+  if (hi <= lo) return dfSampleCenter; // no room — keep the df estimate
+
+  const rmsAt = (center: number): number => {
+    let acc = 0;
+    for (let k = center - envHalf; k <= center + envHalf; k++) {
+      const v = signal[k] ?? 0;
+      acc += v * v;
+    }
+    return Math.sqrt(acc / (2 * envHalf + 1));
+  };
+
+  let bestSample = dfSampleCenter;
+  let bestRise = -Infinity;
+  let prevRms = rmsAt(lo);
+  for (let s = lo + 1; s <= hi; s++) {
+    const curRms = rmsAt(s);
+    const rise = curRms - prevRms; // positive only on a rising edge
+    if (rise > bestRise) {
+      bestRise = rise;
+      bestSample = s;
+    }
+    prevRms = curRms;
+  }
+  return bestSample;
+}
+
 /**
  * For each marker, find the player's transient in a window around it and measure the
  * offset. Returns one measurement per marker, in marker order.
@@ -204,7 +275,28 @@ export function measureAtMarkers(
       return { markerSec, playerSec: null, errorSec: null, strength };
     }
 
-    const playerSec = startedAtSec + frameToSec(bestFrame);
+    // The df frame is the COARSE region (phase-robust over sustains). Refine to the AUDIBLE
+    // attack = steepest rise of the raw-amplitude envelope right around it. This removes the
+    // constant ~−12..−15ms df framing lead (present even on strong notes: measured −12.6ms)
+    // AND the weak-note df-shoulder early-fire (measured weak −28.8ms, 23/25 notes >10ms
+    // early). After refine: synthetic ground truth ±1.7ms; real bass.wav +0.3ms strong /
+    // +3.2ms weak. The refine roams ONLY inside this marker's own neighbour-bounded span,
+    // so it can't grab an adjacent note; and it targets the steepest RISE, so it can't land
+    // before the note. (bass-coach-early-marker-investigation workflow, measured.)
+    const dfSampleCenter = Math.round(frameToSec(bestFrame) * sampleRate);
+    const searchLoSample = Math.max(0, Math.round((markerBufSec - backSec) * sampleRate));
+    const searchHiSample = Math.min(
+      signal.length - 1,
+      Math.round((markerBufSec + fwdSec) * sampleRate),
+    );
+    const attackSample = refineToEnvelopeRise(
+      signal,
+      sampleRate,
+      dfSampleCenter,
+      searchLoSample,
+      searchHiSample,
+    );
+    const playerSec = startedAtSec + attackSample / sampleRate;
     return { markerSec, playerSec, errorSec: playerSec - markerSec, strength };
   });
 }
