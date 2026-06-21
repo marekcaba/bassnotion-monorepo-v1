@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { expectedMidi, pitchVerdict } from './pitchVerdict';
+import { expectedPitch, pitchVerdict } from './pitchVerdict';
 import type { PitchResult } from './verifyPitch';
 
 const det = (midi: number, cents = 0): PitchResult => ({
@@ -9,16 +9,16 @@ const det = (midi: number, cents = 0): PitchResult => ({
   cents,
 });
 
-describe('expectedMidi — authored string+fret → pitch', () => {
+describe('expectedPitch — authored string+fret → pitch', () => {
   it('string 3 (A1) fret 0 = MIDI 33; fret 5 = D2 = MIDI 38', () => {
-    expect(expectedMidi({ string: 3, fret: 0 }, '4')).toBe(33);
-    expect(expectedMidi({ string: 3, fret: 5 }, '4')).toBe(38);
+    expect(expectedPitch({ string: 3, fret: 0 }, '4')).toBe(33);
+    expect(expectedPitch({ string: 3, fret: 5 }, '4')).toBe(38);
   });
   it('null when string/fret missing or role is pitchless', () => {
-    expect(expectedMidi({ string: 3, fret: null }, '4')).toBeNull();
-    expect(expectedMidi({ string: null, fret: 5 }, '4')).toBeNull();
-    expect(expectedMidi({ string: 3, fret: 0, role: 'ghost' }, '4')).toBeNull();
-    expect(expectedMidi({ string: 3, fret: 0, role: 'dead' }, '4')).toBeNull();
+    expect(expectedPitch({ string: 3, fret: null }, '4')).toBeNull();
+    expect(expectedPitch({ string: null, fret: 5 }, '4')).toBeNull();
+    expect(expectedPitch({ string: 3, fret: 0, role: 'ghost' }, '4')).toBeNull();
+    expect(expectedPitch({ string: 3, fret: 0, role: 'dead' }, '4')).toBeNull();
   });
 });
 

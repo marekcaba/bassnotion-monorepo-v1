@@ -40,6 +40,7 @@ import {
 } from './timing-mirror/measureAtMarkers';
 import { verifyPitch } from './timing-mirror/verifyPitch';
 import { pitchVerdict } from './timing-mirror/pitchVerdict';
+import { midiPitchToNoteName } from '@/domains/admin/utils/fretboardCalculations';
 import type { ReferenceAnalysis } from '@bassnotion/contracts';
 import {
   scoreOnsetsAgainstGrid,
@@ -422,11 +423,12 @@ export function TimingMirrorPanel({
                   player: m.playerSec == null ? null : r2(m.playerSec),
                   errMs: m.errorSec == null ? null : Math.round(m.errorSec * 1000),
                   strength: Math.round(m.strength * 100) / 100,
-                  // pitch (the WHAT): detected MIDI vs the AUTHORED expected MIDI + verdict.
-                  midi: p ? p.midi : null,
+                  // pitch (the WHAT): the note the student PLAYED vs the AUTHORED note
+                  // (string+fret), as NOTE NAMES (no MIDI) + the verdict.
+                  played: p ? midiPitchToNoteName(p.midi) : null,
+                  expected: v.expected == null ? null : midiPitchToNoteName(v.expected),
                   cents: p ? p.cents : null,
                   pConf: p ? Math.round(p.confidence * 100) / 100 : null,
-                  expectedMidi: v.expected,
                   pitch: v.verdict, // correct/octave/wrong/unknown/n/a
                 };
               }),

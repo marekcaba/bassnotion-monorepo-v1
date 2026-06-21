@@ -26,10 +26,12 @@ export interface AuthoredNote {
 }
 
 /**
- * The expected MIDI for an authored note, or null when there is no defined pitch
- * (pitchless role, or string/fret not authored).
+ * The expected pitch (as a chromatic pitch number — the same scale calculatePitch and the
+ * detector use, purely the comparison math; NOT a MIDI file/authoring concept) for an
+ * authored note, or null when there is no defined pitch (pitchless role, or string/fret
+ * not authored). Authoring is string+fret; this resolves it to a pitch to compare against.
  */
-export function expectedMidi(
+export function expectedPitch(
   note: AuthoredNote,
   bassType: '4' | '5' | '6' = '4',
 ): number | null {
@@ -54,10 +56,12 @@ export function pitchVerdict(
   note: AuthoredNote,
   bassType: '4' | '5' | '6' = '4',
 ): { verdict: PitchVerdict; expected: number | null; centsOff: number | null } {
-  const expected = expectedMidi(note, bassType);
+  const expected = expectedPitch(note, bassType);
   if (expected == null) return { verdict: 'n/a', expected: null, centsOff: null };
   if (detected == null) return { verdict: 'unknown', expected, centsOff: null };
 
+  // detected.midi is the DETECTOR's pitch number (verifyPitch's output field) — internal
+  // comparison math, not authoring. expected is on the same scale.
   const semisOff = detected.midi - expected;
   // ±1 semitone window (a detector can be a semitone off on a noisy onset) = correct.
   if (Math.abs(semisOff) <= 1) {
