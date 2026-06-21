@@ -58,6 +58,7 @@ import type {
   ReferenceAnalysis,
 } from '@bassnotion/contracts';
 import { sortMarkers, toAnalysis, fromAnalysis } from './refMarkers';
+import { ReferenceMarkerTable } from './ReferenceMarkerTable';
 
 /**
  * A marker as the EDITOR holds it internally: one OBJECT carrying its time AND its
@@ -122,6 +123,7 @@ export function ReferenceTransientEditor({
   const [zoom, setZoom] = useState(1); // 1 = fit; higher = wider (scrollable)
   const [clickOnMarkers, setClickOnMarkers] = useState(true);
   const [playhead, setPlayhead] = useState<number | null>(null); // sec, null = stopped
+  const [selectedId, setSelectedId] = useState<number | null>(null); // table↔canvas sync
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
@@ -210,6 +212,14 @@ export function ReferenceTransientEditor({
       onChangeRef.current(toAnalysis(sorted, bassType));
     },
     [bassType],
+  );
+
+  /** Patch one marker's authored fields (by id) and re-commit (saves). */
+  const updateMarker = useCallback(
+    (id: number, patch: Partial<RefMarker>) => {
+      commit(markersRef.current.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+    },
+    [commit],
   );
 
   // ---- playback ----
@@ -348,8 +358,10 @@ export function ReferenceTransientEditor({
     // handle (green dot) at the BOTTOM — two clear, separate hit zones.
     for (const m of markers) {
       const px = (m.timeSec / duration) * w;
-      ctx.strokeStyle = '#6ad08c';
-      ctx.lineWidth = 1.5;
+      const isSel = m.id === selectedId;
+      // selected marker = brighter + thicker line (row↔canvas sync)
+      ctx.strokeStyle = isSel ? '#aef0c4' : '#6ad08c';
+      ctx.lineWidth = isSel ? 2.5 : 1.5;
       ctx.beginPath();
       ctx.moveTo(px, DELETE_Y + 6);
       ctx.lineTo(px, DRAG_Y - 6);
@@ -381,7 +393,7 @@ export function ReferenceTransientEditor({
       ctx.lineTo(px, WAVE_H);
       ctx.stroke();
     }
-  }, [mono, duration, markers, zoom, playhead]);
+  }, [mono, duration, markers, zoom, playhead, selectedId]);
 
   // ---- interaction ----
   const dragRef = useRef<{ index: number; downX: number; moved: boolean } | null>(null);
@@ -469,7 +481,9 @@ export function ReferenceTransientEditor({
     if (d.moved) {
       commit(markers); // persist the dragged position (objects sorted by time)
     } else {
-      // a click without a drag = PLAY this note (hear if it's a real attack)
+      // a click without a drag = PLAY this note AND SELECT it (sync the table row)
+      const m = markers[d.index];
+      if (m) setSelectedId(m.id);
       playNote(d.index);
     }
   }, [markers, commit, playNote]);
@@ -531,6 +545,18 @@ export function ReferenceTransientEditor({
           }}
         />
       </div>
+
+      {/* The per-marker authoring matrix — string+fret+technique per note (the ground
+          truth the student is graded against). Row ↔ canvas marker stay in sync. */}
+      <ReferenceMarkerTable
+        markers={markers}
+        bassType={bassType}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onUpdate={updateMarker}
+        onPlay={playNote}
+      />
+
       <p style={{ fontSize: 11, color: '#6b7280', marginTop: 6, lineHeight: 1.5 }}>
         {status}
         <br />
