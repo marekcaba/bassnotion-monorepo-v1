@@ -102,6 +102,19 @@ export function measureAtMarkers(
   for (let f = 0; f < df.length; f++) if (df[f]! > dfPeak) dfPeak = df[f]!;
   const dfFloor = dfPeak * minAbsLevel;
 
+  // The TAKE's peak raw amplitude — for an ABSOLUTE silence check per window. The df is
+  // normalized, so on a fully silent take its "peak" is just numerical noise and the
+  // relative dfFloor can't tell silence from a note. A raw-amplitude floor can: a window
+  // whose audio never reaches a fraction of the take's loudest sample has no real note.
+  let takeAmp = 0;
+  for (let k = 0; k < signal.length; k++) {
+    const a = Math.abs(signal[k] ?? 0);
+    if (a > takeAmp) takeAmp = a;
+  }
+  // Floor relative to the take's loudest sample, but never below a tiny absolute epsilon
+  // so a fully-silent take (takeAmp≈0) still reports every marker as MISSED.
+  const ampFloor = Math.max(1e-4, takeAmp * minAbsLevel);
+
   // Sort markers so we can bound each window by its neighbours (a marker must only search
   // its OWN note's territory — never reach into an adjacent note and grab THAT attack).
   const sorted = [...markersSec].sort((a, b) => a - b);
@@ -124,21 +137,55 @@ export function measureAtMarkers(
       return { markerSec, playerSec: null, errorSec: null, strength: 0 };
     }
 
-    // The attack = the STRONGEST detection-function peak in the window (the phase event
-    // of the player's pluck). A body ripple gives a weak df; the pluck gives the max.
+    // ABSOLUTE silence check: if the window's audio never reaches the take-relative
+    // amplitude floor, there's no note here → MISSED (robust even on a near-silent take
+    // where the normalized df floor is meaningless).
+    let winAmp = 0;
+    const ampFrom = Math.max(0, Math.round((markerBufSec - backSec) * sampleRate));
+    const ampTo = Math.min(signal.length, Math.round((markerBufSec + fwdSec) * sampleRate));
+    for (let k = ampFrom; k < ampTo; k++) {
+      const a = Math.abs(signal[k] ?? 0);
+      if (a > winAmp) winAmp = a;
+    }
+    if (winAmp < ampFloor) {
+      return { markerSec, playerSec: null, errorSec: null, strength: 0 };
+    }
+
+    // The attack = the FIRST strong detection-function peak in the window — NOT the
+    // single strongest. THE FIX for "the blue marker is already IN the note": a later
+    // mid-note phase event (vibrato, a finger transition, the body's evolution) can spike
+    // the df HIGHER than the initial pluck, so "strongest" lands deep in the note (the
+    // +109ms / +66ms outliers). The attack is the FIRST event that clears a fraction of
+    // the window's max — the onset, even when a later event is bigger.
+    let windowMax = 0;
+    for (let f = fromFrame; f <= toFrame; f++) if (df[f]! > windowMax) windowMax = df[f]!;
+    // The whole window must contain a real attack at all (take-relative floor). If even
+    // its strongest df is weak → silence / faded tail → MISSED.
+    if (windowMax < dfFloor) {
+      return {
+        markerSec,
+        playerSec: null,
+        errorSec: null,
+        strength: dfPeak > 0 ? Math.min(1, windowMax / dfPeak) : 0,
+      };
+    }
+    // Accept the FIRST local df peak that clears 30% of the window max — the attack is the
+    // first real phase event, even when a LATER mid-note event (a pitch transition spikes
+    // df ~3× the pluck) is bigger. 30% admits a moderate pluck while still ignoring tiny
+    // ripple wobbles. (Taking the strongest gave the "+109ms, marker IN the note" bug.)
+    const acceptThr = Math.max(dfFloor, windowMax * 0.3);
     let bestFrame = -1;
     let bestVal = 0;
     for (let f = fromFrame; f <= toFrame; f++) {
-      if (df[f]! > bestVal) {
-        bestVal = df[f]!;
+      const isPeak = df[f]! >= (df[f - 1] ?? 0) && df[f]! >= (df[f + 1] ?? 0);
+      if (isPeak && df[f]! >= acceptThr) {
         bestFrame = f;
+        bestVal = df[f]!;
+        break;
       }
     }
-
     const strength = dfPeak > 0 ? Math.min(1, bestVal / dfPeak) : 0;
-    // MISSED gate: the strongest df peak in the window must clear the take-relative floor.
-    // A window over silence or a faded tail has only weak df → no real attack here.
-    if (bestFrame < 0 || bestVal < dfFloor) {
+    if (bestFrame < 0) {
       return { markerSec, playerSec: null, errorSec: null, strength };
     }
 

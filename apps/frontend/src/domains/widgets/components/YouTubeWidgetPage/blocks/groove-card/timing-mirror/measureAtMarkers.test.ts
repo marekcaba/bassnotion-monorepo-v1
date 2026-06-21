@@ -96,6 +96,25 @@ describe('measureAtMarkers — search the player audio AT each coach marker', ()
     expect(Math.abs(m[1]!.playerSec! - 0.75)).toBeLessThan(0.05);
   });
 
+  it('lands on the ATTACK, not a stronger mid-note event (the +109ms outlier)', () => {
+    // A note whose attack is moderate but which has a STRONGER event ~80ms in (e.g. a
+    // pitch transition / vibrato peak). "Strongest df peak" would land at the mid-note
+    // event; the FIRST-strong-peak rule must land on the attack.
+    const buf = new Float32Array(sr);
+    const s = Math.floor(0.5 * sr);
+    for (let i = 0; i < Math.floor(0.4 * sr) && s + i < sr; i++) {
+      const tt = i / sr;
+      const env = Math.min(1, tt / 0.005) * Math.exp(-tt / 0.4);
+      // pitch jumps from 55 to 73 Hz at 80ms in — a strong spectral event mid-note
+      const freq = tt < 0.08 ? 55 : 73;
+      buf[s + i] = 0.7 * env * Math.sin(2 * Math.PI * freq * tt);
+    }
+    const m = measureAtMarkers(buf, sr, 0, [0.5]);
+    expect(m[0]!.playerSec).not.toBeNull();
+    // must land on the 0.5 attack, NOT ~80ms later at the pitch jump
+    expect(Math.abs(m[0]!.playerSec! - 0.5)).toBeLessThan(0.04);
+  });
+
   it('respects startedAtSec (window is in ctx time, audio is buffer time)', () => {
     const buf = new Float32Array(sr);
     note(buf, 0.5); // buffer time 0.5
