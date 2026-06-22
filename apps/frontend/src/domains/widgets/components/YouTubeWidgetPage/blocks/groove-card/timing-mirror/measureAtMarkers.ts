@@ -193,21 +193,37 @@ function refineToEnvelopeRise(
     return Math.sqrt(acc / (2 * envHalf + 1));
   };
 
-  // 1) steepest-rise sample = the foot of the climb (the cue that's accurate on SHARP
-  //    attacks but ~10-40ms EARLY on soft/slow ones — measured on real bass.wav).
-  let bestSample = dfSampleCenter;
-  let bestRise = -Infinity;
+  // 1) steepest FRACTIONAL rise = the attack edge of THIS note's OWN energy, normalized by
+  //    the local RMS so a faint pluck riding a LOUDER neighbour's decay still wins. The old
+  //    absolute Δ (curRms − prevRms) was dominated by the loud tail's ripple, latching the
+  //    marker ~12.5ms EARLY on quiet-cluster notes (probe: cluster −31.4ms vs clean −18.9ms;
+  //    the abs-rise refine walked the marker EARLIER than even the df center). A FRACTIONAL
+  //    rise that must be PRECEDED BY A LOCAL DIP (a real attack rises from a trough; a ring's
+  //    ripple does not) fixes it: probe EXCESS earliness −12.5ms → +2.5ms, clean median|err|
+  //    8.4 vs 8.6 (no regression). Source: quiet-cluster-placement-probe.mjs fix (b).
+  const sampleCount = hi - lo + 1;
+  const rms = new Float32Array(sampleCount);
+  for (let s = lo; s <= hi; s++) rms[s - lo] = rmsAt(s);
   let localPeak = 0;
-  let prevRms = rmsAt(lo);
-  for (let s = lo + 1; s <= hi; s++) {
-    const curRms = rmsAt(s);
-    if (curRms > localPeak) localPeak = curRms;
-    const rise = curRms - prevRms; // positive only on a rising edge
-    if (rise > bestRise) {
-      bestRise = rise;
-      bestSample = s;
+  for (let i = 0; i < sampleCount; i++) if (rms[i]! > localPeak) localPeak = rms[i]!;
+
+  // dip window = ~6ms before a candidate; the sample before the rise must sit near that local
+  // floor (≤1.15×) for the rise to count as an ATTACK rather than a mid-ring wiggle. A non-dip
+  // rise isn't banned (sharp notes can lack a deep pre-dip) — soft-penalized so a dip wins.
+  const dipSpan = Math.max(1, Math.round(0.006 * sampleRate));
+  let bestSample = dfSampleCenter;
+  let bestScore = -Infinity;
+  for (let i = 1; i < sampleCount; i++) {
+    const frac = (rms[i]! - rms[i - 1]!) / Math.max(1e-6, rms[i - 1]!);
+    const dipFrom = Math.max(1, i - dipSpan);
+    let priorMin = Infinity;
+    for (let k = dipFrom; k < i; k++) if (rms[k]! < priorMin) priorMin = rms[k]!;
+    const precededByDip = rms[i - 1]! <= priorMin * 1.15 + 1e-6;
+    const score = frac * (precededByDip ? 1 : 0.25);
+    if (score > bestScore) {
+      bestScore = score;
+      bestSample = lo + i;
     }
-    prevRms = curRms;
   }
 
   // 2) SOFT-NOTE correction (workflow bass-coach-onset-fusion-design, 2026-06-22): fusion

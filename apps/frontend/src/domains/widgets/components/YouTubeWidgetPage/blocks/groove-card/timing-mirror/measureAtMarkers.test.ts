@@ -262,3 +262,40 @@ describe('measureAtMarkers — soft-note edge correction (0.6 peak-fraction)', (
     expect(Math.abs(t - 0.5) * 1000).toBeLessThan(12);
   });
 })
+
+describe('measureAtMarkers — quiet-cluster placement (Bug 1: faint pluck on a loud tail)', () => {
+  /** A loud note that DECAYS, with a quiet second note plucked ON its tail `gapSec` later. */
+  function clusterSignal(gapSec: number) {
+    const dur = 0.5;
+    const n = Math.floor(dur * sr);
+    const x = new Float32Array(n);
+    const loudAt = 0.05;
+    const quietAt = loudAt + gapSec;
+    const pluck = (start: number, amp: number, hz: number, tau: number) => {
+      const s0 = Math.floor(start * sr);
+      for (let i = s0; i < n; i++) {
+        const t = (i - s0) / sr;
+        x[i]! +=
+          amp *
+          Math.exp(-t / tau) *
+          (Math.sin(2 * Math.PI * hz * t) + 0.4 * Math.sin(2 * Math.PI * hz * 2 * t));
+      }
+    };
+    pluck(loudAt, 0.9, 55, 0.25); // loud, long decay → still ringing at quietAt
+    pluck(quietAt, 0.18, 62, 0.18); // quiet pluck riding the loud tail
+    return { signal: x, loudAt, quietAt };
+  }
+
+  it('lands the quiet note on ITS attack, not ~40ms early on the loud tail', () => {
+    const { signal, loudAt, quietAt } = clusterSignal(0.09); // 90ms gap (a fast run)
+    const startedAt = 10;
+    const markers = [startedAt + loudAt, startedAt + quietAt];
+    const out = measureAtMarkers(signal, sr, startedAt, markers);
+    const quiet = out[1]!;
+    expect(quiet.playerSec).not.toBeNull();
+    const errMs = (quiet.errorSec as number) * 1000;
+    // BUG was ~ −40ms early. Fix: within ±15ms, crucially NEVER badly early on the tail.
+    expect(errMs).toBeGreaterThan(-15);
+    expect(Math.abs(errMs)).toBeLessThan(20);
+  });
+});

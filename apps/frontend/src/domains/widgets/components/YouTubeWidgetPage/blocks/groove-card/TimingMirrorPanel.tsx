@@ -355,7 +355,27 @@ export function TimingMirrorPanel({
           );
           if (maxLen < Math.round(0.04 * sampleRate)) return null; // too short to trust
           if (winStart + maxLen > signal.length) return null;
-          return verifyPitch(signal.subarray(winStart, winStart + maxLen), sampleRate);
+          // CONTAMINATION GUARD (lownote-pitch-error workflow): a quiet note's window can be
+          // dominated by a LOUDER overlapping neighbour, so YIN confidently reads the
+          // NEIGHBOUR's pitch (measured error = neighbourMidi − thisNoteMidi → the ±2-semitone
+          // false "wrong note"). A CLEAN read AGREES across a short and a long window; a
+          // contaminated one does NOT (probe: real quiet onsets disagreed 6/7). If a short
+          // sub-window disagrees with the full window, the read is untrustworthy → demote its
+          // confidence below pitchVerdict's minWrongConf (0.85) so it becomes 'unknown' (not
+          // penalised), never a confident 'wrong'.
+          const full = verifyPitch(signal.subarray(winStart, winStart + maxLen), sampleRate);
+          if (full == null) return null;
+          const shortLen = Math.min(maxLen, Math.round(0.072 * sampleRate)); // YIN low-B floor
+          if (shortLen < maxLen) {
+            const shortRead = verifyPitch(
+              signal.subarray(winStart, winStart + shortLen),
+              sampleRate,
+            );
+            if (shortRead != null && shortRead.midi !== full.midi) {
+              return { ...full, confidence: Math.min(full.confidence, 0.5) };
+            }
+          }
+          return full;
         });
 
         // COMPARE detected pitch to the AUTHORED note (string+fret per marker → expected
