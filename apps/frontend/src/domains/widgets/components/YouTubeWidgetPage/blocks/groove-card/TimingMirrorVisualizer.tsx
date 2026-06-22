@@ -119,10 +119,32 @@ export function TimingMirrorVisualizer({ data }: { data: VizData }) {
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
-    // missed reference notes: amber marker on the ref lane
-    for (const tSec of data.score.alignment.missed) marker(ctx, x(tSec), refTop, LANE_H, COL.missed);
-    // noise player onsets: red marker on the player lane
-    for (const tSec of data.score.alignment.noise) marker(ctx, x(tSec), playerTop, LANE_H, COL.noise);
+    // MISSED reference notes (nothing played there): amber marker SPANNING BOTH lanes so
+    // it's unmissable — you can see exactly which authored note had no attack.
+    for (const tSec of data.score.alignment.missed) {
+      const px = x(tSec);
+      ctx.strokeStyle = COL.missed;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(px, refTop - 6);
+      ctx.lineTo(px, playerTop + LANE_H + 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      marker(ctx, px, refTop, LANE_H, COL.missed);
+    }
+    // WRONG notes (played, but a confident wrong pitch): red marker + a full red line on
+    // the PLAYER lane so you see exactly where each wrong note was.
+    for (const tSec of data.score.alignment.noise) {
+      const px = x(tSec);
+      ctx.strokeStyle = COL.noise;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, playerTop - 6);
+      ctx.lineTo(px, playerTop + LANE_H + 6);
+      ctx.stroke();
+      marker(ctx, px, playerTop, LANE_H, COL.noise);
+    }
 
     // ---- labels ----
     ctx.font = '11px ui-monospace, Menlo, monospace';
@@ -136,9 +158,9 @@ export function TimingMirrorVisualizer({ data }: { data: VizData }) {
       cssH - 8,
     );
     ctx.fillStyle = COL.missed;
-    ctx.fillText(`● missed ${data.score.missedCount}`, PAD + 110, cssH - 8);
+    ctx.fillText(`◌ missed ${data.score.missedCount}`, PAD + 110, cssH - 8);
     ctx.fillStyle = COL.noise;
-    ctx.fillText(`● noise ${data.score.noiseCount}`, PAD + 210, cssH - 8);
+    ctx.fillText(`● wrong ${data.score.noiseCount}`, PAD + 210, cssH - 8);
   }, [data, zoom]);
 
   const playerDur = data.playerSignal.length / data.playerSampleRate;

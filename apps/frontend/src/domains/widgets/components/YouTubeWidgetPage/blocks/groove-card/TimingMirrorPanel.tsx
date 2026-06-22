@@ -420,19 +420,28 @@ export function TimingMirrorPanel({
             ? `Only ${Math.round(mScore.coverage * 100)}% of the part was played — play more of it before scoring the timing.`
             : null,
           alignment: {
-            // hits become matched pairs (for the visualizer's connecting lines)
+            // MATCHED = correctly-played notes (right pitch / n-a / unknown) with an onset.
+            // A WRONG-pitch note is NOT a matched pair — it goes to `noise` (drawn red on the
+            // player lane) so you SEE where the wrong notes were. (subIndex = original marker
+            // index, computed before filtering, so it's correct.)
             matched: measurements
-              .filter((m) => m.playerSec != null)
-              .map((m, i) => ({
+              .map((m, i) => ({ m, i }))
+              .filter(({ m, i }) => m.playerSec != null && !isWrong(i))
+              .map(({ m, i }) => ({
                 subIndex: i,
                 referenceSec: m.markerSec,
                 playerSec: m.playerSec as number,
                 errorSec: m.errorSec as number,
               })),
+            // MISSED = a marker where nothing was played (genuine miss) — amber on ref lane.
             missed: measurements
               .filter((m) => m.playerSec == null)
               .map((m) => m.markerSec),
-            noise: [],
+            // WRONG notes (played, but a confident wrong pitch) — red on the player lane.
+            noise: measurements
+              .map((m, i) => ({ m, i }))
+              .filter(({ m, i }) => m.playerSec != null && isWrong(i))
+              .map(({ m }) => m.playerSec as number),
             coverage: mScore.coverage,
           },
         };

@@ -89,6 +89,63 @@ const REFINE_ENV_SEC = 0.004;
  *  bass.wav: 0.6 moves only the genuinely-soft ~12% of notes (modestly, ≤~7ms), sharp notes
  *  ~0 — conservative so it can't overshoot the accurate majority. Ear/eye is the final judge. */
 const EDGE_PEAK_FRACTION = 0.6;
+/** Attack rise-time threshold (seconds) for the SOFT/SHARP branch. A note whose RMS
+ *  envelope climbs 10%→90% of its local peak FASTER than this is "sharp" → placed on the
+ *  fine-grid df peak (tighter, the env-refine scatters it). Slower = "soft" → env-edge
+ *  refine. ~12ms per the onset-precision-soa probe (swept on real bass for min within-pitch
+ *  scatter). */
+const SHARP_RISE_SEC = 0.012;
+
+/**
+ * Attack rise time (seconds) = how long the local RMS envelope takes to climb 10%→90% of
+ * its peak, around the df center. Small = sharp/percussive attack; large = soft/gradual.
+ * Returns null if there's no clean rise to measure.
+ */
+function attackRiseSec(
+  signal: Float32Array,
+  sampleRate: number,
+  dfSampleCenter: number,
+  searchLoSample: number,
+  searchHiSample: number,
+): number | null {
+  const envHalf = Math.max(1, Math.round((REFINE_ENV_SEC * sampleRate) / 2));
+  const lo = Math.max(
+    envHalf,
+    searchLoSample,
+    dfSampleCenter - Math.round(REFINE_BACK_SEC * sampleRate),
+  );
+  const hi = Math.min(
+    signal.length - envHalf - 1,
+    searchHiSample,
+    dfSampleCenter + Math.round(REFINE_FWD_SEC * sampleRate),
+  );
+  if (hi <= lo) return null;
+  const rmsAt = (center: number): number => {
+    let acc = 0;
+    for (let k = center - envHalf; k <= center + envHalf; k++) {
+      const v = signal[k] ?? 0;
+      acc += v * v;
+    }
+    return Math.sqrt(acc / (2 * envHalf + 1));
+  };
+  let peak = 0;
+  for (let s = lo; s <= hi; s += envHalf) peak = Math.max(peak, rmsAt(s));
+  if (peak <= 1e-6) return null;
+  const lowThr = peak * 0.1;
+  const highThr = peak * 0.9;
+  let t10 = -1;
+  let t90 = -1;
+  for (let s = lo; s <= hi; s++) {
+    const e = rmsAt(s);
+    if (t10 < 0 && e >= lowThr) t10 = s;
+    if (t10 >= 0 && e >= highThr) {
+      t90 = s;
+      break;
+    }
+  }
+  if (t10 < 0 || t90 < 0 || t90 <= t10) return null;
+  return (t90 - t10) / sampleRate;
+}
 
 /**
  * Move a coarse df-frame onset onto the AUDIBLE transient: the sample where a short-time
@@ -110,6 +167,9 @@ function refineToEnvelopeRise(
   dfSampleCenter: number,
   searchLoSample: number,
   searchHiSample: number,
+  /** Walk forward to the 0.6-of-peak edge (stage 2). True for SOFT notes (lands on the
+   *  visible attack), false for SHARP notes (rise ≈ edge; the walk only adds scatter). */
+  doEdgeWalk = true,
 ): number {
   const envHalf = Math.max(1, Math.round((REFINE_ENV_SEC * sampleRate) / 2));
   const lo = Math.max(
@@ -157,8 +217,9 @@ function refineToEnvelopeRise(
   //    attack edge. On a SHARP note the rise is near-vertical so the crossing is ~at the
   //    steepest-rise sample (no move). On a SOFT note the ramp is gradual, so the crossing
   //    lands LATER, on the visible edge. Only ever moves the marker LATER (never before the
-  //    note) and stays inside the window. Self-gating by attack shape — no strength knob.
-  if (localPeak > 1e-6) {
+  //    note) and stays inside the window. Gated by `doEdgeWalk` — soft notes only (sharp
+  //    notes' rise≈edge, and the walk's varying RMS shape only adds scatter).
+  if (doEdgeWalk && localPeak > 1e-6) {
     const crossThr = localPeak * EDGE_PEAK_FRACTION;
     for (let s = bestSample; s <= hi; s++) {
       if (rmsAt(s) >= crossThr) {
@@ -325,12 +386,28 @@ export function measureAtMarkers(
       signal.length - 1,
       Math.round((markerBufSec + fwdSec) * sampleRate),
     );
+    // SOFT/SHARP branch (onset-precision-soa workflow). BOTH paths use the bias-correcting
+    // steepest-RISE (refineToEnvelopeRise's stage 1) so neither lands early. They differ
+    // only in the 0.6-of-peak EDGE WALK (stage 2):
+    //   - SHARP note (fast rise): rise ≈ edge already, and the edge-walk's varying RMS
+    //     shape adds SCATTER → skip the walk, place on the steepest rise.
+    //   - SOFT note (gradual rise): the rise is well before the visible edge → keep the
+    //     0.6-edge walk to land on what the eye reads.
+    const sharpness = attackRiseSec(
+      signal,
+      sampleRate,
+      dfSampleCenter,
+      searchLoSample,
+      searchHiSample,
+    );
+    const isSharp = sharpness != null && sharpness <= SHARP_RISE_SEC;
     const attackSample = refineToEnvelopeRise(
       signal,
       sampleRate,
       dfSampleCenter,
       searchLoSample,
       searchHiSample,
+      !isSharp, // edge-walk only for SOFT notes
     );
     const playerSec = startedAtSec + attackSample / sampleRate;
     return { markerSec, playerSec, errorSec: playerSec - markerSec, strength };
