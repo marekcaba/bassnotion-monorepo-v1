@@ -15,7 +15,10 @@ import { usePathname } from 'next/navigation';
  *
  * The /college room is the one label whose clean URL differs from its folder
  * (/college serves /app/bassment); this mirrors the middleware's alias rewrite so
- * comparators see /app/bassment, not /app/college.
+ * comparators see /app/bassment, not /app/college. A tutorial opened from the College
+ * room is room-scoped (/college/<slug>) and the middleware serves it off the shared
+ * tutorial page, so /college/<slug> maps to /app/tutorials/<slug> here too — this MUST
+ * stay in lockstep with the middleware's /college rules.
  *
  * See docs/deployment/APP_SUBDOMAIN_RUNBOOK.md (Step 3 / "READ THIS FIRST part 2").
  */
@@ -23,12 +26,18 @@ export function useInternalPathname(): string {
   return toInternalPathname(usePathname());
 }
 
-/** Pure mapping — exported for tests and non-hook callers. */
+/** Pure mapping — exported for tests and non-hook callers.
+ *  KEEP IN LOCKSTEP with the /college rules in middleware.ts. */
 export function toInternalPathname(pathname: string): string {
   if (pathname === '/') return '/app';
 
-  // Label alias: the clean /college room serves the /app/bassment folder.
+  // College room. Bare /college is the room landing (→ /app/bassment). A room-scoped
+  // tutorial /college/<slug> serves the shared tutorial page (→ /app/tutorials/<slug>),
+  // so active-state comparators (keyed on /app/tutorials) match. Deeper paths fall back
+  // to the bassment folder. Mirrors middleware.ts exactly.
   if (pathname === '/college') return '/app/bassment';
+  const collegeSlug = pathname.match(/^\/college\/([^/]+)$/);
+  if (collegeSlug) return `/app/tutorials/${collegeSlug[1]}`;
   if (pathname.startsWith('/college/')) {
     return pathname.replace(/^\/college/, '/app/bassment');
   }
