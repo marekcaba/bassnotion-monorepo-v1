@@ -23,15 +23,27 @@ import React from 'react';
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 import { useGrooveCardPlayback } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/useGrooveCardPlayback';
 import { GrooveCardShell } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardShell';
-import { GrooveCardControls } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardControls';
+import { formatKeyLabel } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardControls';
 import { ScaleFretboardWindow } from './ScaleFretboardWindow';
-import { ScalePicker } from './ScalePicker';
+import { ScalesControls } from './ScalesControls';
+import { positionCount } from './scaleBlueprints';
 import {
   rootFromKey,
   type ScaleType,
+  type ScaleView,
   type StringCount,
 } from './scaleGenerator';
 import { useEquipmentListening } from '../listening/useEquipmentListening';
+
+/** Scale types + labels, in cycle order for the scale stepper. */
+const SCALE_TYPES: { value: ScaleType; label: string }[] = [
+  { value: 'major', label: 'Major' },
+  { value: 'natural_minor', label: 'Minor' },
+  { value: 'dorian', label: 'Dorian' },
+  { value: 'mixolydian', label: 'Mixolyd.' },
+  { value: 'minor_pentatonic', label: 'Min Pent' },
+  { value: 'major_pentatonic', label: 'Maj Pent' },
+];
 
 export interface ScalesToolProps {
   /** The backing groove (stems/bpm/key). Drives the transport + the shared clock. */
@@ -50,6 +62,7 @@ export function ScalesTool({
   onBeforePlay,
 }: ScalesToolProps) {
   const [scaleType, setScaleType] = React.useState<ScaleType>('major');
+  const [view, setView] = React.useState<ScaleView>(1); // box position 1, or 'whole'
 
   const playback = useGrooveCardPlayback({
     block: backingConfig,
@@ -74,13 +87,70 @@ export function ScalesTool({
     loopStartAudioTime: playback.loopStartAudioTime,
   });
 
-  const isBassMuted = playback.mutedStems.has('audio-bass');
-  const isSoloBass = playback.soloedStem === 'audio-bass';
-
   const onPlayPause = React.useCallback(() => {
     if (playback.isPlaying) playback.pause();
     else void playback.play();
   }, [playback]);
+
+  // ── ROLLER specs: each control's prev/current/next labels + up/down handlers.
+  //    UP selects the value shown ABOVE (prev), DOWN the value BELOW (next). ──
+
+  // SCALE — cycles through the scale types (wraps). Changing scale resets to position 1.
+  const scaleIdx = SCALE_TYPES.findIndex((s) => s.value === scaleType);
+  const scaleAt = (d: number) =>
+    SCALE_TYPES[(scaleIdx + d + SCALE_TYPES.length) % SCALE_TYPES.length]!;
+  const setScaleBy = (d: number) => {
+    setScaleType(scaleAt(d).value);
+    setView(1);
+  };
+  const scaleRoller = {
+    prevLabel: scaleAt(-1).label,
+    currentLabel: scaleAt(0).label,
+    nextLabel: scaleAt(1).label,
+    onUp: () => setScaleBy(-1),
+    onDown: () => setScaleBy(1),
+  };
+
+  // POSITION — 1..N then 'All' (wraps). Label "Pos N" / "All".
+  const nPositions = positionCount(scaleType);
+  const viewIdx = view === 'whole' ? nPositions : (view as number) - 1; // 0..N
+  const viewSlots = nPositions + 1;
+  const viewToLabel = (idx: number) =>
+    idx === nPositions ? 'All' : `Pos ${idx + 1}`;
+  const viewToValue = (idx: number): ScaleView =>
+    idx === nPositions ? 'whole' : idx + 1;
+  const setViewBy = (d: number) =>
+    setView(viewToValue((viewIdx + d + viewSlots) % viewSlots));
+  const positionRoller = {
+    prevLabel: viewToLabel((viewIdx - 1 + viewSlots) % viewSlots),
+    currentLabel: viewToLabel(viewIdx),
+    nextLabel: viewToLabel((viewIdx + 1) % viewSlots),
+    onUp: () => setViewBy(-1),
+    onDown: () => setViewBy(1),
+  };
+
+  // KEY — semitone steps; labels are note names. UP raises, DOWN lowers (matches the
+  // wheel: the higher value sits above). Bounded by the engine's transpose range.
+  const semis = playback.currentSemitones;
+  const range = playback.transposeRange;
+  const keyName = (s: number) => formatKeyLabel(backingConfig.originalKey, s);
+  const keyRoller = {
+    prevLabel: semis < range ? keyName(semis + 1) : undefined,
+    currentLabel: keyName(semis),
+    nextLabel: semis > -range ? keyName(semis - 1) : undefined,
+    onUp: () => playback.setKey(Math.min(range, semis + 1)),
+    onDown: () => playback.setKey(Math.max(-range, semis - 1)),
+  };
+
+  // TEMPO — BPM ±1. UP faster (sits above), DOWN slower.
+  const bpm = playback.currentBpm;
+  const tempoRoller = {
+    prevLabel: `${bpm + 1}`,
+    currentLabel: `${bpm}`,
+    nextLabel: `${bpm - 1}`,
+    onUp: () => playback.setTempo(bpm + 1),
+    onDown: () => playback.setTempo(bpm - 1),
+  };
 
   return (
     <GrooveCardShell
@@ -107,35 +177,21 @@ export function ScalesTool({
           maxFrets={maxFrets}
           isPlaying={playback.isPlaying}
           tempo={playback.currentBpm}
+          view={view}
         />
       }
-      // The skill-specific panel: choose the scale TYPE (the root comes from the
-      // playback key switcher above — no redundant root picker).
-      footer={
-        <ScalePicker scaleType={scaleType} onScaleTypeChange={setScaleType} />
-      }
+      // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No
+      // footer panel needed.
       controls={
-        <GrooveCardControls
+        <ScalesControls
           isPlaying={playback.isPlaying}
           isReady={playback.isReady}
-          isLoading={playback.isLoading}
           countdownState={playback.countdownState}
-          currentBpm={playback.currentBpm}
-          currentSemitones={playback.currentSemitones}
-          pendingKeyShift={playback.pendingKeyShift}
-          originalKey={backingConfig.originalKey}
-          isBassMuted={isBassMuted}
-          isSoloDrums={isSoloBass}
-          muteDisabled={isSoloBass}
+          scale={scaleRoller}
+          position={positionRoller}
+          keyRoller={keyRoller}
+          tempo={tempoRoller}
           onPlayPause={onPlayPause}
-          onTempoChange={playback.setTempo}
-          onKeyChange={playback.setKey}
-          onMuteBass={(muted) => playback.setStemMuted('audio-bass', muted)}
-          onSoloDrums={(solo) =>
-            playback.setStemSolo(solo ? 'audio-bass' : null)
-          }
-          transposeRange={playback.transposeRange}
-          originalBpm={backingConfig.originalBpm}
         />
       }
     />

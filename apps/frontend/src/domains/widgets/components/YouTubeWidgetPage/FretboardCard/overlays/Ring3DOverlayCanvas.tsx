@@ -626,6 +626,11 @@ export interface Ring3DOverlayCanvasProps {
   /** Override the rendered viewport width (px). Default 580 (shows ~fret 12).
    *  Widen it to show MORE frets — used by the gym equipment fretboard tools. */
   viewportWidthOverride?: number;
+  /** When true, ALL exercise-note positions render as lit scale dots (the whole
+   *  scale shape visible at once), with the active note still emphasized — instead
+   *  of the tutorial's moving-lookahead window (only the next ~2 notes lit). Used by
+   *  the gym Scales tool. Default false → tutorial behavior unchanged. */
+  showAllNotes?: boolean;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -760,6 +765,7 @@ interface DebugVisualizationProps {
   exerciseNotes: ExerciseNoteInput[]; // Exercise notes array for timeline building
   tempo: number; // BPM for timing calculations
   isPlaying: boolean; // Playback state for enabling updates
+  showAllNotes?: boolean; // light the WHOLE scale at once (gym Scales tool), not lookahead
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
   activeRingZOffset?: number; // Z offset above the dot (default 1)
@@ -852,6 +858,7 @@ function DebugVisualization({
   exerciseNotes,
   tempo,
   isPlaying,
+  showAllNotes = false,
   countdownBeats = 4,
   activeRingZOffset = -1,
   activeRingRadius = 13,
@@ -1085,6 +1092,18 @@ function DebugVisualization({
         };
       }
 
+      // SCALE MODE (gym Scales tool): every exercise-note position is a lit scale dot,
+      // so the WHOLE scale shape is visible at once (not just the lookahead window).
+      // The active note above stays BLUE; all other scale notes render GREEN.
+      if (showAllNotes) {
+        return {
+          color: DOT_COLORS.GREEN,
+          opacity: 1.0,
+          isActive: false,
+          isRoundedRect,
+        };
+      }
+
       // Check if this position is the NEXT note (first upcoming) - show as GREEN
       const nextUpcoming = upcomingNotes[0];
       if (
@@ -1103,7 +1122,13 @@ function DebugVisualization({
       // Outside lookahead window - render as appropriate GREY
       return { color: greyColor, opacity: 1.0, isActive: false, isRoundedRect };
     },
-    [positionToNotes, DOT_COLORS, MARKER_FRETS, LOOKAHEAD_CONFIG.opacityLevels],
+    [
+      positionToNotes,
+      DOT_COLORS,
+      MARKER_FRETS,
+      LOOKAHEAD_CONFIG.opacityLevels,
+      showAllNotes,
+    ],
   );
 
   // =============================================================================
@@ -3307,6 +3332,7 @@ export function Ring3DOverlayCanvas({
   tempo = 120,
   viewportWidthOverride, // optional: widen the rendered viewport to show more frets
   // (gym equipment tools). Undefined → the default 580.
+  showAllNotes = false, // gym Scales tool: light the WHOLE scale, not a lookahead window
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -4253,6 +4279,7 @@ export function Ring3DOverlayCanvas({
                       exerciseNotes={exerciseNotes}
                       tempo={tempo}
                       isPlaying={isPlaying}
+                      showAllNotes={showAllNotes}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}

@@ -13,13 +13,8 @@
 import React from 'react';
 import { Ring3DOverlayCanvas } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/overlays/Ring3DOverlayCanvas';
 import { DEFAULT_RING_CONFIG } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/overlays/RingOverlayConfig';
-import {
-  generateScale,
-  scaleToExerciseNotes,
-  type PitchClass,
-  type ScaleType,
-  type StringCount,
-} from './scaleGenerator';
+import type { PitchClass, ScaleType, StringCount } from './scaleGenerator';
+import { buildNoteUniverse, selectBox } from './noteUniverse';
 import {
   getFretboardOverlayConfig,
   FRETBOARD_CANVAS_HEIGHT,
@@ -38,6 +33,9 @@ export interface ScaleFretboardWindowProps {
   maxFrets: number;
   isPlaying: boolean;
   tempo: number;
+  /** What to show: a box POSITION number (1 = root box), or 'whole' for the entire
+   *  scale across the neck. Default 1. */
+  view?: number | 'whole';
 }
 
 export function ScaleFretboardWindow({
@@ -47,12 +45,25 @@ export function ScaleFretboardWindow({
   maxFrets,
   isPlaying,
   tempo,
+  view = 1,
 }: ScaleFretboardWindowProps) {
-  // Regenerate the scale only when its inputs change (pure).
+  // Build the full note universe for the user's neck, then show either ONE box position
+  // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
+  // play-along sequence steps through it).
   const exerciseNotes = React.useMemo(() => {
-    const notes = generateScale({ root, scaleType, stringCount, maxFrets });
-    return scaleToExerciseNotes(notes);
-  }, [root, scaleType, stringCount, maxFrets]);
+    const fretboard = { stringCount, maxFrets };
+    const universe = buildNoteUniverse(fretboard, root, scaleType);
+    const shown =
+      view === 'whole'
+        ? universe
+        : selectBox(universe, fretboard, root, scaleType, view);
+    return shown.map((n, i) => ({
+      string: n.string,
+      fret: n.fret,
+      duration: '4n',
+      position: { measure: Math.floor(i / 4) + 1, beat: (i % 4) + 1 },
+    }));
+  }, [root, scaleType, stringCount, maxFrets, view]);
 
   // Enable the ring overlay (DEFAULT has enabled:false) so the active-note highlight
   // shows; the dots themselves come from exerciseNotes.
@@ -158,6 +169,9 @@ export function ScaleFretboardWindow({
         tempo={tempo}
         overlay3DConfig={anchoredConfig}
         viewportWidthOverride={viewportWidth}
+        // Light the WHOLE scale at once (the scale shape), not a moving lookahead
+        // window — the active note still emphasizes as the sequence plays.
+        showAllNotes
       />
     </div>
   );
