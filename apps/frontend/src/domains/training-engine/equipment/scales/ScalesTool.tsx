@@ -26,7 +26,11 @@ import { GrooveCardShell } from '@/domains/widgets/components/YouTubeWidgetPage/
 import { GrooveCardControls } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardControls';
 import { ScaleFretboardWindow } from './ScaleFretboardWindow';
 import { ScalePicker } from './ScalePicker';
-import type { PitchClass, ScaleType, StringCount } from './scaleGenerator';
+import {
+  rootFromKey,
+  type ScaleType,
+  type StringCount,
+} from './scaleGenerator';
 import { useEquipmentListening } from '../listening/useEquipmentListening';
 
 export interface ScalesToolProps {
@@ -45,7 +49,6 @@ export function ScalesTool({
   maxFrets = 14,
   onBeforePlay,
 }: ScalesToolProps) {
-  const [root, setRoot] = React.useState<PitchClass>('C');
   const [scaleType, setScaleType] = React.useState<ScaleType>('major');
 
   const playback = useGrooveCardPlayback({
@@ -54,6 +57,13 @@ export function ScalesTool({
     mode: 'block',
     onBeforePlay,
   });
+
+  // The scale ROOT follows the playback KEY switcher (the `< E >` control) — no
+  // separate root picker. Changing the key transposes the audio AND moves the scale.
+  const root = rootFromKey(
+    backingConfig.originalKey,
+    playback.currentSemitones,
+  );
 
   // LISTENING (stubbed): every play is a take the platform hears. No-op until the
   // bass-coach engine is wired; the seam exists now so the tool is listening-ready.
@@ -99,14 +109,10 @@ export function ScalesTool({
           tempo={playback.currentBpm}
         />
       }
-      // The skill-specific panel: choose what to practice.
+      // The skill-specific panel: choose the scale TYPE (the root comes from the
+      // playback key switcher above — no redundant root picker).
       footer={
-        <ScalePicker
-          root={root}
-          scaleType={scaleType}
-          onRootChange={setRoot}
-          onScaleTypeChange={setScaleType}
-        />
+        <ScalePicker scaleType={scaleType} onScaleTypeChange={setScaleType} />
       }
       controls={
         <GrooveCardControls

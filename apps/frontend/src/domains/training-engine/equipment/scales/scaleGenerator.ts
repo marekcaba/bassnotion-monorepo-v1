@@ -82,6 +82,40 @@ function midiToPitchClass(midi: number): PitchClass {
   return PITCH_CLASSES[((midi % 12) + 12) % 12]!;
 }
 
+/** Parse a key label ('E', 'Db', 'F#', 'B♭', 'C♯') to a 0-11 pitch class, or null. */
+function parseKeyToPitchClass(key: string): number | null {
+  const m = key.trim().match(/^([A-Ga-g])([#♯b♭]?)/);
+  if (!m) return null;
+  const LETTER: Record<string, number> = {
+    C: 0,
+    D: 2,
+    E: 4,
+    F: 5,
+    G: 7,
+    A: 9,
+    B: 11,
+  };
+  let pc = LETTER[m[1]!.toUpperCase()]!;
+  if (m[2] === '#' || m[2] === '♯') pc += 1;
+  else if (m[2] === 'b' || m[2] === '♭') pc -= 1;
+  return ((pc % 12) + 12) % 12;
+}
+
+/**
+ * The scale ROOT the fretboard should show = the backing's CURRENT key (its original
+ * key transposed by the live semitone offset). This unifies the root with the
+ * playback key switcher (the `< E >` control) — one source of truth, no separate root
+ * picker. Falls back to C if the key label can't be parsed.
+ */
+export function rootFromKey(
+  originalKey: string,
+  currentSemitones: number,
+): PitchClass {
+  const base = parseKeyToPitchClass(originalKey);
+  if (base == null) return 'C';
+  return PITCH_CLASSES[(((base + currentSemitones) % 12) + 12) % 12]!;
+}
+
 /**
  * Generate a one-octave scale in a single box position, ascending.
  *
