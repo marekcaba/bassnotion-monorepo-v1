@@ -10,7 +10,13 @@
  * render the player at mount (non-drill branch) so they DO need the provider.
  */
 export function routeNeedsAudioProvider(pathname: string): boolean {
-  return pathname.startsWith('/app/tutorials');
+  // Tutorials render a player at mount. Gym EQUIPMENT TOOLS (the leaf routes under
+  // /app/gym/, e.g. /app/gym/scales) also render a player at mount — but the GYM
+  // FLOOR itself (/app/gym, exact) must stay audio-free so it paints instantly. So we
+  // match the /app/gym/ PREFIX (with trailing slash → leaves only), never the floor.
+  return (
+    pathname.startsWith('/app/tutorials') || pathname.startsWith('/app/gym/')
+  );
 }
 
 /**

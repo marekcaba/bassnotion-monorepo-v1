@@ -623,6 +623,9 @@ export interface Ring3DOverlayCanvasProps {
   stringCount?: 4 | 5 | 6;
   /** Maximum fret number */
   maxFrets?: number;
+  /** Override the rendered viewport width (px). Default 580 (shows ~fret 12).
+   *  Widen it to show MORE frets — used by the gym equipment fretboard tools. */
+  viewportWidthOverride?: number;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -3302,6 +3305,8 @@ export function Ring3DOverlayCanvas({
   maxFrets = 24,
   countdownBeats = 4,
   tempo = 120,
+  viewportWidthOverride, // optional: widen the rendered viewport to show more frets
+  // (gym equipment tools). Undefined → the default 580.
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -3601,7 +3606,10 @@ export function Ring3DOverlayCanvas({
   // =============================================================================
   // CANVAS DIMENSIONS - Fixed viewport size, content offset by scroll position
   // =============================================================================
-  const VIEWPORT_WIDTH = 580; // Slightly wider than 2D viewport (568) to show fret 12
+  // Default 580 (matches the 2D viewport, shows ~fret 12). An override widens the
+  // rendered viewport so MORE frets are visible — used by the gym equipment tools,
+  // which have room to show the full neck. The tutorial passes nothing → 580.
+  const VIEWPORT_WIDTH = viewportWidthOverride ?? 580;
   const VIEWPORT_HEIGHT = 290; // Fixed - matches 2D fretboard height
 
   // Calculate full content width for positioning calculations
