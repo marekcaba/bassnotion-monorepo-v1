@@ -24,7 +24,10 @@ import { SCALE_BLUEPRINTS, type ScalePosition } from './scaleBlueprints';
  *    5-string: + 5=B(23, the low B).  6-string: + 6=B(18) (a 6th low string).
  *  This is what the fretboard renderer + the audio engine expect — emit THIS, not a
  *  "1=lowest" convention (that rendered the scale upside-down). */
-const OPEN_STRING_MIDI: Record<StringCount, Record<number, number>> = {
+export const OPEN_STRING_MIDI: Record<
+  StringCount,
+  Record<number, number>
+> = {
   4: { 1: 43, 2: 38, 3: 33, 4: 28 }, // G D A E
   5: { 1: 43, 2: 38, 3: 33, 4: 28, 5: 23 }, // G D A E B(low)
   6: { 1: 43, 2: 38, 3: 33, 4: 28, 5: 23, 6: 18 }, // + low F#/Gb? (6th string varies)
