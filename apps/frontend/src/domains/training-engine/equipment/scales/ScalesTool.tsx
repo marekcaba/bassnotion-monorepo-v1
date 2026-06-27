@@ -130,17 +130,21 @@ export function ScalesTool({
   //    scale type + kind below; "Auto" (generated box scale) is always the first option. ──
   const { data: library = [] } = useGymExerciseLibrary('scales');
 
-  // Authored exercises for the CURRENT scale type + kind tab (one entry per saved exercise).
+  // Authored exercises for the CURRENT scale type + kind tab, AND fingered for the player's
+  // own neck. An exercise is fingered for ONE string count (a 5-string Major Scale doesn't
+  // fit a 4-string player), so only show those matching the player's `stringCount`.
   const exercisesForTab = React.useMemo(
     () =>
       library
         .filter((ex) => (ex.scaleType ?? null) === scaleType)
-        .filter(
-          (ex) =>
-            ((ex.payload as PathsByKeyLite | null)?.pathKind ?? 'path') ===
-            kind,
-        ),
-    [library, scaleType, kind],
+        .filter((ex) => {
+          const p = ex.payload as PathsByKeyLite | null;
+          return (
+            (p?.pathKind ?? 'path') === kind &&
+            (p?.stringCount ?? 4) === stringCount
+          );
+        }),
+    [library, scaleType, kind, stringCount],
   );
 
   // The currently-selected authored exercise (null = Auto / generated).
