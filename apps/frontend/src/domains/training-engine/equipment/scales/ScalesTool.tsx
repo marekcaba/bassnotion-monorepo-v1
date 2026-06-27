@@ -117,14 +117,16 @@ export function ScalesTool({
   // The scale ROOT follows the KEY wheel (the `< E >` control) — no separate root picker.
   const root = rootFromKey(backingConfig.originalKey, keyStep);
 
-  // The current key NAME, flat-spelled (Db/Eb/Gb/Ab/Bb) — this is the exact `PathKey` the
-  // admin authored each exercise under, so it indexes `byKey` directly.
+  // The current key NAME, flat-spelled. NOTE: spellPitchClass returns the pretty UNICODE
+  // accidental (G♭, A♭ via U+266D) for the roller display, but the admin's `byKey` is keyed
+  // by ASCII PathKeys (Gb, Ab). `asciiKey` converts ♭/♯ → b/# so the authored lookup hits.
   const keyBasePc = parsePitchClass(backingConfig.originalKey) ?? 0;
   const keyName = React.useCallback(
     (s: number) => spellPitchClass(keyBasePc + s, true),
     [keyBasePc],
   );
   const currentKeyName = keyName(keyStep);
+  const currentKeyAscii = currentKeyName.replace('♭', 'b').replace('♯', '#');
 
   // ── The exercise LIBRARY: authored scale exercises for the gym Scales tool. Grouped by
   //    scale type + kind below; "Auto" (generated box scale) is always the first option. ──
@@ -161,7 +163,7 @@ export function ScalesTool({
 
     if (selectedExercise) {
       const payload = selectedExercise.payload as PathsByKeyLite | null;
-      const events = payload?.byKey?.[currentKeyName]?.ascending ?? [];
+      const events = payload?.byKey?.[currentKeyAscii]?.ascending ?? [];
       if (events.length > 0) {
         const exStringCount = (payload?.stringCount ??
           stringCount) as StringCount;
@@ -186,7 +188,7 @@ export function ScalesTool({
     return { path: p, loopBeats: scalePathBeats(p), droneSymbol };
   }, [
     selectedExercise,
-    currentKeyName,
+    currentKeyAscii,
     root,
     scaleType,
     stringCount,
