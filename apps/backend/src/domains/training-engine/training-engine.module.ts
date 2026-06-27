@@ -11,6 +11,7 @@ import { AdminScaleBlueprintsService } from './admin-scale-blueprints.service.js
 import { ScaleBlueprintsRepository } from './repositories/scale-blueprints.repository.js';
 import { AdminGymExercisesController } from './admin-gym-exercises.controller.js';
 import { AdminGymExercisesService } from './admin-gym-exercises.service.js';
+import { GymExercisesController } from './gym-exercises.controller.js';
 import { GymExercisesRepository } from './repositories/gym-exercises.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
@@ -49,6 +50,7 @@ import { MembershipModule } from '../billing/membership.module.js';
     AdminTrainingGoalsController,
     AdminScaleBlueprintsController,
     AdminGymExercisesController,
+    GymExercisesController,
   ],
   providers: [
     TrainingEngineService,
