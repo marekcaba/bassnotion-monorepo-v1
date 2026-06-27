@@ -3943,8 +3943,14 @@ export function Ring3DOverlayCanvas({
 
   // Use animated leftFadePercent for scroll-based fade-in/fade-out effect
   // The animation is triggered by scroll position (see useEffect above)
-  // leftFadePercent animates from 0 → leftFadeZoneTarget when scrolled
-  const effectiveLeftFade = leftFadePercent;
+  // leftFadePercent animates from 0 → leftFadeZoneTarget when scrolled.
+  //
+  // EXCEPTION (gym Scales tool, showAllNotes): there's no DOM scroll, so the scroll-gated
+  // animation never fires and the left edge stays HARD-CROPPED regardless of the slider.
+  // For that tool, apply the configured left fade STATICALLY (like the right fade already
+  // does) so both edges soften. The tutorial (showAllNotes=false) keeps its scroll-based
+  // behavior — clean nut at the start, fade once scrolled.
+  const effectiveLeftFade = showAllNotes ? leftFadeZoneTarget : leftFadePercent;
 
   // Calculate gradient angles for perspective effect
   // 90deg = horizontal (to right), adjust by fadeEdgeAngle for perspective
