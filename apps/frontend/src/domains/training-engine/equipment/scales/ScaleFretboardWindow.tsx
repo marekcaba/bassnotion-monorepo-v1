@@ -36,6 +36,9 @@ export interface ScaleFretboardWindowProps {
   /** What to show: a box POSITION number (1 = root box), or 'whole' for the entire
    *  scale across the neck. Default 1. */
   view?: number | 'whole';
+  /** Admin-authored box shapes to preview (the editor's LIVE draft), overriding the
+   *  in-code seed. Absent in the player — it uses the seed/server blueprint. */
+  blueprintOverride?: { positions: { positionNumber: number; startFretOffset: number; span: number }[] };
 }
 
 export function ScaleFretboardWindow({
@@ -46,6 +49,7 @@ export function ScaleFretboardWindow({
   isPlaying,
   tempo,
   view = 1,
+  blueprintOverride,
 }: ScaleFretboardWindowProps) {
   // Build the full note universe for the user's neck, then show either ONE box position
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
@@ -56,7 +60,14 @@ export function ScaleFretboardWindow({
     const shown =
       view === 'whole'
         ? universe
-        : selectBox(universe, fretboard, root, scaleType, view);
+        : selectBox(
+            universe,
+            fretboard,
+            root,
+            scaleType,
+            view,
+            blueprintOverride,
+          );
     return {
       exerciseNotes: shown.map((n, i) => ({
         string: n.string,
@@ -70,7 +81,7 @@ export function ScaleFretboardWindow({
         .filter((n) => n.isRoot)
         .map((n) => ({ string: n.string, fret: n.fret })),
     };
-  }, [root, scaleType, stringCount, maxFrets, view]);
+  }, [root, scaleType, stringCount, maxFrets, view, blueprintOverride]);
 
   // Enable the ring overlay (DEFAULT has enabled:false) so the active-note highlight
   // shows; the dots themselves come from exerciseNotes.

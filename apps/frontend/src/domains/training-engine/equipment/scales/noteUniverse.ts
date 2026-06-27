@@ -15,7 +15,7 @@ import {
   type ScaleType,
   type StringCount,
 } from './scaleGenerator';
-import { SCALE_BLUEPRINTS } from './scaleBlueprints';
+import { SCALE_BLUEPRINTS, type ScalePosition } from './scaleBlueprints';
 
 /** Open-string MIDI by `string` number — the AUTHORITATIVE convention from
  *  ExerciseLoader.ts:991-1000 + the contract (exercise.ts:40):
@@ -143,8 +143,11 @@ export function selectBox(
   root: PitchClass,
   scaleType: ScaleType,
   positionNumber: number,
+  // Admin-authored override: the box shapes from the editor / server, replacing the
+  // in-code seed. Falls back to SCALE_BLUEPRINTS when absent (production day-1 + tests).
+  blueprintOverride?: { positions: ScalePosition[] },
 ): UniverseNote[] {
-  const blueprint = SCALE_BLUEPRINTS[scaleType];
+  const blueprint = blueprintOverride ?? SCALE_BLUEPRINTS[scaleType];
   const pos =
     blueprint.positions.find((p) => p.positionNumber === positionNumber) ??
     blueprint.positions[0]!;

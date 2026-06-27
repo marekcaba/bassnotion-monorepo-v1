@@ -66,3 +66,36 @@ export const recordRepResultSchema = z.object({
 });
 
 export type RecordRepResultData = z.infer<typeof recordRepResultSchema>;
+
+// =====================================================
+// SCALE BLUEPRINTS — admin authoring validation
+// =====================================================
+
+export const scaleRhythmSchema = z.enum(['4n', '8n', '16n']);
+
+export const scaleTypeIdSchema = z.enum([
+  'major',
+  'natural_minor',
+  'dorian',
+  'mixolydian',
+  'minor_pentatonic',
+  'major_pentatonic',
+]);
+
+export const scalePositionShapeSchema = z.object({
+  positionNumber: z.number().int().min(1),
+  startFretOffset: z.number().int().min(-6).max(24),
+  span: z.number().int().min(1).max(12),
+});
+
+/** Admin PATCH body — at least one of positions/rhythm; both optional individually. */
+export const updateScaleBlueprintSchema = z
+  .object({
+    positions: z.array(scalePositionShapeSchema).min(1).optional(),
+    rhythm: scaleRhythmSchema.optional(),
+  })
+  .refine((v) => v.positions !== undefined || v.rhythm !== undefined, {
+    message: 'Provide at least one of: positions, rhythm',
+  });
+
+export type UpdateScaleBlueprintData = z.infer<typeof updateScaleBlueprintSchema>;

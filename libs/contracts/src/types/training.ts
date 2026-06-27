@@ -688,3 +688,48 @@ export function drillCompletionToSignal(
       return null;
   }
 }
+
+// =====================================================
+// SCALE BLUEPRINTS — admin-authored box shapes + rhythm
+// =====================================================
+// The gym Scales tool's per-scale fingering shapes. Seeded in code with sensible
+// defaults; an admin refines the box windows visually + sets the practice rhythm,
+// and the engine reads the stored shapes. Mirrors the `scale_blueprints` table
+// (snake_case → camelCase in the repository).
+
+/** One box position: a fret WINDOW relative to the root's fret on the lowest string. */
+export interface ScalePositionShape {
+  /** 1-based: position 1 = the root box, ascending up the neck. */
+  positionNumber: number;
+  /** Fret offset of the box's LOW edge, relative to the root fret on the lowest
+   *  string (usually slightly negative — the index finger sits behind the root). */
+  startFretOffset: number;
+  /** How many frets the box spans (the hand-position width). */
+  span: number;
+}
+
+/** The note value each step of the scale run occupies (Tone.js notation). */
+export type ScaleRhythmValue = '4n' | '8n' | '16n';
+
+/** The scale types the gym Scales tool authors. */
+export type ScaleTypeId =
+  | 'major'
+  | 'natural_minor'
+  | 'dorian'
+  | 'mixolydian'
+  | 'minor_pentatonic'
+  | 'major_pentatonic';
+
+/** One scale's full admin-authored blueprint (box shapes + practice rhythm). */
+export interface ScaleBlueprintRecord {
+  scaleType: ScaleTypeId;
+  positions: ScalePositionShape[];
+  rhythm: ScaleRhythmValue;
+  updatedAt: string;
+}
+
+/** Admin PATCH payload — replace a scale's positions and/or rhythm. */
+export interface UpdateScaleBlueprintInput {
+  positions?: ScalePositionShape[];
+  rhythm?: ScaleRhythmValue;
+}
