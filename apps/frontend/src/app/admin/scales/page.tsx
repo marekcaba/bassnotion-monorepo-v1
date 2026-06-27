@@ -180,8 +180,12 @@ export default function AdminScalesPage() {
   const loadExercise = (ex: GymExercise) => {
     setCurrentExerciseId(ex.id);
     const payload = ex.payload as PathsByKey;
-    // Older exercises predate the stringCount field — default to 4-string.
-    setPaths({ ...payload, stringCount: payload.stringCount ?? 4 });
+    // Older exercises predate the stringCount/pathKind fields — default them.
+    setPaths({
+      ...payload,
+      stringCount: payload.stringCount ?? 4,
+      pathKind: payload.pathKind ?? 'path',
+    });
     if (ex.scaleType) setScaleType(ex.scaleType as ScaleTypeId);
     setPathKey('E');
     setPathSaved(false);
@@ -731,6 +735,7 @@ export default function AdminScalesPage() {
                   </span>
                   <span className="text-xs text-gray-400">
                     {ex.scaleType ?? '—'} ·{' '}
+                    {(ex.payload as PathsByKey | null)?.pathKind ?? 'path'} ·{' '}
                     {(ex.payload as PathsByKey | null)?.stringCount ?? 4}-string
                     {ex.description ? ` · ${ex.description}` : ''}
                   </span>

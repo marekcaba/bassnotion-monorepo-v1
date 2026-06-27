@@ -64,11 +64,36 @@ export interface SavedPreset {
   stride: number;
 }
 
+/** What KIND of content this exercise is — the library groups by it, and the student
+ *  tool uses it to decide which performance rollers apply (paths have no "position"). */
+export type PathKind = 'scale' | 'pattern' | 'path';
+
+export const PATH_KINDS: { value: PathKind; label: string; hint: string }[] = [
+  {
+    value: 'scale',
+    label: 'Scale run',
+    hint: 'a box-position run up/down the scale',
+  },
+  {
+    value: 'pattern',
+    label: 'Pattern',
+    hint: 'a cell+stride figure (thirds, 1235…)',
+  },
+  {
+    value: 'path',
+    label: 'Path',
+    hint: 'a route across the whole neck (no box)',
+  },
+];
+
 export interface PathsByKey {
   /** Exercise name (e.g. "Major scale — 3 octaves") + a short description, shown to the
    *  student when they pick this exercise. */
   name: string;
   description: string;
+  /** Library bucket + which performance controls apply. Defaults to 'path' (old exercises
+   *  authored before this field existed were full-neck paths). */
+  pathKind: PathKind;
   /** The neck this exercise is FINGERED for. One exercise = one string count (a 4- vs
    *  5-string E major are separate exercises — the fingerings differ). */
   stringCount: 4 | 5 | 6;
@@ -89,6 +114,7 @@ export function emptyPathsByKey(stringCount: 4 | 5 | 6 = 4): PathsByKey {
   return {
     name: '',
     description: '',
+    pathKind: 'path',
     stringCount,
     timeSignature: { numerator: 4, denominator: 4 },
     byKey,
@@ -407,6 +433,30 @@ export function PathEditor({
                 }`}
               >
                 {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* KIND — the library bucket. Decides how the student finds this exercise and
+            which performance controls apply (paths have no box "position"). */}
+        <div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Kind
+          </div>
+          <div className="flex gap-1">
+            {PATH_KINDS.map((pk) => (
+              <button
+                key={pk.value}
+                type="button"
+                onClick={() => onChange({ ...paths, pathKind: pk.value })}
+                title={pk.hint}
+                className={`rounded px-2.5 py-1 text-xs font-semibold ${
+                  paths.pathKind === pk.value
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {pk.label}
               </button>
             ))}
           </div>
