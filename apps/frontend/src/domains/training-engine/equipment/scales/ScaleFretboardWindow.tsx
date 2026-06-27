@@ -194,7 +194,51 @@ export function ScaleFretboardWindow({
   // ways, shoving the left edge off-screen (the nut clips). Instead the box stays 100%
   // and the wider canvas overflows symmetrically (overflow:visible), so the scene stays
   // centered in the card. No sceneX anchor-pull needed — centering is symmetric now.
-  const anchoredConfig = overlay3DConfig;
+  // ── CENTER THE EXERCISE (pan sceneX, like the admin drag) ──────────────────────────
+  // sceneX pans the fretboard left/right WITHIN the fixed window (1px sceneX = 1px pan).
+  // To present an authored exercise centered, set sceneX from the exercise's middle fret.
+  // The linear map was MEASURED on the real board (drag-to-center two exercises):
+  //   5-string: (fret 2 → sceneX -105) and (fret 12.5 → -545) → slope -41.9 px/fret,
+  //   anchor (fret 0) -21.1. 4-string sits +17 higher (its default sceneX is -51 vs -68).
+  // Only authored exercises (litNotes) get centered; generated scales keep the default.
+  const SCENE_PX_PER_FRET = -41.9;
+  const SCENE_ANCHOR_5 = -21.1; // sceneX at fret 0, 5/6-string
+  const targetSceneX = React.useMemo(() => {
+    if (!litNotes || litNotes.length === 0) return overlay3DConfig.sceneX;
+    const frets = litNotes.map((n) => n.fret);
+    const centerFret = (Math.min(...frets) + Math.max(...frets)) / 2;
+    const anchor = stringCount === 4 ? SCENE_ANCHOR_5 + 17 : SCENE_ANCHOR_5;
+    return anchor + SCENE_PX_PER_FRET * centerFret;
+  }, [litNotes, stringCount, overlay3DConfig.sceneX]);
+
+  // Animate sceneX toward the target so the board SLIDES the exercise into center on
+  // load / key / variant change, instead of snapping.
+  const [animSceneX, setAnimSceneX] = React.useState(targetSceneX);
+  const sceneRafRef = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (sceneRafRef.current !== null) cancelAnimationFrame(sceneRafRef.current);
+    const tick = () => {
+      setAnimSceneX((cur) => {
+        const next = cur + (targetSceneX - cur) * 0.2; // ease toward target
+        if (Math.abs(targetSceneX - next) < 0.5) {
+          sceneRafRef.current = null;
+          return targetSceneX;
+        }
+        sceneRafRef.current = requestAnimationFrame(tick);
+        return next;
+      });
+    };
+    sceneRafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (sceneRafRef.current !== null)
+        cancelAnimationFrame(sceneRafRef.current);
+    };
+  }, [targetSceneX]);
+
+  const anchoredConfig = React.useMemo(
+    () => ({ ...overlay3DConfig, sceneX: animSceneX }),
+    [overlay3DConfig, animSceneX],
+  );
 
   return (
     <div
