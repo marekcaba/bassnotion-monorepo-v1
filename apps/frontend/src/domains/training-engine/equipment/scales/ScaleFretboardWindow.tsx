@@ -21,7 +21,7 @@ import {
   FRETBOARD_WINDOW,
 } from './fretboardViewConfig';
 import {
-  FretboardCalibrationPanel, // ← re-enabled for calibration (flag-gated)
+  // FretboardCalibrationPanel,  // ← uncomment (+ the mount below) to re-calibrate
   CALIBRATION_ENABLED,
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
@@ -134,8 +134,10 @@ export function ScaleFretboardWindow({
   );
 
   // DEV calibration: live overrides for the centering/fade params, seeded from the
-  // base config. When CALIBRATION_ENABLED, the draggable panel adjusts these live;
-  // otherwise the base config is used as-is.
+  // base config. When CALIBRATION_ENABLED, the panel adjusts these live; otherwise
+  // the base config is used as-is.
+  // `setCal` unused while the panel is commented out; restore on re-calibration.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cal, setCal] = React.useState<FretboardCalibrationValues>(() => ({
     sceneX: baseConfig.sceneX,
     offsetX: baseConfig.offsetX,
@@ -248,10 +250,10 @@ export function ScaleFretboardWindow({
         overflow: 'visible',
       }}
     >
-      {/* DEV calibration panel — draggable; renders null unless
-          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true. Tune sceneX / L-R fade zones live, then
-          bake the values into fretboardViewConfig.ts and comment this back out. */}
-      <FretboardCalibrationPanel values={cal} onChange={setCal} />
+      {/* DEV calibration panel — commented out (values baked into fretboardViewConfig.ts).
+          To re-calibrate: uncomment this + the import above, and set
+          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
+      {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
       <Ring3DOverlayCanvas
         exerciseNotes={exerciseNotes}
         currentTime={0}
