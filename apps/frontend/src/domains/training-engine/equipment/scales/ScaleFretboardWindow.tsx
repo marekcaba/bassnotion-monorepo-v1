@@ -196,6 +196,28 @@ export function ScaleFretboardWindow({
   // centered in the card. No sceneX anchor-pull needed — centering is symmetric now.
   const anchoredConfig = overlay3DConfig;
 
+  // ── CENTER THE EXERCISE ────────────────────────────────────────────────────────────
+  // The board's content is panned by ScrollOffsetGroup via a scrollLeft value (it has
+  // built-in per-frame smoothing). The gym tool has no DOM scroll strip, so we compute the
+  // scrollLeft that puts the exercise's fret RANGE at the window center and pass it as
+  // scrollLeftOverride — the canvas seeds it and animates the pan. Only for authored
+  // exercises (litNotes); the generated box-scale view keeps the default neck centering.
+  //
+  // Geometry MUST match Ring3DOverlayCanvas: fret N's content-X =
+  //   CENTER_OFFSET(15) + FRET_OFFSET(38) + (N-1)*FRET_SPACING(36) + DOT_RADIUS(13);
+  // FULL_CONTENT_WIDTH = 15 + 38 + (maxFrets-1)*36 + 13*2 + 20. To center fret N:
+  //   scrollLeft = fretX(N) - FULL_CONTENT_WIDTH/2.
+  const scrollLeftOverride = React.useMemo(() => {
+    if (!litNotes || litNotes.length === 0) return undefined;
+    const FRET_SPACING = 36;
+    const fretX = (n: number) => 15 + 38 + (n - 1) * FRET_SPACING + 13;
+    const fullContentWidth =
+      15 + 38 + (maxFrets - 1) * FRET_SPACING + 13 * 2 + 20;
+    const frets = litNotes.map((n) => n.fret);
+    const centerFret = (Math.min(...frets) + Math.max(...frets)) / 2;
+    return fretX(centerFret) - fullContentWidth / 2;
+  }, [litNotes, maxFrets]);
+
   return (
     <div
       style={{
@@ -225,6 +247,9 @@ export function ScaleFretboardWindow({
         showAllNotes
         // Root notes paint a DARKER green so the scale's home note stands out.
         rootPositions={rootPositions}
+        // Pan so an authored exercise sits centered in the window (animated). Undefined
+        // for generated scales → default neck centering.
+        scrollLeftOverride={scrollLeftOverride}
       />
     </div>
   );
