@@ -182,7 +182,15 @@ export default function AdminScalesPage() {
   // gets a "copy" suffix so the two are distinguishable in the list until you rename it.
   const duplicateExercise = () => {
     setCurrentExerciseId(null);
-    setPaths({ ...paths, name: `${paths.name || 'Untitled'} (copy)` });
+    // Keep the variant GROUP (same exercise) but clear the variant LABEL so you give the new
+    // fingering its own (v2, "Open strings", …). If no group is set, fall back to suffixing
+    // the name so the two rows are still distinguishable in the list.
+    const hasGroup = !!paths.variantGroup?.trim();
+    setPaths({
+      ...paths,
+      name: hasGroup ? paths.name : `${paths.name || 'Untitled'} (copy)`,
+      variantLabel: '',
+    });
     setPathSaved(false);
     setPathError(null);
   };
@@ -191,11 +199,13 @@ export default function AdminScalesPage() {
   const loadExercise = (ex: GymExercise) => {
     setCurrentExerciseId(ex.id);
     const payload = ex.payload as PathsByKey;
-    // Older exercises predate the stringCount/pathKind fields — default them.
+    // Older exercises predate the stringCount/pathKind/variant fields — default them.
     setPaths({
       ...payload,
       stringCount: payload.stringCount ?? 4,
       pathKind: payload.pathKind ?? 'path',
+      variantGroup: payload.variantGroup ?? '',
+      variantLabel: payload.variantLabel ?? '',
     });
     if (ex.scaleType) setScaleType(ex.scaleType as ScaleTypeId);
     setPathKey('E');
@@ -758,6 +768,13 @@ export default function AdminScalesPage() {
                     {ex.scaleType ?? '—'} ·{' '}
                     {(ex.payload as PathsByKey | null)?.pathKind ?? 'path'} ·{' '}
                     {(ex.payload as PathsByKey | null)?.stringCount ?? 4}-string
+                    {(() => {
+                      const p = ex.payload as PathsByKey | null;
+                      const grp = p?.variantGroup?.trim();
+                      const lbl = p?.variantLabel?.trim();
+                      if (!grp && !lbl) return '';
+                      return ` · ${[grp, lbl].filter(Boolean).join(' / ')}`;
+                    })()}
                     {ex.description ? ` · ${ex.description}` : ''}
                   </span>
                 </button>

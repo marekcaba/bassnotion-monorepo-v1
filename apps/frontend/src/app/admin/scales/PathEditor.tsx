@@ -94,6 +94,12 @@ export interface PathsByKey {
   /** Library bucket + which performance controls apply. Defaults to 'path' (old exercises
    *  authored before this field existed were full-neck paths). */
   pathKind: PathKind;
+  /** VARIANT GROUPING — the same logical exercise has many fingerings on bass. `variantGroup`
+   *  is the exercise IDENTITY ("Two octaves"); `variantLabel` is this fingering ("v1", "Open
+   *  strings"). The student tool groups by `variantGroup` and offers the labels within it.
+   *  Empty `variantGroup` → the exercise stands alone (falls back to `name`). */
+  variantGroup?: string;
+  variantLabel?: string;
   /** The neck this exercise is FINGERED for. One exercise = one string count (a 4- vs
    *  5-string E major are separate exercises — the fingerings differ). */
   stringCount: 4 | 5 | 6;
@@ -115,6 +121,8 @@ export function emptyPathsByKey(stringCount: 4 | 5 | 6 = 4): PathsByKey {
     name: '',
     description: '',
     pathKind: 'path',
+    variantGroup: '',
+    variantLabel: '',
     stringCount,
     timeSignature: { numerator: 4, denominator: 4 },
     byKey,
@@ -409,6 +417,46 @@ export function PathEditor({
               onChange({ ...paths, description: e.target.value })
             }
             placeholder="What the student practices here"
+            className="w-full rounded border border-gray-300 px-2 py-1.5"
+          />
+        </label>
+      </div>
+
+      {/* Variant grouping — same logical exercise, different fingering. Group = the exercise
+          ("Two octaves"); Variant = this fingering ("v1", "Open strings"). The gym tool
+          groups exercises by Group and offers the Variants within. Leave blank to stand alone. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Variant group{' '}
+            <span className="font-normal normal-case text-gray-300">
+              (the exercise — students pick this)
+            </span>
+          </span>
+          <input
+            type="text"
+            value={paths.variantGroup ?? ''}
+            onChange={(e) =>
+              onChange({ ...paths, variantGroup: e.target.value })
+            }
+            placeholder="e.g. Two octaves"
+            className="w-full rounded border border-gray-300 px-2 py-1.5"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Variant label{' '}
+            <span className="font-normal normal-case text-gray-300">
+              (this fingering)
+            </span>
+          </span>
+          <input
+            type="text"
+            value={paths.variantLabel ?? ''}
+            onChange={(e) =>
+              onChange({ ...paths, variantLabel: e.target.value })
+            }
+            placeholder="e.g. v1 / Open strings / Pinky"
             className="w-full rounded border border-gray-300 px-2 py-1.5"
           />
         </label>
