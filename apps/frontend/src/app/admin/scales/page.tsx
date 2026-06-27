@@ -176,6 +176,17 @@ export default function AdminScalesPage() {
     setPathError(null);
   };
 
+  // Duplicate the CURRENT editor state as a brand-new exercise: keep all the drawn notes
+  // but detach from the saved row (clear the id) so the next Save CREATES a new one. Use
+  // this to author a fingering VARIANT — duplicate, nudge a few notes, save as v2. The name
+  // gets a "copy" suffix so the two are distinguishable in the list until you rename it.
+  const duplicateExercise = () => {
+    setCurrentExerciseId(null);
+    setPaths({ ...paths, name: `${paths.name || 'Untitled'} (copy)` });
+    setPathSaved(false);
+    setPathError(null);
+  };
+
   // Load a saved exercise into the editor (its payload IS a PathsByKey).
   const loadExercise = (ex: GymExercise) => {
     setCurrentExerciseId(ex.id);
@@ -582,6 +593,16 @@ export default function AdminScalesPage() {
             >
               + New
             </button>
+            {currentExerciseId && (
+              <button
+                type="button"
+                onClick={duplicateExercise}
+                title="Copy this exercise's notes into a new exercise — tweak a few + save as a variant"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+              >
+                ⧉ Duplicate
+              </button>
+            )}
             {currentExerciseId && (
               <span className="text-xs text-gray-400">
                 editing a saved exercise
