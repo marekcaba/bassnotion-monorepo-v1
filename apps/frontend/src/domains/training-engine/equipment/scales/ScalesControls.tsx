@@ -30,6 +30,8 @@ export interface RollerSpec {
   next2Label?: string;
   onUp: () => void;
   onDown: () => void;
+  /** Grey out + no-op the arrows (e.g. an Exercise roller with a single option). */
+  disabled?: boolean;
 }
 
 /** The kind filter on the content row — buckets the library by what KIND of exercise. */

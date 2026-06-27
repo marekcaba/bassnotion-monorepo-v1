@@ -254,32 +254,38 @@ export function ScalesTool({
   // EXERCISE — which authored exercise (or "Auto"). The option list is the authored
   // exercises for the current scale type + kind tab, with "Auto" (generated) PREPENDED
   // only for the 'scale' kind (Auto is a box scale run). Other kinds list authored-only.
+  // The list is FINITE and does NOT wrap: with one exercise the wheel shows just that one
+  // item (no phantom neighbors, no spin). Neighbor labels are blank past the ends; up/down
+  // clamp at the edges.
   const autoOption = kind === 'scale';
   const exerciseLabels = [
     ...(autoOption ? ['Auto'] : []),
     ...exercisesForTab.map((ex, i) => ex.name || `Exercise ${i + 1}`),
   ];
-  const exerciseSlots = Math.max(exerciseLabels.length, 1);
-  // exerciseIdx is -1 for Auto; map to a 0-based slot for the wheel.
-  const exSlot = autoOption ? exerciseIdx + 1 : Math.max(exerciseIdx, 0);
+  // exerciseIdx is -1 for Auto; map to a 0-based slot for the wheel, clamped in range.
+  const lastSlot = Math.max(exerciseLabels.length - 1, 0);
+  const exSlot = Math.min(
+    Math.max(autoOption ? exerciseIdx + 1 : exerciseIdx, 0),
+    lastSlot,
+  );
+  // Bounded label: blank when the slot is off either end (so a 1-item list shows 1 item).
   const exLabelAt = (slot: number) =>
-    exerciseLabels.length === 0
-      ? '—'
-      : exerciseLabels[
-          ((slot % exerciseSlots) + exerciseSlots) % exerciseSlots
-        ]!;
-  const setExBySlot = (slot: number) => {
-    const wrapped = ((slot % exerciseSlots) + exerciseSlots) % exerciseSlots;
-    setExerciseIdx(autoOption ? wrapped - 1 : wrapped);
+    slot >= 0 && slot < exerciseLabels.length ? exerciseLabels[slot]! : '';
+  const setExToSlot = (slot: number) => {
+    if (slot < 0 || slot >= exerciseLabels.length) return; // clamp at the ends
+    setExerciseIdx(autoOption ? slot - 1 : slot);
   };
   const exerciseRoller = {
     prev2Label: exLabelAt(exSlot - 2),
     prevLabel: exLabelAt(exSlot - 1),
-    currentLabel: exLabelAt(exSlot),
+    currentLabel: exLabelAt(exSlot) || '—',
     nextLabel: exLabelAt(exSlot + 1),
     next2Label: exLabelAt(exSlot + 2),
-    onUp: () => setExBySlot(exSlot - 1),
-    onDown: () => setExBySlot(exSlot + 1),
+    onUp: () => setExToSlot(exSlot - 1),
+    onDown: () => setExToSlot(exSlot + 1),
+    // Nothing to spin to when there's 0 or 1 option — grey the arrows so it can't
+    // empty-spin to a blank row.
+    disabled: exerciseLabels.length <= 1,
   };
 
   // KIND tabs — Runs / Patterns / Paths. Switching kind resets the exercise selection
