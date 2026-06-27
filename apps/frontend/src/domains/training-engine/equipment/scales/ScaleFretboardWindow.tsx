@@ -188,57 +188,73 @@ export function ScaleFretboardWindow({
     ? activeCal.viewportWidth
     : FRETBOARD_WINDOW.viewportWidth;
   const height = activeCal ? activeCal.windowHeight : FRETBOARD_CANVAS_HEIGHT;
-  // The canvas renders `viewportWidth` px wide (wider than the 580 base to show more
-  // frets). We DON'T grow the outer box past 100% — doing so makes it wider than the
-  // centered max-w card, and the page's `justify-center` then splits the overflow both
-  // ways, shoving the left edge off-screen (the nut clips). Instead the box stays 100%
-  // and the wider canvas overflows symmetrically (overflow:visible), so the scene stays
-  // centered in the card. No sceneX anchor-pull needed — centering is symmetric now.
-  // ── CENTER THE EXERCISE (pan sceneX, like the admin drag) ──────────────────────────
-  // sceneX pans the fretboard left/right WITHIN the fixed window (1px sceneX = 1px pan).
-  // To present an authored exercise centered, set sceneX from the exercise's middle fret.
-  // The linear map was MEASURED on the real board (drag-to-center two exercises):
-  //   5-string: (fret 2 → sceneX -105) and (fret 12.5 → -545) → slope -41.9 px/fret,
-  //   anchor (fret 0) -21.1. 4-string sits +17 higher (its default sceneX is -51 vs -68).
-  // Only authored exercises (litNotes) get centered; generated scales keep the default.
-  const SCENE_PX_PER_FRET = -41.9;
-  const SCENE_ANCHOR_5 = -21.1; // sceneX at fret 0, 5/6-string
-  const targetSceneX = React.useMemo(() => {
-    if (!litNotes || litNotes.length === 0) return overlay3DConfig.sceneX;
+  const anchoredConfig = overlay3DConfig;
+
+  // ── MOVEMENT: the tutorial's model (the working reference) ─────────────────────────
+  // A native horizontal scroll container drives the pan: the canvas reads its scrollLeft
+  // every frame (ScrollSyncManager) and translates the 3D content (ScrollOffsetGroup).
+  // This is what gives us, for free: drag-to-move AND the scroll-gated LEFT FADE (off at
+  // the nut, on once moved). The inner spacer is wider than the window so there's room to
+  // scroll the whole neck. Geometry mirrors Ring3DOverlayCanvas exactly.
+  const FRET_SPACING = 38;
+  const FRET_OFFSET = 46;
+  const CENTER_OFFSET = 15;
+  const DOT_RADIUS = 13;
+  const fullContentWidth =
+    CENTER_OFFSET +
+    FRET_OFFSET +
+    (maxFrets - 1) * FRET_SPACING +
+    DOT_RADIUS * 2 +
+    20;
+
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragStartRef = React.useRef({ x: 0, scrollLeft: 0 });
+
+  // Center a fret in the viewport (tutorial's scrollToFret, smooth). fret can be fractional.
+  const scrollToFret = React.useCallback(
+    (fret: number, behavior: ScrollBehavior = 'smooth') => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      const fretX = CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
+      const target = fretX - viewportWidth / 2;
+      el.scrollTo({ left: Math.max(0, target), behavior });
+    },
+    [viewportWidth],
+  );
+
+  // On exercise change (litNotes), auto-center on the exercise's middle fret so it's
+  // presented in front of the student. A manual drag afterwards is free to move it; the
+  // next exercise re-centers.
+  React.useEffect(() => {
+    if (!litNotes || litNotes.length === 0) {
+      scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
     const frets = litNotes.map((n) => n.fret);
     const centerFret = (Math.min(...frets) + Math.max(...frets)) / 2;
-    const anchor = stringCount === 4 ? SCENE_ANCHOR_5 + 17 : SCENE_ANCHOR_5;
-    return anchor + SCENE_PX_PER_FRET * centerFret;
-  }, [litNotes, stringCount, overlay3DConfig.sceneX]);
+    // rAF so the container has laid out before we scroll.
+    const id = requestAnimationFrame(() => scrollToFret(centerFret));
+    return () => cancelAnimationFrame(id);
+  }, [litNotes, scrollToFret]);
 
-  // Animate sceneX toward the target so the board SLIDES the exercise into center on
-  // load / key / variant change, instead of snapping.
-  const [animSceneX, setAnimSceneX] = React.useState(targetSceneX);
-  const sceneRafRef = React.useRef<number | null>(null);
-  React.useEffect(() => {
-    if (sceneRafRef.current !== null) cancelAnimationFrame(sceneRafRef.current);
-    const tick = () => {
-      setAnimSceneX((cur) => {
-        const next = cur + (targetSceneX - cur) * 0.2; // ease toward target
-        if (Math.abs(targetSceneX - next) < 0.5) {
-          sceneRafRef.current = null;
-          return targetSceneX;
-        }
-        sceneRafRef.current = requestAnimationFrame(tick);
-        return next;
-      });
+  // Drag-to-pan (mouse), mirroring the tutorial: 2× walk for responsiveness.
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.pageX,
+      scrollLeft: scrollContainerRef.current.scrollLeft,
     };
-    sceneRafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (sceneRafRef.current !== null)
-        cancelAnimationFrame(sceneRafRef.current);
-    };
-  }, [targetSceneX]);
-
-  const anchoredConfig = React.useMemo(
-    () => ({ ...overlay3DConfig, sceneX: animSceneX }),
-    [overlay3DConfig, animSceneX],
-  );
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const walk = (e.pageX - dragStartRef.current.x) * 2;
+    scrollContainerRef.current.scrollLeft =
+      dragStartRef.current.scrollLeft - walk;
+  };
+  const endDrag = () => setIsDragging(false);
 
   return (
     <div
@@ -254,22 +270,54 @@ export function ScaleFretboardWindow({
           To re-calibrate: uncomment this + the import above, and set
           NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
       {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
-      <Ring3DOverlayCanvas
-        exerciseNotes={exerciseNotes}
-        currentTime={0}
-        isPlaying={isPlaying}
-        config={ringConfig}
-        stringCount={stringCount}
-        maxFrets={maxFrets}
-        tempo={tempo}
-        overlay3DConfig={anchoredConfig}
-        viewportWidthOverride={viewportWidth}
-        // Light the WHOLE scale at once (the scale shape), not a moving lookahead
-        // window — the active note still emphasizes as the sequence plays.
-        showAllNotes
-        // Root notes paint a DARKER green so the scale's home note stands out.
-        rootPositions={rootPositions}
-      />
+
+      {/* Scroll container (the tutorial's movement mechanism). overflow-x-auto + a wide
+          inner spacer = native scroll; the canvas reads scrollLeft each frame. Scrollbar
+          hidden; drag-to-pan on top of native scroll. */}
+      <div
+        ref={scrollContainerRef}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={endDrag}
+        onMouseLeave={endDrag}
+        className="h-full w-full overflow-x-auto overflow-y-hidden"
+        style={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        <style jsx>{`
+          div::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+        {/* Wide spacer so there's room to scroll the whole neck. The canvas overlays it. */}
+        <div style={{ position: 'relative', width: fullContentWidth, height }}>
+          <Ring3DOverlayCanvas
+            exerciseNotes={exerciseNotes}
+            currentTime={0}
+            isPlaying={isPlaying}
+            config={ringConfig}
+            stringCount={stringCount}
+            maxFrets={maxFrets}
+            tempo={tempo}
+            overlay3DConfig={anchoredConfig}
+            viewportWidthOverride={viewportWidth}
+            // The canvas reads this each frame to pan the 3D content + gate the left fade.
+            // Cast: React 19 types useRef(null) as RefObject<T | null>; the canvas prop is
+            // RefObject<T> (it null-guards .current internally).
+            scrollContainerRef={
+              scrollContainerRef as React.RefObject<HTMLDivElement>
+            }
+            // Light the WHOLE scale at once (the scale shape), not a moving lookahead
+            // window — the active note still emphasizes as the sequence plays.
+            showAllNotes
+            // Root notes paint a DARKER green so the scale's home note stands out.
+            rootPositions={rootPositions}
+          />
+        </div>
+      </div>
     </div>
   );
 }
