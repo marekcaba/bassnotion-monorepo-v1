@@ -21,20 +21,22 @@ export const FRETBOARD_CANVAS_WIDTH = 568;
  *  Ear/eye-calibrated for the gym scales tool (2026-06-24). */
 export const FRETBOARD_CANVAS_HEIGHT = 305;
 
-/** WINDOW geometry (the canvas box, not the 3D scene). The fretboard canvas is WIDER
- *  than the fixed-width card so more frets show; the right cut moves right while the
- *  left edge stays anchored. Calibrated live, baked here. */
+/** WINDOW geometry (the canvas box, not the 3D scene). The gym fretboard now uses the
+ *  TUTORIAL's scroll model — a native scroll container pans the neck (ScaleFretboardWindow)
+ *  — so the scene config below MIRRORS the tutorial's, and the viewport is the tutorial's
+ *  default 580 (the scroll container, not a wide canvas, reveals more frets). The old 710 +
+ *  custom sceneX was the pre-scroll static-layout tuning and fought the scroll offset. */
 export const FRETBOARD_WINDOW = {
-  /** The PRIMARY (inner canvas) width in px. HIGHER = right hard-cut moves right →
-   *  more frets visible (scene was hardcoded to 580). Calibrated 2026-06-24. */
-  viewportWidth: 710,
+  /** Canvas width in px — matches the tutorial (568/580). Panning the neck is the scroll
+   *  container's job now, not a wide fixed canvas. */
+  viewportWidth: 580,
 };
 
 export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
-  // Calibrated on a 4-string (the right cut, content scale, and left-anchor were tuned
-  // by eye 2026-06-24). 5/6-string keep the same relative left-shift the tutorial used
-  // (4→others was a −17 nudge), applied to the calibrated 4-string base.
-  const sceneX = stringCount === 4 ? -51 : -68;
+  // MIRROR the tutorial's scroll-model scene config (YouTubeWidgetPage.tsx default preset),
+  // so the scroll container's ScrollOffsetGroup math lines up with the scene. sceneX is
+  // string-count-dependent exactly as the tutorial sets it (4-string 20, 5/6-string 3).
+  const sceneX = stringCount === 4 ? 20 : 3;
   return {
     rotationX: 0,
     rotationY: 0,
@@ -48,8 +50,8 @@ export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
     fovOffset: 0,
     originX: 284, // center of the 568px canvas
     originY: 136,
-    contentScale: 1.57,
-    contentScaleX: 0.878,
+    contentScale: 1.3,
+    contentScaleX: 0.959,
     contentScaleY: 0.949,
     cameraY: 0,
     perspectiveMultiplier: 0.98,
