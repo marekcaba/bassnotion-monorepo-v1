@@ -635,11 +635,6 @@ export interface Ring3DOverlayCanvasProps {
    *  DARKER green than the rest of the scale so the home note stands out. Scales-tool
    *  only; the tutorial passes nothing. */
   rootPositions?: Array<{ string: number; fret: number }>;
-  /** Pan the board to this scroll offset (px), WITHOUT a DOM scroll container. The gym
-   *  tools have no scrollable strip; they pass this to center an exercise on the neck.
-   *  The existing ScrollOffsetGroup smoothing animates the pan. Undefined → no override
-   *  (reads the DOM container's scrollLeft as usual). */
-  scrollLeftOverride?: number;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -3399,7 +3394,6 @@ export function Ring3DOverlayCanvas({
   // (gym equipment tools). Undefined → the default 580.
   showAllNotes = false, // gym Scales tool: light the WHOLE scale, not a lookahead window
   rootPositions, // gym Scales tool: root notes paint a darker green
-  scrollLeftOverride, // gym Scales tool: pan to center an exercise (no DOM scroll strip)
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -3444,15 +3438,6 @@ export function Ring3DOverlayCanvas({
   // PERFORMANCE: Store scroll position in a ref that updates from scrollContainerRef
   // This allows Three.js components to read it without causing React re-renders
   const scrollLeftRef = useRef(0);
-
-  // CONTROLLED PAN (gym tools): when scrollLeftOverride is given there's no DOM scroll
-  // strip, so seed the ref directly. ScrollOffsetGroup's per-frame smoothing then eases
-  // the board to it — so changing the override (new exercise) animates the pan.
-  useEffect(() => {
-    if (scrollLeftOverride !== undefined) {
-      scrollLeftRef.current = scrollLeftOverride;
-    }
-  }, [scrollLeftOverride]);
 
   // =============================================================================
   // EXERCISE TRANSITION FADE - Smooth fade out/in when switching exercises
@@ -3614,10 +3599,9 @@ export function Ring3DOverlayCanvas({
     // Reset left fade percent state
     setLeftFadePercent(0);
 
-    // Reset scroll position ref — to the controlled override (gym tools center the new
-    // exercise) if present, else 0 (the tutorial's default start).
-    scrollLeftRef.current = scrollLeftOverride ?? 0;
-  }, [exerciseNotes, scrollLeftOverride]); // Reset when exercise notes change
+    // Reset scroll position ref
+    scrollLeftRef.current = 0;
+  }, [exerciseNotes]); // Reset when exercise notes change
 
   // =============================================================================
   // 2D Fretboard geometry constants - MUST MATCH FretboardGrid.tsx EXACTLY!
