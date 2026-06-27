@@ -12,15 +12,18 @@
 
 import React from 'react';
 import { RollerPicker } from './RollerPicker';
-import { RollerCalibrationPanel } from './RollerCalibrationPanel';
+// import { RollerCalibrationPanel } from './RollerCalibrationPanel'; // dev tuner — values baked
 import { ROLLER_ANIM, type RollerAnimConfig } from './rollerConfig';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
 
-/** A roller's three visible labels + its up/down handlers. */
+/** A roller's visible labels (+ two-out neighbors for a continuous slide) + its
+ *  up/down handlers. */
 export interface RollerSpec {
+  prev2Label?: string;
   prevLabel?: string;
   currentLabel: string;
   nextLabel?: string;
+  next2Label?: string;
   onUp: () => void;
   onDown: () => void;
 }
@@ -49,12 +52,13 @@ export function ScalesControls({
   const showBeat =
     countdownState.isCountingDown && countdownState.currentBeat > 0;
 
-  // Live-tunable roller animation (dev calibration panel). Baked default otherwise.
-  const [anim, setAnim] = React.useState<RollerAnimConfig>(ROLLER_ANIM);
+  // Roller animation config — baked in ROLLER_ANIM. (Live tuner panel commented out;
+  // re-enable RollerCalibrationPanel + setAnim to re-tune.)
+  const [anim] = React.useState<RollerAnimConfig>(ROLLER_ANIM);
 
   return (
     <div className="flex items-center gap-3 rounded-b-xl bg-black/40 px-4 py-2.5">
-      <RollerCalibrationPanel config={anim} onChange={setAnim} />
+      {/* <RollerCalibrationPanel config={anim} onChange={setAnim} /> */}
       {/* LEFT group — Scale | Position */}
       <div className="flex flex-1 items-center justify-evenly">
         <RollerPicker {...scale} anim={anim} ariaLabel="Scale" />
@@ -90,7 +94,9 @@ export function ScalesControls({
       {/* RIGHT group — Key | Tempo */}
       <div className="flex flex-1 items-center justify-evenly">
         <RollerPicker {...keyRoller} anim={anim} ariaLabel="Key" />
-        <RollerPicker {...tempo} anim={anim} ariaLabel="Tempo" />
+        {/* Tempo: press-and-hold the arrows to fly through BPM (stepping one at a time
+            is tedious over a big range). */}
+        <RollerPicker {...tempo} anim={anim} ariaLabel="Tempo" holdRepeat />
       </div>
     </div>
   );

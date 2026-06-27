@@ -50,19 +50,26 @@ export function ScaleFretboardWindow({
   // Build the full note universe for the user's neck, then show either ONE box position
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
   // play-along sequence steps through it).
-  const exerciseNotes = React.useMemo(() => {
+  const { exerciseNotes, rootPositions } = React.useMemo(() => {
     const fretboard = { stringCount, maxFrets };
     const universe = buildNoteUniverse(fretboard, root, scaleType);
     const shown =
       view === 'whole'
         ? universe
         : selectBox(universe, fretboard, root, scaleType, view);
-    return shown.map((n, i) => ({
-      string: n.string,
-      fret: n.fret,
-      duration: '4n',
-      position: { measure: Math.floor(i / 4) + 1, beat: (i % 4) + 1 },
-    }));
+    return {
+      exerciseNotes: shown.map((n, i) => ({
+        string: n.string,
+        fret: n.fret,
+        duration: '4n',
+        position: { measure: Math.floor(i / 4) + 1, beat: (i % 4) + 1 },
+      })),
+      // Root notes (string+fret) so the canvas can paint them a DARKER green — the scale's
+      // home note stands out from the rest of the shape.
+      rootPositions: shown
+        .filter((n) => n.isRoot)
+        .map((n) => ({ string: n.string, fret: n.fret })),
+    };
   }, [root, scaleType, stringCount, maxFrets, view]);
 
   // Enable the ring overlay (DEFAULT has enabled:false) so the active-note highlight
@@ -132,32 +139,27 @@ export function ScaleFretboardWindow({
   const height = CALIBRATION_ENABLED
     ? cal.windowHeight
     : FRETBOARD_CANVAS_HEIGHT;
-  const extraWidth = Math.max(0, viewportWidth - 580);
-  // Anchor-left compensation: content centers on viewportWidth/2, so it drifts right by
-  // extraWidth/2 as we widen; subtract that from sceneX to keep the nut (left) in place.
-  const anchoredConfig = React.useMemo(
-    () => ({
-      ...overlay3DConfig,
-      sceneX: overlay3DConfig.sceneX - extraWidth / 2,
-    }),
-    [overlay3DConfig, extraWidth],
-  );
+  // The canvas renders `viewportWidth` px wide (wider than the 580 base to show more
+  // frets). We DON'T grow the outer box past 100% — doing so makes it wider than the
+  // centered max-w card, and the page's `justify-center` then splits the overflow both
+  // ways, shoving the left edge off-screen (the nut clips). Instead the box stays 100%
+  // and the wider canvas overflows symmetrically (overflow:visible), so the scene stays
+  // centered in the card. No sceneX anchor-pull needed — centering is symmetric now.
+  const anchoredConfig = overlay3DConfig;
 
   return (
     <div
       style={{
         position: 'relative',
-        // Grow the outer box rightward by the extra canvas width (left edge fixed) so
-        // the widened canvas shows instead of being clipped by the card.
-        width: `calc(100% + ${extraWidth}px)`,
+        width: '100%',
         height,
         background: 'transparent',
         overflow: 'visible',
       }}
     >
-      {/* DEV calibration panel — commented out (the values are baked into
-          fretboardViewConfig.ts). To re-calibrate: uncomment this + set
-          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. */}
+      {/* DEV calibration panel — commented out (values baked into fretboardViewConfig.ts).
+          To re-calibrate: uncomment this + the import above, and set
+          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
       {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
       <Ring3DOverlayCanvas
         exerciseNotes={exerciseNotes}
@@ -172,6 +174,8 @@ export function ScaleFretboardWindow({
         // Light the WHOLE scale at once (the scale shape), not a moving lookahead
         // window — the active note still emphasizes as the sequence plays.
         showAllNotes
+        // Root notes paint a DARKER green so the scale's home note stands out.
+        rootPositions={rootPositions}
       />
     </div>
   );

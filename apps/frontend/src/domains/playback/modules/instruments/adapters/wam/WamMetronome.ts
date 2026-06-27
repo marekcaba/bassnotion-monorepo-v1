@@ -415,7 +415,9 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
    * Trigger a metronome click
    */
   triggerClick(isAccent = false, velocity = 80, time?: number): void {
-    this.logger.info('🎵 WamMetronomeNode.triggerClick() called', {
+    // debug, not info: this fires on EVERY click — at info it spams the console one trio
+    // of lines per beat, burying real signal. Enable debug logging to see per-click data.
+    this.logger.debug('🎵 WamMetronomeNode.triggerClick() called', {
       hasClickBuffer: !!this.clickBuffer,
       hasAccentBuffer: !!this.accentBuffer,
       isAccent,
@@ -449,7 +451,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
 
     const triggerTime = time !== undefined ? time : this.context.currentTime;
 
-    this.logger.info('🎵 Playing metronome click with buffer', {
+    this.logger.debug('🎵 Playing metronome click with buffer', {
       bufferDuration: buffer.duration,
       bufferSampleRate: buffer.sampleRate,
       triggerTime,
@@ -482,7 +484,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
 
       // Log audio output scheduling with frame-accurate timing
       const frame = Math.round(triggerTime * this.context.sampleRate);
-      this.logger.info('✅ Metronome click scheduled', {
+      this.logger.debug('✅ Metronome click scheduled', {
         triggerTime: triggerTime.toFixed(6),
         frame,
         sampleRate: this.context.sampleRate,
@@ -827,7 +829,7 @@ export class WamMetronome extends WebAudioModuleBase {
       isDownbeat?: boolean;
     };
   }): void {
-    this.logger.info('🎵 WamMetronome.trigger() called', {
+    this.logger.debug('🎵 WamMetronome.trigger() called', {
       hasAudioNode: !!this.audioNode,
       event,
     });

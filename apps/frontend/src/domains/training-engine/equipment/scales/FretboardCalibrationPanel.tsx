@@ -100,16 +100,45 @@ export function FretboardCalibrationPanel({
   values: FretboardCalibrationValues;
   onChange: (v: FretboardCalibrationValues) => void;
 }) {
+  // Draggable position — grab the header to move the panel out of the way of the board.
+  const [pos, setPos] = React.useState({ x: -1, y: 16 }); // x:-1 = "anchor top-right"
+  const drag = React.useRef<{ dx: number; dy: number } | null>(null);
+
+  const onPointerMove = React.useCallback((e: PointerEvent) => {
+    if (!drag.current) return;
+    setPos({ x: e.clientX - drag.current.dx, y: e.clientY - drag.current.dy });
+  }, []);
+  const onPointerUp = React.useCallback(() => {
+    drag.current = null;
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+  }, [onPointerMove]);
+  const onHeaderDown = (e: React.PointerEvent) => {
+    // Resolve the current left from the live rect so the first drag doesn't jump when
+    // we're still right-anchored (x === -1).
+    const rect = (
+      e.currentTarget.parentElement as HTMLElement
+    ).getBoundingClientRect();
+    drag.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    setPos({ x: rect.left, y: rect.top });
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  };
+
   if (!CALIBRATION_ENABLED) return null;
+
+  // Before the first drag, stay pinned to the top-right (x === -1); after, use x/y.
+  const placement: React.CSSProperties =
+    pos.x < 0 ? { top: pos.y, right: 16 } : { top: pos.y, left: pos.x };
+
   return (
     <div
       style={{
         position: 'fixed',
-        top: 16,
-        right: 16,
+        ...placement,
         zIndex: 9999,
         width: 280,
-        padding: 14,
+        paddingBottom: 14,
         background: 'rgba(14,16,20,0.95)',
         border: '1px solid #2b3038',
         borderRadius: 10,
@@ -118,51 +147,62 @@ export function FretboardCalibrationPanel({
         fontSize: 12,
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 10 }}>
-        Fretboard calibration
-      </div>
-      {SLIDERS.map((s) => (
-        <div key={s.key} style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>{s.label}</span>
-            <span style={{ color: '#6ad08c' }}>{values[s.key]}</span>
-          </div>
-          <input
-            type="range"
-            min={s.min}
-            max={s.max}
-            step={s.step}
-            value={values[s.key]}
-            onChange={(e) =>
-              onChange({ ...values, [s.key]: Number(e.target.value) })
-            }
-            style={{ width: '100%' }}
-          />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => {
-          // eslint-disable-next-line no-console
-          console.log(
-            '[fretboard-calibration] paste into fretboardViewConfig.ts:',
-            JSON.stringify(values, null, 2),
-          );
-        }}
+      <div
+        onPointerDown={onHeaderDown}
         style={{
-          width: '100%',
-          marginTop: 4,
-          padding: '6px 10px',
-          background: '#6ad08c',
-          color: '#0a0a0a',
-          border: 'none',
-          borderRadius: 7,
+          cursor: 'grab',
+          padding: '10px 14px',
+          borderBottom: '1px solid #262a31',
           fontWeight: 700,
-          cursor: 'pointer',
+          userSelect: 'none',
         }}
       >
-        Log values → console
-      </button>
+        ⠿ Fretboard calibration
+      </div>
+      <div style={{ padding: '12px 14px 0' }}>
+        {SLIDERS.map((s) => (
+          <div key={s.key} style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{s.label}</span>
+              <span style={{ color: '#6ad08c' }}>{values[s.key]}</span>
+            </div>
+            <input
+              type="range"
+              min={s.min}
+              max={s.max}
+              step={s.step}
+              value={values[s.key]}
+              onChange={(e) =>
+                onChange({ ...values, [s.key]: Number(e.target.value) })
+              }
+              style={{ width: '100%' }}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => {
+            // eslint-disable-next-line no-console
+            console.log(
+              '[fretboard-calibration] paste into fretboardViewConfig.ts:',
+              JSON.stringify(values, null, 2),
+            );
+          }}
+          style={{
+            width: '100%',
+            marginTop: 4,
+            padding: '6px 10px',
+            background: '#6ad08c',
+            color: '#0a0a0a',
+            border: 'none',
+            borderRadius: 7,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Log values → console
+        </button>
+      </div>
     </div>
   );
 }

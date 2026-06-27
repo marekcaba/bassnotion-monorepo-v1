@@ -26,14 +26,14 @@ export interface RollerAnimConfig {
 
 /** Baked defaults — tune live via the panel, then paste the values here. */
 export const ROLLER_ANIM: RollerAnimConfig = {
-  durationMs: 160,
-  easing: 'ease-out',
+  durationMs: 430,
+  easing: 'ease-in-out',
   rowHeightPx: 18,
-  edgeOpacity: 0.4,
-  edge2Opacity: 0.15,
+  edgeOpacity: 0,
+  edge2Opacity: 0,
   currentFontPx: 15,
-  edgeFontPx: 12,
-  bandHalfPct: 0, // exactly the font height; nudge ± to taste
+  edgeFontPx: 9,
+  bandHalfPct: 1, // a hair past the font height
 };
 
 export const ROLLER_CALIBRATION_ENABLED =

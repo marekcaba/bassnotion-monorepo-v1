@@ -631,6 +631,10 @@ export interface Ring3DOverlayCanvasProps {
    *  of the tutorial's moving-lookahead window (only the next ~2 notes lit). Used by
    *  the gym Scales tool. Default false → tutorial behavior unchanged. */
   showAllNotes?: boolean;
+  /** Root-note positions (1-based string + fret). In showAllNotes mode these paint a
+   *  DARKER green than the rest of the scale so the home note stands out. Scales-tool
+   *  only; the tutorial passes nothing. */
+  rootPositions?: Array<{ string: number; fret: number }>;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -766,6 +770,7 @@ interface DebugVisualizationProps {
   tempo: number; // BPM for timing calculations
   isPlaying: boolean; // Playback state for enabling updates
   showAllNotes?: boolean; // light the WHOLE scale at once (gym Scales tool), not lookahead
+  rootPositions?: Array<{ string: number; fret: number }>; // roots → darker green
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
   activeRingZOffset?: number; // Z offset above the dot (default 1)
@@ -859,6 +864,7 @@ function DebugVisualization({
   tempo,
   isPlaying,
   showAllNotes = false,
+  rootPositions,
   countdownBeats = 4,
   activeRingZOffset = -1,
   activeRingRadius = 13,
@@ -900,6 +906,7 @@ function DebugVisualization({
   const DOT_COLORS = {
     BLUE: activeDotColorHex, // Currently playing note (from prop, default blue)
     GREEN: 0x16a34a, // Preview/next note (green-600, darker)
+    GREEN_DARK: 0x14532d, // Scale ROOT note (green-900) — the home note stands out
     GREY: 0x475569, // Regular fret positions (slate-600)
     GREY_LIGHT: 0x64748b, // Marker frets: open, 3, 5, 7, 9, 12, 15, 17, 19, 21 (slate-500)
     ACTIVE_RING: activeRingColorHex, // Ring color (from prop)
@@ -1006,6 +1013,17 @@ function DebugVisualization({
     return mapping;
   }, [timeline]);
 
+  // Root-note position keys ("visualStringIndex,fret"), same format as positionToNotes,
+  // so calculateDotState can paint roots a darker green. Built from the 1-based
+  // rootPositions prop via the same string→visual-index conversion used for the timeline.
+  const rootPositionKeys = useMemo(() => {
+    const keys = new Set<string>();
+    (rootPositions ?? []).forEach(({ string, fret }) => {
+      keys.add(`${noteStringToVisualIndex(string, stringCount)},${fret}`);
+    });
+    return keys;
+  }, [rootPositions, stringCount]);
+
   // =============================================================================
   // DOT MESH REFS - Store references to each dot mesh for useFrame updates
   // =============================================================================
@@ -1079,6 +1097,27 @@ function DebugVisualization({
         };
       }
 
+      // SCALE MODE (gym Scales tool): every exercise-note position is a lit scale dot,
+      // so the WHOLE scale shape is visible at once (not just the lookahead window).
+      // Scoped to showAllNotes, which ONLY the Scales tool sets — the tutorial is
+      // untouched.
+      //
+      // A/B HOLD: the BLUE active-note dot + orange highlight ring are commented out
+      // here for now. We'll build a SECONDARY highlight animation and A/B-test both, so
+      // in scale mode no note is marked active (every scale note stays GREEN). To
+      // restore the original blue-dot behaviour, move the active-note block back ABOVE
+      // this early-return.
+      if (showAllNotes) {
+        // Root notes paint a DARKER green so the scale's home note stands out.
+        const isRoot = rootPositionKeys.has(positionKey);
+        return {
+          color: isRoot ? DOT_COLORS.GREEN_DARK : DOT_COLORS.GREEN,
+          opacity: 1.0,
+          isActive: false,
+          isRoundedRect,
+        };
+      }
+
       // Check if this position is the ACTIVE note - show as BLUE
       const activeNote = notesAtPosition.find(
         (n) => n.noteIndex === activeNoteIndex,
@@ -1088,18 +1127,6 @@ function DebugVisualization({
           color: DOT_COLORS.BLUE,
           opacity: LOOKAHEAD_CONFIG.opacityLevels[0],
           isActive: true,
-          isRoundedRect,
-        };
-      }
-
-      // SCALE MODE (gym Scales tool): every exercise-note position is a lit scale dot,
-      // so the WHOLE scale shape is visible at once (not just the lookahead window).
-      // The active note above stays BLUE; all other scale notes render GREEN.
-      if (showAllNotes) {
-        return {
-          color: DOT_COLORS.GREEN,
-          opacity: 1.0,
-          isActive: false,
           isRoundedRect,
         };
       }
@@ -1124,6 +1151,7 @@ function DebugVisualization({
     },
     [
       positionToNotes,
+      rootPositionKeys,
       DOT_COLORS,
       MARKER_FRETS,
       LOOKAHEAD_CONFIG.opacityLevels,
@@ -3333,6 +3361,7 @@ export function Ring3DOverlayCanvas({
   viewportWidthOverride, // optional: widen the rendered viewport to show more frets
   // (gym equipment tools). Undefined → the default 580.
   showAllNotes = false, // gym Scales tool: light the WHOLE scale, not a lookahead window
+  rootPositions, // gym Scales tool: root notes paint a darker green
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -4280,6 +4309,7 @@ export function Ring3DOverlayCanvas({
                       tempo={tempo}
                       isPlaying={isPlaying}
                       showAllNotes={showAllNotes}
+                      rootPositions={rootPositions}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}
