@@ -1181,10 +1181,19 @@ function DebugVisualization({
   const FRET_SPACING = 36; // px between fret centers
   const DOT_RADIUS = 13; // px radius of dots
 
-  // String names for bass guitar - storage order matching FretboardGrid.tsx fullStringConfig
-  // Index 0 = B (lowest pitch), Index 1 = E, Index 2 = A, Index 3 = D, Index 4 = G, Index 5 = C
-  // This matches the 2D fretboard's fullStringConfig = ['B', 'E', 'A', 'D', 'G', 'C']
-  const STRING_NAMES = ['B', 'E', 'A', 'D', 'G', 'C'];
+  // String names indexed by VISUAL ROW. stringIndex 0 = the BOTTOM row (the lowest pitch,
+  // closest/biggest), ascending to the TOP. So index 0 is the lowest string:
+  //   4-string: E A D G   5-string: B E A D G   6-string: B E A D G C
+  // (The old fixed ['B','E','A','D','G','C'] was right for 6-string but a 4-string took
+  //  its first 4 → 'B E A D' — wrong. Now sized to the count, bottom-up.)
+  const STRING_NAMES = useMemo(() => {
+    const byCount: Record<number, string[]> = {
+      4: ['E', 'A', 'D', 'G'],
+      5: ['B', 'E', 'A', 'D', 'G'],
+      6: ['B', 'E', 'A', 'D', 'G', 'C'],
+    };
+    return byCount[stringCount] ?? ['B', 'E', 'A', 'D', 'G', 'C'];
+  }, [stringCount]);
 
   // =============================================================================
   // CANVAS-BASED TEXT TEXTURES - For string labels without external font loading
@@ -1218,7 +1227,7 @@ function DebugVisualization({
     });
 
     return textures;
-  }, []);
+  }, [STRING_NAMES]);
 
   // Dark textures (for active/preview notes - black text on green/blue dots)
   const stringLabelTexturesDark = useMemo(() => {
@@ -1246,7 +1255,7 @@ function DebugVisualization({
     });
 
     return textures;
-  }, []);
+  }, [STRING_NAMES]);
 
   // Refs to track string label meshes for dynamic texture updates
   const stringLabelMeshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
@@ -1259,18 +1268,41 @@ function DebugVisualization({
   // - A string (index 2): fret 3 = C, fret 5 = D, fret 7 = E
   // These use a smaller font than the open string labels
   // =============================================================================
-  const FRET_NOTE_LABELS: Array<{
-    stringIndex: number;
-    fret: number;
-    label: string;
-  }> = [
-    { stringIndex: 1, fret: 3, label: 'G' }, // E string, fret 3 = G
-    { stringIndex: 1, fret: 5, label: 'A' }, // E string, fret 5 = A
-    { stringIndex: 1, fret: 7, label: 'B' }, // E string, fret 7 = B
-    { stringIndex: 2, fret: 3, label: 'C' }, // A string, fret 3 = C
-    { stringIndex: 2, fret: 5, label: 'D' }, // A string, fret 5 = D
-    { stringIndex: 2, fret: 7, label: 'E' }, // A string, fret 7 = E
-  ];
+  // Helper note-name dots ALWAYS on the E and A strings, whatever the string count.
+  // The E/A rows shift visually when low strings are added (4-str: E=0,A=1; 5/6-str:
+  // E=1,A=2), so we look up their VISUAL index from STRING_NAMES (which is per-count and
+  // bottom-up) instead of hardcoding — otherwise they'd land on the wrong rows on a 5/6.
+  const FRET_NOTE_LABELS = useMemo(() => {
+    const eIndex = STRING_NAMES.indexOf('E');
+    const aIndex = STRING_NAMES.indexOf('A');
+    const labels: Array<{ stringIndex: number; fret: number; label: string }> =
+      [];
+    // E string: fret 3=G, 5=A, 7=B — and the same one octave up (15, 17, 19).
+    // A string: fret 3=C, 5=D, 7=E — likewise at 15, 17, 19. The neck repeats past fret 12.
+    const E_NOTES: [number, string][] = [
+      [3, 'G'],
+      [5, 'A'],
+      [7, 'B'],
+    ];
+    const A_NOTES: [number, string][] = [
+      [3, 'C'],
+      [5, 'D'],
+      [7, 'E'],
+    ];
+    if (eIndex >= 0) {
+      for (const [fret, label] of E_NOTES) {
+        labels.push({ stringIndex: eIndex, fret, label });
+        labels.push({ stringIndex: eIndex, fret: fret + 12, label }); // 2nd octave
+      }
+    }
+    if (aIndex >= 0) {
+      for (const [fret, label] of A_NOTES) {
+        labels.push({ stringIndex: aIndex, fret, label });
+        labels.push({ stringIndex: aIndex, fret: fret + 12, label }); // 2nd octave
+      }
+    }
+    return labels;
+  }, [STRING_NAMES]);
 
   const fretNoteLabelTextures = useMemo(() => {
     const textures: Map<string, THREE.CanvasTexture> = new Map();

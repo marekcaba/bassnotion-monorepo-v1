@@ -106,4 +106,27 @@ describe('selectBox — one position is a REAL fingering across strings (the bug
       avg(box1.map((n) => n.fret)),
     );
   });
+
+  it('an authored blueprint override replaces the seed shape', () => {
+    const u = buildNoteUniverse(FB4, 'C', 'major');
+    const override = {
+      positions: [{ positionNumber: 1, startFretOffset: 5, span: 4 }],
+    };
+    const box = selectBox(u, FB4, 'C', 'major', 1, override);
+    const seedBox = selectBox(u, FB4, 'C', 'major', 1);
+    // The override starts 6 frets higher than the seed (−1) → notes sit higher.
+    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(avg(box.map((n) => n.fret))).toBeGreaterThan(
+      avg(seedBox.map((n) => n.fret)),
+    );
+  });
+
+  it('an EMPTY override falls back to the seed (never crashes) — the admin first-render bug', () => {
+    const u = buildNoteUniverse(FB4, 'C', 'major');
+    // The editor passes positions:[] before its draft loads — must not throw.
+    expect(() => selectBox(u, FB4, 'C', 'major', 1, { positions: [] })).not.toThrow();
+    const empty = selectBox(u, FB4, 'C', 'major', 1, { positions: [] });
+    const seed = selectBox(u, FB4, 'C', 'major', 1);
+    expect(empty.length).toBe(seed.length); // identical to the seed box
+  });
 });

@@ -708,8 +708,9 @@ export interface ScalePositionShape {
   span: number;
 }
 
-/** The note value each step of the scale run occupies (Tone.js notation). */
-export type ScaleRhythmValue = '4n' | '8n' | '16n';
+/** The note value each step of the scale run occupies (Tone.js notation).
+ *  '8t' = eighth-note triplet (three per beat). */
+export type ScaleRhythmValue = '4n' | '8n' | '8t' | '16n';
 
 /** The scale types the gym Scales tool authors. */
 export type ScaleTypeId =
@@ -732,4 +733,49 @@ export interface ScaleBlueprintRecord {
 export interface UpdateScaleBlueprintInput {
   positions?: ScalePositionShape[];
   rhythm?: ScaleRhythmValue;
+}
+
+// =====================================================
+// GYM EXERCISES — admin-authored exercises for gym equipment (paths, grooves, …)
+// =====================================================
+// One authoring interface produces exercises for ANY gym equipment. The PAYLOAD (the
+// authored content — e.g. the per-key note paths, the meter, name/description) is stored
+// as opaque JSON so the same table serves scale paths today and groove exercises later;
+// the columns are just the queryable metadata. Saving is DRAFT-FRIENDLY — a half-authored
+// exercise (a few keys filled, the rest empty) saves fine, no validation gate.
+
+/** What kind of exercise (which authoring payload shape + which equipment it targets). */
+export type GymExerciseKind = 'scale_path' | 'groove'; // extend as equipment grows
+
+/** A saved gym exercise. `payload` is the authored content (shape depends on `kind`). */
+export interface GymExercise {
+  id: string;
+  kind: GymExerciseKind;
+  name: string;
+  description: string;
+  /** The gym equipment station this targets (e.g. 'scales'). */
+  equipment: string;
+  /** For scale_path: the scale type ('major' …). Null for kinds without one. */
+  scaleType: string | null;
+  /** The authored content — JSON, shape per kind (e.g. the PathsByKey for scale_path). */
+  payload: unknown;
+  updatedAt: string;
+}
+
+/** Admin create payload. Everything but kind/equipment is optional-ish (drafts welcome). */
+export interface CreateGymExerciseInput {
+  kind: GymExerciseKind;
+  name: string;
+  description?: string;
+  equipment: string;
+  scaleType?: string | null;
+  payload: unknown;
+}
+
+/** Admin PATCH payload — any subset (save partial progress freely). */
+export interface UpdateGymExerciseInput {
+  name?: string;
+  description?: string;
+  scaleType?: string | null;
+  payload?: unknown;
 }

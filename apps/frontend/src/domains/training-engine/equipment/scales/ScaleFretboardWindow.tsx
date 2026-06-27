@@ -38,7 +38,21 @@ export interface ScaleFretboardWindowProps {
   view?: number | 'whole';
   /** Admin-authored box shapes to preview (the editor's LIVE draft), overriding the
    *  in-code seed. Absent in the player — it uses the seed/server blueprint. */
-  blueprintOverride?: { positions: { positionNumber: number; startFretOffset: number; span: number }[] };
+  blueprintOverride?: {
+    positions: {
+      positionNumber: number;
+      startFretOffset: number;
+      span: number;
+    }[];
+  };
+  /** Override the fretboard's centering/sizing config (the calibration values). The
+   *  admin /admin/scales page passes this from a draggable panel to position the board
+   *  for ITS layout, without touching the baked gym values. Absent → use the baked config. */
+  calibrationOverride?: FretboardCalibrationValues;
+  /** Light EXACTLY these (string, fret) notes, bypassing the scale/box logic. The path
+   *  editor uses this to preview an explicitly-drawn note sequence. The first note is
+   *  marked as the "root" (darker) so the path's start stands out. */
+  litNotes?: { string: number; fret: number }[];
 }
 
 export function ScaleFretboardWindow({
@@ -50,11 +64,25 @@ export function ScaleFretboardWindow({
   tempo,
   view = 1,
   blueprintOverride,
+  calibrationOverride,
+  litNotes,
 }: ScaleFretboardWindowProps) {
   // Build the full note universe for the user's neck, then show either ONE box position
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
   // play-along sequence steps through it).
   const { exerciseNotes, rootPositions } = React.useMemo(() => {
+    // EXPLICIT note list (path editor): light exactly these, first = the path start (root).
+    if (litNotes) {
+      return {
+        exerciseNotes: litNotes.map((n, i) => ({
+          string: n.string as 1 | 2 | 3 | 4 | 5 | 6,
+          fret: n.fret,
+          duration: '4n',
+          position: { measure: Math.floor(i / 4) + 1, beat: (i % 4) + 1 },
+        })),
+        rootPositions: litNotes.length > 0 ? [litNotes[0]!] : [],
+      };
+    }
     const fretboard = { stringCount, maxFrets };
     const universe = buildNoteUniverse(fretboard, root, scaleType);
     const shown =
@@ -81,7 +109,15 @@ export function ScaleFretboardWindow({
         .filter((n) => n.isRoot)
         .map((n) => ({ string: n.string, fret: n.fret })),
     };
-  }, [root, scaleType, stringCount, maxFrets, view, blueprintOverride]);
+  }, [
+    root,
+    scaleType,
+    stringCount,
+    maxFrets,
+    view,
+    blueprintOverride,
+    litNotes,
+  ]);
 
   // Enable the ring overlay (DEFAULT has enabled:false) so the active-note highlight
   // shows; the dots themselves come from exerciseNotes.
@@ -114,9 +150,13 @@ export function ScaleFretboardWindow({
     windowHeight: FRETBOARD_CANVAS_HEIGHT,
   }));
 
-  // Scene config (inside the canvas): base, with live calibration overrides when on.
+  // The active calibration: an explicit override (the admin panel) wins; else the live
+  // `cal` when the env-gated dev panel is on; else nothing (use the baked base config).
+  const activeCal = calibrationOverride ?? (CALIBRATION_ENABLED ? cal : null);
+
+  // Scene config (inside the canvas): base, with calibration overrides when present.
   const overlay3DConfig = React.useMemo(() => {
-    if (!CALIBRATION_ENABLED) return baseConfig;
+    if (!activeCal) return baseConfig;
     // Only the scene fields go to the overlay (window fields are applied to the div).
     const {
       sceneX,
@@ -126,7 +166,7 @@ export function ScaleFretboardWindow({
       contentScaleX,
       leftFadeZone,
       rightFadeZone,
-    } = cal;
+    } = activeCal;
     return {
       ...baseConfig,
       sceneX,
@@ -137,19 +177,17 @@ export function ScaleFretboardWindow({
       leftFadeZone,
       rightFadeZone,
     };
-  }, [baseConfig, cal]);
+  }, [baseConfig, activeCal]);
 
   // PRIMARY WINDOW WIDTH = the inner canvas width (the thing whose right edge hard-cuts
   // the fretboard). Widening it moves the right cut RIGHT → more frets visible. The
   // content is centered on viewportWidth, so widening alone shifts it right; we cancel
   // that by pulling sceneX left by half the extra width → LEFT EDGE STAYS ANCHORED,
   // right edge extends. The outer box grows to fit so the wider canvas isn't clipped.
-  const viewportWidth = CALIBRATION_ENABLED
-    ? cal.viewportWidth
+  const viewportWidth = activeCal
+    ? activeCal.viewportWidth
     : FRETBOARD_WINDOW.viewportWidth;
-  const height = CALIBRATION_ENABLED
-    ? cal.windowHeight
-    : FRETBOARD_CANVAS_HEIGHT;
+  const height = activeCal ? activeCal.windowHeight : FRETBOARD_CANVAS_HEIGHT;
   // The canvas renders `viewportWidth` px wide (wider than the 580 base to show more
   // frets). We DON'T grow the outer box past 100% — doing so makes it wider than the
   // centered max-w card, and the page's `justify-center` then splits the overflow both

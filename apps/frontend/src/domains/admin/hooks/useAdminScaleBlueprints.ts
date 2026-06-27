@@ -19,6 +19,10 @@ export function useAdminScaleBlueprints() {
     queryKey: blueprintKeys.list(),
     queryFn: () => adminScaleBlueprintsApi.list(),
     staleTime: 60_000,
+    // Don't retry: until the scale_blueprints table exists (migration applies on merge),
+    // this 500s, and the editor falls back to the in-code seed defaults — one failed
+    // request is enough, no need to hammer it 3× and spam the console.
+    retry: false,
   });
 }
 

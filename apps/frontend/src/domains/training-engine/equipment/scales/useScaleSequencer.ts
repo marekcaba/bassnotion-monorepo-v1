@@ -253,10 +253,18 @@ export function useScaleSequencer({
         // Tone.Sampler: note name + duration + absolute time + velocity (0..1). It
         // pitch-shifts from the nearest loaded anchor sample if this exact note wasn't
         // one of the anchors. Let the note ring MOST of its slot (0.85×) so the sample's
-        // body sounds — choking it to ~0.45× cut the note before its attack rang out and
-        // sounded muffled. A small gap remains so consecutive notes still articulate.
-        const slot = beatDuration() * (note.duration === '8n' ? 0.5 : 1);
-        const dur = slot * 0.85;
+        // body sounds — choking it cut the note before its attack rang out (muffled). A
+        // small gap remains so consecutive notes still articulate. The slot tracks the
+        // rhythm: quarter=1 beat, eighth=½, triplet=⅓, sixteenth=¼.
+        const beatFraction =
+          note.duration === '4n'
+            ? 1
+            : note.duration === '8t'
+              ? 1 / 3
+              : note.duration === '16n'
+                ? 0.25
+                : 0.5; // '8n'
+        const dur = beatDuration() * beatFraction * 0.85;
         sampler.triggerAttackRelease(
           midiToToneNote(note.midi),
           dur,

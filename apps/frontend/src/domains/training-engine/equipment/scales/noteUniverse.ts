@@ -147,10 +147,16 @@ export function selectBox(
   // in-code seed. Falls back to SCALE_BLUEPRINTS when absent (production day-1 + tests).
   blueprintOverride?: { positions: ScalePosition[] },
 ): UniverseNote[] {
-  const blueprint = blueprintOverride ?? SCALE_BLUEPRINTS[scaleType];
+  // Use the override only when it actually has positions — an empty/invalid override
+  // (e.g. the admin editor before its draft loads) falls back to the seed, never crashes.
+  const blueprint =
+    blueprintOverride && blueprintOverride.positions.length > 0
+      ? blueprintOverride
+      : SCALE_BLUEPRINTS[scaleType];
   const pos =
     blueprint.positions.find((p) => p.positionNumber === positionNumber) ??
-    blueprint.positions[0]!;
+    blueprint.positions[0];
+  if (!pos) return []; // no positions at all → nothing to show (defensive)
 
   const rootFret = rootFretOnLowestString(fretboard, root);
   if (rootFret === null) return [];

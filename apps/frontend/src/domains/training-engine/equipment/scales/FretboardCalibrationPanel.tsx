@@ -51,12 +51,12 @@ const SLIDERS: {
     step: 5,
   },
   // ── SCENE (content inside the canvas) ──
-  { key: 'sceneX', label: 'sceneX (slide L/R)', min: -100, max: 100, step: 1 },
+  { key: 'sceneX', label: 'sceneX (slide L/R)', min: -1500, max: 500, step: 1 },
   {
     key: 'offsetX',
     label: 'offsetX (canvas px)',
-    min: -100,
-    max: 100,
+    min: -800,
+    max: 800,
     step: 1,
   },
   {
