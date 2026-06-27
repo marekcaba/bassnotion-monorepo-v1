@@ -51,7 +51,10 @@ export interface ScalesControlsProps {
   countdownState: CountdownState;
   /** CONTENT row */
   scale: RollerSpec; // scale TYPE
-  exercise: RollerSpec; // which authored exercise (or "Auto")
+  exercise: RollerSpec; // which exercise GROUP (or "Auto")
+  variant: RollerSpec; // which fingering within the group (v1/v2/…)
+  /** Show the variant roller (only when the selected group has >1 fingering). */
+  showVariant: boolean;
   kindTabs: KindTabsSpec;
   /** PERFORM row */
   position: RollerSpec;
@@ -68,6 +71,8 @@ export function ScalesControls({
   countdownState,
   scale,
   exercise,
+  variant,
+  showVariant,
   kindTabs,
   position,
   showPosition,
@@ -110,6 +115,9 @@ export function ScalesControls({
         </div>
         <div className="flex flex-1 items-center justify-evenly">
           <RollerPicker {...exercise} anim={anim} ariaLabel="Exercise" />
+          {showVariant && (
+            <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
+          )}
         </div>
       </div>
 

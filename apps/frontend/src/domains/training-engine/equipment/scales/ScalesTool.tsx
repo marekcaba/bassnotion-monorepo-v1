@@ -76,6 +76,8 @@ const KIND_TABS: { value: ExerciseKind; label: string }[] = [
 interface PathsByKeyLite {
   name?: string;
   pathKind?: ExerciseKind;
+  variantGroup?: string;
+  variantLabel?: string;
   stringCount?: number;
   byKey?: Record<
     string,
@@ -104,10 +106,11 @@ export function ScalesTool({
   const [bpm, setBpm] = React.useState(backingConfig.originalBpm || 90);
   const [masterVolume, setMasterVolume] = React.useState(0.8);
 
-  // CONTENT picker: the kind tab (Runs/Patterns/Paths) + which exercise within it.
-  // exerciseIdx === -1 (or no authored content) = "Auto" — the generated box scale.
+  // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
+  // which fingering VARIANT within the group. groupIdx === -1 = "Auto" (generated box scale).
   const [kind, setKind] = React.useState<ExerciseKind>('scale');
-  const [exerciseIdx, setExerciseIdx] = React.useState(-1); // -1 = Auto
+  const [groupIdx, setGroupIdx] = React.useState(-1); // -1 = Auto
+  const [variantIdx, setVariantIdx] = React.useState(0); // fingering within the group
 
   // The KEY wheel is a continuous chromatic dial: a signed step counter that the wheel
   // advances ±1 per spin (the fretboard root + the played notes both derive from it,
@@ -149,9 +152,35 @@ export function ScalesTool({
     [library, scaleType, kind, stringCount],
   );
 
-  // The currently-selected authored exercise (null = Auto / generated).
-  const selectedExercise =
-    exerciseIdx >= 0 ? (exercisesForTab[exerciseIdx] ?? null) : null;
+  // GROUP the tab's exercises by their variantGroup (the exercise identity). Exercises with
+  // no group stand alone (keyed by their own name). Each group → an ordered list of its
+  // fingering variants. The Exercise roller picks a GROUP; the Variant roller picks within it.
+  const exerciseGroups = React.useMemo(() => {
+    const order: string[] = [];
+    const byGroup = new Map<
+      string,
+      { label: string; variants: typeof exercisesForTab }
+    >();
+    for (const ex of exercisesForTab) {
+      const p = ex.payload as PathsByKeyLite | null;
+      const group = p?.variantGroup?.trim() || p?.name?.trim() || 'Exercise';
+      if (!byGroup.has(group)) {
+        byGroup.set(group, { label: group, variants: [] });
+        order.push(group);
+      }
+      byGroup.get(group)!.variants.push(ex);
+    }
+    return order.map((g) => byGroup.get(g)!);
+  }, [exercisesForTab]);
+
+  // The selected group + the selected fingering variant within it (null = Auto / generated).
+  const selectedGroup =
+    groupIdx >= 0 ? (exerciseGroups[groupIdx] ?? null) : null;
+  const selectedExercise = selectedGroup
+    ? (selectedGroup.variants[
+        Math.min(variantIdx, selectedGroup.variants.length - 1)
+      ] ?? null)
+    : null;
   const usingAuthored = selectedExercise !== null;
 
   // ── The play SEQUENCE: either the GENERATED box scale (Auto) or the chosen AUTHORED
@@ -239,7 +268,8 @@ export function ScalesTool({
   const setScaleBy = (d: number) => {
     setScaleType(scaleAt(d).value);
     setView(1);
-    setExerciseIdx(-1);
+    setGroupIdx(-1);
+    setVariantIdx(0);
   };
   const scaleRoller = {
     prev2Label: scaleAt(-2).label,
@@ -251,51 +281,74 @@ export function ScalesTool({
     onDown: () => setScaleBy(1),
   };
 
-  // EXERCISE — which authored exercise (or "Auto"). The option list is the authored
-  // exercises for the current scale type + kind tab, with "Auto" (generated) PREPENDED
-  // only for the 'scale' kind (Auto is a box scale run). Other kinds list authored-only.
-  // The list is FINITE and does NOT wrap: with one exercise the wheel shows just that one
-  // item (no phantom neighbors, no spin). Neighbor labels are blank past the ends; up/down
-  // clamp at the edges.
-  const autoOption = kind === 'scale';
-  const exerciseLabels = [
-    ...(autoOption ? ['Auto'] : []),
-    ...exercisesForTab.map((ex, i) => ex.name || `Exercise ${i + 1}`),
-  ];
-  // exerciseIdx is -1 for Auto; map to a 0-based slot for the wheel, clamped in range.
-  const lastSlot = Math.max(exerciseLabels.length - 1, 0);
-  const exSlot = Math.min(
-    Math.max(autoOption ? exerciseIdx + 1 : exerciseIdx, 0),
-    lastSlot,
-  );
-  // Bounded label: blank when the slot is off either end (so a 1-item list shows 1 item).
-  const exLabelAt = (slot: number) =>
-    slot >= 0 && slot < exerciseLabels.length ? exerciseLabels[slot]! : '';
-  const setExToSlot = (slot: number) => {
-    if (slot < 0 || slot >= exerciseLabels.length) return; // clamp at the ends
-    setExerciseIdx(autoOption ? slot - 1 : slot);
-  };
-  const exerciseRoller = {
-    prev2Label: exLabelAt(exSlot - 2),
-    prevLabel: exLabelAt(exSlot - 1),
-    currentLabel: exLabelAt(exSlot) || '—',
-    nextLabel: exLabelAt(exSlot + 1),
-    next2Label: exLabelAt(exSlot + 2),
-    onUp: () => setExToSlot(exSlot - 1),
-    onDown: () => setExToSlot(exSlot + 1),
-    // Nothing to spin to when there's 0 or 1 option — grey the arrows so it can't
-    // empty-spin to a blank row.
-    disabled: exerciseLabels.length <= 1,
+  // A bounded (non-wrapping) roller spec from a label list + a current slot + a clamped
+  // setter. Blank neighbors past the ends; disabled when ≤1 option (so it can't empty-spin).
+  const boundedRoller = (
+    labels: string[],
+    slot: number,
+    setSlot: (s: number) => void,
+  ) => {
+    const at = (s: number) => (s >= 0 && s < labels.length ? labels[s]! : '');
+    const go = (s: number) => {
+      if (s >= 0 && s < labels.length) setSlot(s);
+    };
+    return {
+      prev2Label: at(slot - 2),
+      prevLabel: at(slot - 1),
+      currentLabel: at(slot) || '—',
+      nextLabel: at(slot + 1),
+      next2Label: at(slot + 2),
+      onUp: () => go(slot - 1),
+      onDown: () => go(slot + 1),
+      disabled: labels.length <= 1,
+    };
   };
 
-  // KIND tabs — Runs / Patterns / Paths. Switching kind resets the exercise selection
-  // (Auto for 'scale', first authored for the others).
+  // EXERCISE roller — picks the GROUP (the exercise identity). "Auto" (generated box scale)
+  // is PREPENDED only for the 'scale' kind. Selecting a group resets the variant to the first.
+  const autoOption = kind === 'scale';
+  const groupLabels = [
+    ...(autoOption ? ['Auto'] : []),
+    ...exerciseGroups.map((g) => g.label),
+  ];
+  const groupSlot = Math.min(
+    Math.max(autoOption ? groupIdx + 1 : groupIdx, 0),
+    Math.max(groupLabels.length - 1, 0),
+  );
+  const exerciseRoller = boundedRoller(groupLabels, groupSlot, (slot) => {
+    setGroupIdx(autoOption ? slot - 1 : slot);
+    setVariantIdx(0);
+  });
+
+  // VARIANT roller — picks the fingering WITHIN the selected group (v1/v2/…). Only shown
+  // when an authored group with ≥1 variant is selected; for Auto it's hidden.
+  const variantLabels = selectedGroup
+    ? selectedGroup.variants.map((ex, i) => {
+        const p = ex.payload as PathsByKeyLite | null;
+        return p?.variantLabel?.trim() || `v${i + 1}`;
+      })
+    : [];
+  const variantSlot = Math.min(
+    Math.max(variantIdx, 0),
+    Math.max(variantLabels.length - 1, 0),
+  );
+  const variantRoller = boundedRoller(
+    variantLabels,
+    variantSlot,
+    setVariantIdx,
+  );
+  // Show the variant roller only when the group has more than one fingering to choose.
+  const showVariant = !!selectedGroup && variantLabels.length > 1;
+
+  // KIND tabs — Runs / Patterns / Paths. Switching kind resets the selection (Auto for
+  // 'scale', first group for the others) + the variant.
   const kindTabs = {
     tabs: KIND_TABS,
     active: kind,
     onSelect: (k: string) => {
       setKind(k as ExerciseKind);
-      setExerciseIdx(k === 'scale' ? -1 : 0);
+      setGroupIdx(k === 'scale' ? -1 : 0);
+      setVariantIdx(0);
     },
   };
 
@@ -401,6 +454,8 @@ export function ScalesTool({
           countdownState={countdownState}
           scale={scaleRoller}
           exercise={exerciseRoller}
+          variant={variantRoller}
+          showVariant={showVariant}
           kindTabs={kindTabs}
           position={positionRoller}
           showPosition={showPosition}
