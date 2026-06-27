@@ -339,6 +339,17 @@ export function ScalesTool({
   // any authored selection (and always for the 'path' kind).
   const showPosition = !usingAuthored && kind !== 'path';
 
+  // The fretboard lights the AUTHORED path's exact notes (via litNotes) when an authored
+  // exercise is selected; for Auto it falls back to generating the scale/box itself. The
+  // play `path` already carries the resolved (string, fret) of each note.
+  const litNotes = React.useMemo(
+    () =>
+      usingAuthored
+        ? path.map((n) => ({ string: n.string, fret: n.fret }))
+        : undefined,
+    [usingAuthored, path],
+  );
+
   return (
     <GrooveCardShell
       title="Scales"
@@ -365,6 +376,8 @@ export function ScalesTool({
           isPlaying={sequencer.isPlaying}
           tempo={bpm}
           view={view}
+          // Authored exercise → light its exact notes; Auto → generate the scale/box.
+          litNotes={litNotes}
         />
       }
       // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No
