@@ -188,60 +188,13 @@ export function ScaleFretboardWindow({
     ? activeCal.viewportWidth
     : FRETBOARD_WINDOW.viewportWidth;
   const height = activeCal ? activeCal.windowHeight : FRETBOARD_CANVAS_HEIGHT;
-
-  // ── CENTER THE EXERCISE ────────────────────────────────────────────────────────────
-  // The baked sceneX centers the WHOLE neck. An authored path that lives high up the
-  // neck then bunches on the right, half-cut. Shift sceneX so the exercise's fret RANGE
-  // sits in the middle of the window. Only the gym/preview pass `litNotes` (an explicit
-  // exercise); the generated box-scale view keeps the default neck centering.
-  const targetSceneX = React.useMemo(() => {
-    const baseSceneX = overlay3DConfig.sceneX;
-    if (!litNotes || litNotes.length === 0) return baseSceneX;
-    const frets = litNotes.map((n) => n.fret);
-    const exerciseCenterFret = (Math.min(...frets) + Math.max(...frets)) / 2;
-    const neckCenterFret = maxFrets / 2;
-    // px the scene moves per fret ≈ fret spacing (36) × the horizontal content scale.
-    const pxPerFret = 36 * overlay3DConfig.contentScaleX;
-    // A right-heavy exercise (centerFret > neckCenter) must shift LEFT (sceneX down).
-    return baseSceneX + (neckCenterFret - exerciseCenterFret) * pxPerFret;
-  }, [
-    litNotes,
-    maxFrets,
-    overlay3DConfig.sceneX,
-    overlay3DConfig.contentScaleX,
-  ]);
-
-  // Animate sceneX toward the target so the board SLIDES the exercise into the center
-  // when it loads / changes (key, variant), instead of snapping.
-  const [animatedSceneX, setAnimatedSceneX] = React.useState(targetSceneX);
-  const sceneRafRef = React.useRef<number | null>(null);
-  React.useEffect(() => {
-    if (sceneRafRef.current !== null) cancelAnimationFrame(sceneRafRef.current);
-    const tick = () => {
-      setAnimatedSceneX((cur) => {
-        const next = cur + (targetSceneX - cur) * 0.18; // exponential ease toward target
-        if (Math.abs(targetSceneX - next) < 0.5) {
-          sceneRafRef.current = null;
-          return targetSceneX; // settle exactly
-        }
-        sceneRafRef.current = requestAnimationFrame(tick);
-        return next;
-      });
-    };
-    sceneRafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (sceneRafRef.current !== null)
-        cancelAnimationFrame(sceneRafRef.current);
-    };
-  }, [targetSceneX]);
-
   // The canvas renders `viewportWidth` px wide (wider than the 580 base to show more
-  // frets). The wider canvas overflows symmetrically (overflow:visible), so the scene
-  // stays centered in the card — then animatedSceneX pans it to center the exercise.
-  const anchoredConfig = React.useMemo(
-    () => ({ ...overlay3DConfig, sceneX: animatedSceneX }),
-    [overlay3DConfig, animatedSceneX],
-  );
+  // frets). We DON'T grow the outer box past 100% — doing so makes it wider than the
+  // centered max-w card, and the page's `justify-center` then splits the overflow both
+  // ways, shoving the left edge off-screen (the nut clips). Instead the box stays 100%
+  // and the wider canvas overflows symmetrically (overflow:visible), so the scene stays
+  // centered in the card. No sceneX anchor-pull needed — centering is symmetric now.
+  const anchoredConfig = overlay3DConfig;
 
   return (
     <div
