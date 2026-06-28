@@ -196,7 +196,7 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   litBrightColor: '#16a34a', // green-600
   litDimColor: '#184936', // solid muted green (eye-tuned)
   litBrightRootColor: '#14532d', // green-900 (root home note)
-  litDimRootColor: '#0f2a1c', // dim root green
+  litDimRootColor: '#184936', // dim root green (eye-tuned to match the dim note)
   rootRingDimFactor: 0.35,
 };
 
