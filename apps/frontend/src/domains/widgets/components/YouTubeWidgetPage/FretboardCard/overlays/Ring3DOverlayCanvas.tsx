@@ -104,6 +104,8 @@ import {
 const MAX_RIPPLE_RINGS = 6;
 /** Max ghost-ball notes in the anticipation runway pool (config picks how many show). */
 const MAX_RUNWAY = 6;
+/** Max static root-marker rings (one per root/octave dot visible on the neck). */
+const MAX_ROOT_RINGS = 8;
 
 /**
  * Custom perspective camera for 3D ring overlay.
@@ -1086,6 +1088,8 @@ function DebugVisualization({
   const tracerRefs = useRef<(THREE.Mesh | null)[]>([]);
   // APPROACH RING — shrinks onto the NEXT dot as its beat arrives (timing cue). Pass 2.
   const approachRingRef = useRef<THREE.Mesh>(null);
+  // ROOT MARKER RINGS — static rings around the root + octave dots (the dark-green ones).
+  const rootRingRefs = useRef<(THREE.Mesh | null)[]>([]);
   const rippleStateRef = useRef<{ noteIdx: number; t: number }>({
     noteIdx: -1,
     t: 1,
@@ -2099,8 +2103,18 @@ function DebugVisualization({
       }
     });
 
+    // GYM (showAllNotes): the orange playhead sphere is the active-note indicator now, so the
+    // tutorial's yellow active-note ring is DISMISSED here. (Its mesh stays mounted but hidden;
+    // it gets repurposed as static root/interval markers elsewhere.)
+    if (showAllNotes) {
+      if (activeRingRef.current) activeRingRef.current.visible = false;
+      if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
+      if (activeRingRectRef.current) activeRingRectRef.current.visible = false;
+      if (activeRingRectGlowRef.current)
+        activeRingRectGlowRef.current.visible = false;
+    }
     // Position the yellow ring on the first note - choose shape based on fret type
-    if (activePosition) {
+    if (!showAllNotes && activePosition) {
       // Show circular ring for regular frets, hide for open/fret 12
       if (activeRingRef.current) {
         if (activeIsRoundedRect) {
@@ -3062,6 +3076,37 @@ function DebugVisualization({
     }
   });
 
+  // ── ROOT MARKER RINGS — STATIC rings around the root + octave dots (the dark-green ones).
+  //    Independent of playback (always on for the gym), so its OWN useFrame. ──
+  useFrame(() => {
+    const rings = rootRingRefs.current;
+    if (!showAllNotes || ph.rootRingOn <= 0 || !rootPositions) {
+      rings.forEach((r) => r && (r.visible = false));
+      return;
+    }
+    const dotR = 13; // dot radius in canvas px (the ring sizes to the dot, not the sphere)
+    rings.forEach((ring, i) => {
+      if (!ring) return;
+      const root = rootPositions[i];
+      if (!root) {
+        ring.visible = false;
+        return;
+      }
+      const key = `${noteStringToVisualIndex(root.string, stringCount)},${root.fret}`;
+      const mesh = dotMeshRefs.current.get(key);
+      if (!mesh) {
+        ring.visible = false;
+        return;
+      }
+      ring.position.set(mesh.position.x, mesh.position.y, mesh.position.z + 0.8);
+      ring.scale.setScalar(dotR * ph.rootRingSize);
+      const rmat = ring.material as THREE.MeshBasicMaterial;
+      rmat.color.set(ph.rootRingColor);
+      rmat.opacity = ph.rootRingOpacity;
+      ring.visible = true;
+    });
+  });
+
   return (
     <group name="debug-fretboard-grid">
       {/* Background removed - transparent */}
@@ -3534,6 +3579,31 @@ function DebugVisualization({
           clippingPlanes={globalClippingPlanes}
         />
       </mesh>
+
+      {/* ROOT MARKER RINGS — static rings around the root + octave dots (the dark-green ones),
+          marking the home note / intervals. One per root position; placed in the playhead
+          useFrame. Replaces the dismissed yellow active-note ring. */}
+      {Array.from({ length: MAX_ROOT_RINGS }).map((_, i) => (
+        <mesh
+          key={`root-ring-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            rootRingRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 4.5]}
+          name={`root-marker-ring-${i}`}
+        >
+          <ringGeometry args={[0.86, 1, 48]} />
+          <meshBasicMaterial
+            color={ph.rootRingColor}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
 
       {/* ============================================================
           ACTIVE NOTE RING (ROUNDED RECTANGLE) - Yellow ring for open strings & fret 12

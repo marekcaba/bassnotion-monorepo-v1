@@ -29,7 +29,10 @@ type NumKey =
   | 'approachOn'
   | 'approachLead'
   | 'approachStart'
-  | 'approachOpacity';
+  | 'approachOpacity'
+  | 'rootRingOn'
+  | 'rootRingOpacity'
+  | 'rootRingSize';
 
 const SLIDERS: {
   key: NumKey;
@@ -94,6 +97,28 @@ const SLIDERS: {
     step: 0.1,
   },
   { key: 'approachOpacity', label: 'ring opacity', min: 0, max: 1, step: 0.05 },
+  // ── Root marker rings (static, around the roots/octaves) ──
+  {
+    key: 'rootRingOn',
+    label: '◉ root rings ON (0/1)',
+    min: 0,
+    max: 1,
+    step: 1,
+  },
+  {
+    key: 'rootRingOpacity',
+    label: 'root ring opacity',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  {
+    key: 'rootRingSize',
+    label: 'root ring size ×',
+    min: 1,
+    max: 2.5,
+    step: 0.05,
+  },
 ];
 
 const ColorRow = ({
@@ -241,6 +266,11 @@ export function AnticipationPanel({
           label="ring color"
           value={values.approachColor}
           onChange={(v) => onChange({ ...values, approachColor: v })}
+        />
+        <ColorRow
+          label="root ring color"
+          value={values.rootRingColor}
+          onChange={(v) => onChange({ ...values, rootRingColor: v })}
         />
 
         {/* SLIDERS */}
