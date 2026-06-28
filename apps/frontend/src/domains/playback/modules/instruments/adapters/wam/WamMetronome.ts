@@ -209,8 +209,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
     try {
       // FIRST: Try to get preloaded decoded AudioBuffers from memory cache
       const cachedHighBuffer =
-        this.sampleCache.getCachedBuffer('metronome-high');
-      const cachedLowBuffer = this.sampleCache.getCachedBuffer('metronome-low');
+        this.sampleCache.getCachedBuffer('metronome-high-v2');
+      const cachedLowBuffer = this.sampleCache.getCachedBuffer('metronome-low-v2');
 
       if (cachedHighBuffer && cachedLowBuffer) {
         this.logger.info(
@@ -228,9 +228,9 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       );
 
       const rawHighBuffer =
-        await this.sampleCache.getCachedRawBuffer('metronome-high');
+        await this.sampleCache.getCachedRawBuffer('metronome-high-v2');
       const rawLowBuffer =
-        await this.sampleCache.getCachedRawBuffer('metronome-low');
+        await this.sampleCache.getCachedRawBuffer('metronome-low-v2');
 
       if (rawHighBuffer && rawLowBuffer) {
         console.log(
@@ -246,8 +246,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         const lowAudioBuffer = await this.context.decodeAudioData(rawLowBuffer);
 
         // Cache decoded buffers in memory for next time
-        this.sampleCache.cacheBuffer('metronome-high', highAudioBuffer);
-        this.sampleCache.cacheBuffer('metronome-low', lowAudioBuffer);
+        this.sampleCache.cacheBuffer('metronome-high-v2', highAudioBuffer);
+        this.sampleCache.cacheBuffer('metronome-low-v2', lowAudioBuffer);
 
         this.accentBuffer = highAudioBuffer;
         this.clickBuffer = lowAudioBuffer;
@@ -262,8 +262,8 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
       // Load TWO different samples for low and high clicks
-      const clickSamplePath = 'metronome/Click_low2_fixed.mp3'; // Low pitched click
-      const accentSamplePath = 'metronome/Click_high2_fixed.mp3'; // High pitched accent
+      const clickSamplePath = 'metronome/Click_Low2.mp3'; // Low pitched click
+      const accentSamplePath = 'metronome/Click_High2.mp3'; // High pitched accent
 
       const clickUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${clickSamplePath}`;
       const accentUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/${accentSamplePath}`;
@@ -275,7 +275,7 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
       // Load regular click buffer
       const cachedClickBuffer =
         this.sampleCache.getCachedBuffer(clickUrl) ||
-        this.sampleCache.getCachedBuffer('metronome-click');
+        this.sampleCache.getCachedBuffer('metronome-click-v2');
 
       if (cachedClickBuffer) {
         this.logger.info(`♻️ Using cached buffer for regular click`);
@@ -293,17 +293,17 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         this.logger.info(`🎵 Regular click loaded: ${audioBuffer.duration}s`);
 
         // Cache both raw (to IndexedDB) and decoded (to memory)
-        await this.sampleCache.cacheBuffer('metronome-low', arrayBuffer);
+        await this.sampleCache.cacheBuffer('metronome-low-v2', arrayBuffer);
         this.sampleCache.cacheBuffer(clickUrl, audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-click', audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-low', audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-click-v2', audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-low-v2', audioBuffer);
         this.clickBuffer = audioBuffer;
       }
 
       // Load accent click buffer
       const cachedAccentBuffer =
         this.sampleCache.getCachedBuffer(accentUrl) ||
-        this.sampleCache.getCachedBuffer('metronome-accent');
+        this.sampleCache.getCachedBuffer('metronome-accent-v2');
 
       if (cachedAccentBuffer) {
         this.logger.info(`♻️ Using cached buffer for accent click`);
@@ -321,10 +321,10 @@ export class WamMetronomeNode extends ExtendedGainNode implements WamNode {
         this.logger.info(`🎵 Accent click loaded: ${audioBuffer.duration}s`);
 
         // Cache both raw (to IndexedDB) and decoded (to memory)
-        await this.sampleCache.cacheBuffer('metronome-high', arrayBuffer);
+        await this.sampleCache.cacheBuffer('metronome-high-v2', arrayBuffer);
         this.sampleCache.cacheBuffer(accentUrl, audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-accent', audioBuffer);
-        this.sampleCache.cacheBuffer('metronome-high', audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-accent-v2', audioBuffer);
+        this.sampleCache.cacheBuffer('metronome-high-v2', audioBuffer);
         this.accentBuffer = audioBuffer;
       }
 

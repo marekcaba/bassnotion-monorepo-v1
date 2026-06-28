@@ -27,8 +27,8 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
       }
 
       // Use the exact same paths as WamMetronome to ensure compatibility
-      const clickHighUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_high2_fixed.mp3`;
-      const clickLowUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_low2_fixed.mp3`;
+      const clickHighUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_High2.mp3`;
+      const clickLowUrl = `${supabaseUrl}/storage/v1/object/public/audio-samples/metronome/Click_Low2.mp3`;
 
       logger.info('🎵 Preloading metronome samples:', {
         highUrl: clickHighUrl,
@@ -43,7 +43,7 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
       // CRITICAL: Check IndexedDB cache BEFORE network fetch
       const cachedHighBuffer =
         await GlobalSampleCache.getInstance().getCachedRawBuffer(
-          'metronome-high',
+          'metronome-high-v2',
         );
 
       let highArrayBuffer: ArrayBuffer;
@@ -65,7 +65,7 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
         // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
         // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
         await GlobalSampleCache.getInstance().cacheBuffer(
-          'metronome-high',
+          'metronome-high-v2',
           highArrayBuffer,
         );
         logger.info('✅ High click cached');
@@ -75,7 +75,7 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
       // CRITICAL: Check IndexedDB cache BEFORE network fetch
       const cachedLowBuffer =
         await GlobalSampleCache.getInstance().getCachedRawBuffer(
-          'metronome-low',
+          'metronome-low-v2',
         );
 
       let lowArrayBuffer: ArrayBuffer;
@@ -97,7 +97,7 @@ export class MetronomePreloadStrategy implements PreloadStrategy {
         // ✅ BUG #2 FIX: Cache raw ArrayBuffer, NOT decoded AudioBuffer from OfflineContext
         // PERSISTENT CACHE: Also stores to IndexedDB for cross-session persistence
         await GlobalSampleCache.getInstance().cacheBuffer(
-          'metronome-low',
+          'metronome-low-v2',
           lowArrayBuffer,
         );
         logger.info('✅ Low click cached');

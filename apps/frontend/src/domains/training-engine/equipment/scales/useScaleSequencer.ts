@@ -44,6 +44,14 @@ const COUNT_IN_BEATS = BEATS_PER_BAR;
  *  are deliberately LOW so the click sits under the bass instead of clipping the mix. */
 const CLICK_GAIN = 0.18;
 const CLICK_GAIN_ACCENT = 0.3;
+/** Metronome click scheduling compensation, seconds. An earlier ~42ms value compensated the
+ *  LEADING SILENCE baked into the click .mp3 (the file was dead-silent for ~51ms before its
+ *  transient). That silence has been TRIMMED out of the asset (Click_Low2/High2.mp3 now onset at
+ *  ~0ms), so the click transient lands on the beat with NO compensation — measured bass-vs-click
+ *  is within ~7ms (inaudible). Kept as a tunable knob = 0. This is NOT device latency: click + bass
+ *  share one AudioContext, so output latency is common-mode and cancels in their relative offset
+ *  (portable across all devices). Only re-tune if the click ASSET changes again. */
+const CLICK_LATENCY_COMP = 0;
 
 export interface UseScaleSequencerOptions {
   /** The ordered, timed scale notes to play (from buildScalePath). */
@@ -189,6 +197,7 @@ export function useScaleSequencer({
     await Tone.loaded(); // wait for every buffer to fetch + decode
     samplerRef.current = sampler;
     loadedSignatureRef.current = signature;
+
     logger.info('Bass sampler ready', {
       anchorNotes: Object.keys(urls).length,
     });
@@ -292,12 +301,16 @@ export function useScaleSequencer({
     if (metronome) {
       let beatTime = loopStart + nextBeatRef.current * bd;
       while (beatTime <= horizon) {
-        if (beatTime >= now - 0.01) {
+        // The click is fired CLICK_LATENCY_COMP earlier than the beat to cancel the WAM path's
+        // measured latency, so it SOUNDS on the beat in phase with the bass. Guard on the
+        // compensated time so we never arm one that's already slipped into the past.
+        const clickTime = beatTime - CLICK_LATENCY_COMP;
+        if (clickTime >= now - 0.01) {
           const isDownbeat = nextBeatRef.current % BEATS_PER_BAR === 0;
           metronome.trigger({
             // velocity is a 0..1 GAIN (the metronome multiplies it by 127 internally);
             // keep it low so the click sits UNDER the bass instead of clipping the mix.
-            audioTime: beatTime,
+            audioTime: clickTime,
             velocity: isDownbeat ? CLICK_GAIN_ACCENT : CLICK_GAIN,
             data: { isDownbeat },
           });
@@ -329,15 +342,16 @@ export function useScaleSequencer({
     // 1-bar count-in: a click on each of COUNT_IN_BEATS beats, the scale starts after.
     setIsPlaying(true);
     for (let b = 0; b < COUNT_IN_BEATS; b++) {
-      const clickTime = startNow + b * bd;
+      const beatTime = startNow + b * bd;
       if (met)
         met.trigger({
-          audioTime: clickTime,
+          // Same latency comp as the grid clicks so the count-in pulse is in phase too.
+          audioTime: beatTime - CLICK_LATENCY_COMP,
           velocity: b === 0 ? CLICK_GAIN_ACCENT : CLICK_GAIN,
           data: { isDownbeat: b === 0 },
         });
-      // Visual count-in number, fired at wall-clock time matching the click.
-      const delayMs = (clickTime - ctx.currentTime) * 1000;
+      // Visual count-in number lands ON the beat (uncompensated), matching the felt pulse.
+      const delayMs = (beatTime - ctx.currentTime) * 1000;
       window.setTimeout(() => setCountInBeat(b + 1), Math.max(0, delayMs));
     }
 

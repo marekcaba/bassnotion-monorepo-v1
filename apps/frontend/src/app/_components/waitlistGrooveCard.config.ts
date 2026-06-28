@@ -55,12 +55,12 @@ export const WAITLIST_DEMO_CONFIG: GrooveCardBlockConfig = {
 /**
  * Public paths to the count-in samples.
  *
- * Reuses the in-app metronome's existing pair — `Click_high2_fixed.mp3`
- * for the accented downbeat (beat 1) and `Click_low2_fixed.mp3` for the
+ * Reuses the in-app metronome's existing pair — `Click_High2.mp3`
+ * for the accented downbeat (beat 1) and `Click_Low2.mp3` for the
  * three following beats — so the waitlist count-in is tonally identical
  * to the metronome the user will hear inside the app. Both samples are
  * already in production and proven decoder-friendly across every browser
  * the app targets, so no waitlist-specific upload is needed.
  */
-export const WAITLIST_COUNTDOWN_ACCENT_URL = `${BUCKET_BASE}/metronome/Click_high2_fixed.mp3`;
-export const WAITLIST_COUNTDOWN_CLICK_URL = `${BUCKET_BASE}/metronome/Click_low2_fixed.mp3`;
+export const WAITLIST_COUNTDOWN_ACCENT_URL = `${BUCKET_BASE}/metronome/Click_High2.mp3`;
+export const WAITLIST_COUNTDOWN_CLICK_URL = `${BUCKET_BASE}/metronome/Click_Low2.mp3`;
