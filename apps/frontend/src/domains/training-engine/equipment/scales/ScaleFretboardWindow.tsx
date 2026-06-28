@@ -240,6 +240,12 @@ export function ScaleFretboardWindow({
   // viewport less. The spacer is exactly this wide so the browser clamps scroll there.
   const SCREEN_PX_PER_FRET = 45.5;
   const DEFAULT_CENTER_FRET = 2.5;
+  // CENTERING calibration — what scrollLeft puts a given fret at the VISUAL CENTER.
+  // CENTER_FRET_AT_0 = the fret centered at scrollLeft 0; CENTER_PX_PER_FRET = scroll px per
+  // fret of pan (same rate as the scroll range, 45.5). MEASURED 2026-06-28: scrollLeft 56
+  // centered fret-mid 6.0 → anchor = 6.0 − 56/45.5 ≈ 4.77.
+  const CENTER_FRET_AT_0 = 4.77;
+  const CENTER_PX_PER_FRET = 45.5;
   // +200px of slack past the right-edge stop (eye-tuned 2026-06-28) so the last fret isn't
   // jammed flush against the edge.
   const SCROLL_SLACK = 200;
@@ -258,15 +264,14 @@ export function ScaleFretboardWindow({
   const [isDragging, setIsDragging] = React.useState(false);
   const dragStartRef = React.useRef({ x: 0, scrollLeft: 0 });
 
-  // Center a fret in the viewport (smooth). fret can be fractional. Uses the MEASURED
-  // screen-px-per-fret mapping (NOT the content geometry) so the fret lands at the actual
-  // visual center — the 3D renders at contentScale through a perspective camera, so on-screen
-  // px/fret (~45.5) ≠ content px/fret (36). At scroll 0 the visual center is DEFAULT_CENTER_FRET.
+  // Center a fret in the viewport (smooth). fret can be fractional. The scrollLeft→fret
+  // mapping is the MEASURED screen relationship (calibration below): at scroll 0 the visual
+  // center is CENTER_FRET_AT_0; each fret of pan needs CENTER_PX_PER_FRET of scroll.
   const scrollToFret = React.useCallback(
     (fret: number, behavior: ScrollBehavior = 'smooth') => {
       const el = scrollContainerRef.current;
       if (!el) return;
-      const target = (fret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET;
+      const target = (fret - CENTER_FRET_AT_0) * CENTER_PX_PER_FRET;
       el.scrollTo({
         left: Math.min(Math.max(target, 0), maxScroll),
         behavior,
@@ -281,9 +286,10 @@ export function ScaleFretboardWindow({
   // pushed to one side). If it's WIDER than the view → center on the FIRST note (the run
   // starts left-ish, the camera then follows). Matches the auto-follow's "fits" rule.
   React.useEffect(() => {
-    const shownFrets = exerciseNotes
-      .map((n) => (typeof n.fret === 'number' ? n.fret : 0))
-      .filter((f) => f > 0); // ignore open strings for the span
+    // ALL lit frets, including open strings (fret 0 is a real note in the span).
+    const shownFrets = exerciseNotes.map((n) =>
+      typeof n.fret === 'number' ? n.fret : 0,
+    );
     if (shownFrets.length === 0) {
       scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
       return;
