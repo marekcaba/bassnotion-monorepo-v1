@@ -73,34 +73,60 @@ jobs:
         env:
           BACKEND_URL: ${{ github.ref == 'refs/heads/main' && vars.BACKEND_URL_PROD || vars.BACKEND_URL_STAGING }}
           EXPECTED_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           echo "Polling $BACKEND_URL/api/health for commit $EXPECTED_SHA ..."
           # Gate on TWO things, not just liveness:
           #   1. top-level status == "healthy"
-          #   2. the running image's commit == this workflow's commit (github.sha)
-          # (2) is what catches the recurring Railway false-green: the OLD image
-          # answers /api/health 200 while a new build lags or never triggers, so
-          # a liveness-only gate passes against stale code. Asserting the commit
-          # means "the NEW image is actually live" — a lagging/stuck build now
-          # fails the gate instead of silently shipping nothing.
+          #   2. the running image's commit IS THIS commit OR A DESCENDANT OF IT.
+          # (2) catches the recurring Railway false-green: the OLD image answers
+          # /api/health 200 while a new build lags, so a liveness-only gate passes
+          # against stale code. But an EXACT-match gate has the opposite failure:
+          # the LEAPFROG. Railway only ever runs the LATEST commit, so when a second
+          # merge lands before this commit's (slow) build goes live, Railway skips
+          # straight to the newer commit and THIS sha is never served — the gate then
+          # waits 10 min for a sha that will never appear and fails a perfectly good
+          # deploy. Fix: accept "running EXPECTED_SHA *or a descendant*" — a newer
+          # commit being live means our deploy was simply SUPERSEDED, which is a pass.
           #
           # GRACE: if the backend reports commit "unknown" (env var not set —
           # e.g. off-Railway, or before RAILWAY_GIT_COMMIT_SHA is wired), we
           # can't verify the SHA, so fall back to healthy-only with a warning
           # rather than block the deploy on a config gap.
+
+          # Is the running commit the SAME as, or a DESCENDANT of, EXPECTED_SHA?
+          # Uses the GitHub compare API (no checkout needed). For base...head the
+          # returned `status` is HEAD's position relative to BASE:
+          #   identical = head IS base (exactly our commit)            → accept
+          #   ahead     = head is ahead of base (running SUPERSEDED us) → accept
+          #   behind    = head is behind base (running is STALE/older)  → reject
+          #   diverged  = unrelated history                             → reject
+          # (Verified against the live API for the #171→#172 leapfrog: status="ahead".)
+          is_expected_or_descendant() {
+            local running="$1"
+            [ -z "$running" ] || [ "$running" = "unknown" ] && return 1
+            local status
+            status=$(curl -fsS --max-time 15 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GH_REPO/compare/${EXPECTED_SHA}...${running}" \
+              | jq -r '.status // empty' 2>/dev/null || true)
+            [ "$status" = "identical" ] || [ "$status" = "ahead" ]
+          }
+
           for i in $(seq 1 60); do
             body=$(curl -fsS --max-time 10 "$BACKEND_URL/api/health" || true)
             top_status=$(echo "$body" | jq -r '.status // empty' 2>/dev/null || true)
             running_sha=$(echo "$body" | jq -r '.commit // empty' 2>/dev/null || true)
             if [ "$top_status" = "healthy" ]; then
-              # Prefix-tolerant match: Railway may report a full OR short SHA, so
-              # compare on the shorter of the two (min 7 chars) rather than exact
-              # equality — else a short-vs-full mismatch would fail forever.
+              # Prefix-tolerant exact match first (cheap, no API call): Railway may
+              # report a full OR short SHA, so compare on the shorter (min 7 chars).
               n=7
               [ "${#running_sha}" -lt "$n" ] && n=${#running_sha}
               if [ -n "$running_sha" ] && [ "$running_sha" != "unknown" ] && \
                  [ "${EXPECTED_SHA:0:$n}" = "${running_sha:0:$n}" ]; then
-                echo "Backend healthy AND running $running_sha after $i attempt(s)."
+                echo "Backend healthy AND running $running_sha (our commit) after $i attempt(s)."
                 echo "$body"
                 exit 0
               fi
@@ -111,13 +137,21 @@ jobs:
                 echo "$body"
                 exit 0
               fi
-              echo "Attempt $i: healthy but STALE image (running ${running_sha:0:8}, want ${EXPECTED_SHA:0:8}) — new build not live yet, retrying in 10s..."
+              # Not an exact match — but if the running commit is a DESCENDANT of
+              # ours, our deploy was superseded by a newer one. That's a pass.
+              if is_expected_or_descendant "$running_sha"; then
+                echo "Backend healthy; running ${running_sha:0:8} is a DESCENDANT of ${EXPECTED_SHA:0:8} \
+                  — our deploy was superseded by a newer commit. Accepting."
+                echo "$body"
+                exit 0
+              fi
+              echo "Attempt $i: healthy but running an OLDER image (${running_sha:0:8}, want ${EXPECTED_SHA:0:8} or newer) — new build not live yet, retrying in 10s..."
             else
               echo "Attempt $i: not healthy yet (status: ${top_status:-unknown}), retrying in 10s..."
             fi
             sleep 10
           done
-          echo "::error::Backend did not deploy commit $EXPECTED_SHA (and report healthy) within 10 minutes. The new image likely failed to build or Railway's deploy didn't trigger — check the Railway dashboard."
+          echo "::error::Backend did not deploy commit $EXPECTED_SHA (or a descendant) and report healthy within 10 minutes. The new image likely failed to build or Railway's deploy didn't trigger — check the Railway dashboard."
           exit 1
 
   smoke:
