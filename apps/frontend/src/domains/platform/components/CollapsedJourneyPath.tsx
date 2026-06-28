@@ -43,8 +43,9 @@ export function CollapsedJourneyPath({
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
-      // Clean writer URL: the middleware rewrites /tutorials/* → /app/tutorials/*.
-      navigateWithTransition(`/tutorials/${slug}`);
+      // Room-scoped: opened from the College room → /college/<slug> (middleware rewrites
+      // it to the same internal /app/tutorials/<slug> page).
+      navigateWithTransition(`/college/${slug}`);
     },
     [navigateWithTransition],
   );

@@ -21,11 +21,21 @@ describe('toInternalPathname', () => {
     );
   });
 
-  it('maps the /college label alias to the /app/bassment folder', () => {
+  it('maps the bare /college label alias to the /app/bassment folder', () => {
     expect(toInternalPathname('/college')).toBe('/app/bassment');
-    expect(toInternalPathname('/college/anything')).toBe(
-      '/app/bassment/anything',
+  });
+
+  it('maps a room-scoped /college/<slug> to the shared tutorial page', () => {
+    // A tutorial opened from the College room is /college/<slug>; the middleware serves
+    // it off /app/tutorials/<slug>, so the comparator must see that (NOT /app/bassment/…)
+    // or the card-active highlight + audio-provider gate break. Lockstep with middleware.
+    expect(toInternalPathname('/college/serious-groove-card')).toBe(
+      '/app/tutorials/serious-groove-card',
     );
+  });
+
+  it('maps a DEEPER /college/a/b path back to the bassment folder (fallback)', () => {
+    expect(toInternalPathname('/college/a/b')).toBe('/app/bassment/a/b');
   });
 
   it('leaves an already-internal /app/* path unchanged (apex / SSR)', () => {

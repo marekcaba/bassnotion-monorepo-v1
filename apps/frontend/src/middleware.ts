@@ -100,8 +100,24 @@ export function middleware(req: NextRequest) {
       );
     }
 
-    // Label alias: /college → /app/bassment.
-    if (pathname === '/college' || pathname.startsWith('/college/')) {
+    // College room. Bare /college is the room landing (→ /app/bassment). A tutorial
+    // opened FROM the College room is room-scoped — /college/<slug> serves the existing
+    // tutorial page (→ /app/tutorials/<slug>), so the URL bar reads /college/<slug> while
+    // the INTERNAL path stays /app/tutorials/<slug> (audio-provider + active-state checks
+    // key on that, so they keep working unchanged). Any deeper /college/a/b path falls
+    // back to the bassment folder.
+    if (pathname === '/college') {
+      const url = req.nextUrl.clone();
+      url.pathname = '/app/bassment';
+      return NextResponse.rewrite(url);
+    }
+    const collegeSlug = pathname.match(/^\/college\/([^/]+)$/);
+    if (collegeSlug) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/app/tutorials/${collegeSlug[1]}`;
+      return NextResponse.rewrite(url);
+    }
+    if (pathname.startsWith('/college/')) {
       const url = req.nextUrl.clone();
       url.pathname = pathname.replace(/^\/college/, '/app/bassment');
       return NextResponse.rewrite(url);

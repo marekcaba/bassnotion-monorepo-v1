@@ -55,8 +55,10 @@ export const CelebrationBlockView = React.memo(function CelebrationBlockView({
         break;
       case 'next-tutorial':
         if (nextTutorialSlug) {
-          // Clean writer URL: middleware rewrites /tutorials/* → /app/tutorials/*.
-          navigateWithTransition(`/tutorials/${nextTutorialSlug}`);
+          // Room-scoped: finishing a College tutorial → the next one stays under
+          // /college/<slug> (the sibling 'dashboard' case already returns to /college).
+          // Middleware rewrites it to the same internal /app/tutorials/<slug> page.
+          navigateWithTransition(`/college/${nextTutorialSlug}`);
         }
         break;
     }
