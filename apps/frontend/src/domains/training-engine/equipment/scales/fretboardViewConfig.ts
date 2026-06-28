@@ -27,21 +27,22 @@ export const FRETBOARD_CANVAS_HEIGHT = 305;
  *  default 580 (the scroll container, not a wide canvas, reveals more frets). The old 710 +
  *  custom sceneX was the pre-scroll static-layout tuning and fought the scroll offset. */
 export const FRETBOARD_WINDOW = {
-  /** Canvas width in px — matches the tutorial (568/580). Panning the neck is the scroll
-   *  container's job now, not a wide fixed canvas. */
-  viewportWidth: 580,
+  /** Canvas width in px. The scroll container pans the neck; this sets how many frets are
+   *  visible at once. Re-calibrated to 680 (2026-06-28). The scroll-range + scrollToFret
+   *  math in ScaleFretboardWindow read this, so they stay consistent. */
+  viewportWidth: 680,
 };
 
 export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
   // Scroll-model scene config. Re-calibrated by eye on the gym board (5-string) 2026-06-28:
-  // sceneX 0, offsetX -62 (the rest mirrors the tutorial's default preset). sceneX is
-  // string-count-dependent — keep the old +17 gap for 4-string (it sits higher).
-  const sceneX = stringCount === 4 ? 17 : 0;
+  // sceneX -92, offsetX -14, viewport 680 (above). sceneX is string-count-dependent — keep
+  // the old +17 gap for 4-string (it sits higher).
+  const sceneX = stringCount === 4 ? -75 : -92;
   return {
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
-    offsetX: -62,
+    offsetX: -14,
     offsetY: 3,
     sceneX,
     sceneY: 0,
