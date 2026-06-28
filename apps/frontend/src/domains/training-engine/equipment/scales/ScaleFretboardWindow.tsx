@@ -264,20 +264,45 @@ export function ScaleFretboardWindow({
   const [isDragging, setIsDragging] = React.useState(false);
   const dragStartRef = React.useRef({ x: 0, scrollLeft: 0 });
 
-  // Center a fret in the viewport (smooth). fret can be fractional. The scrollLeft→fret
-  // mapping is the MEASURED screen relationship (calibration below): at scroll 0 the visual
+  // Center a fret in the viewport with an EASE-IN-OUT tween (own rAF, not the browser's
+  // default smooth scroll — that easing reads abrupt on key changes). fret can be fractional.
+  // The scrollLeft→fret mapping is the MEASURED screen relationship: at scroll 0 the visual
   // center is CENTER_FRET_AT_0; each fret of pan needs CENTER_PX_PER_FRET of scroll.
+  const centerTweenRef = React.useRef<number | null>(null);
   const scrollToFret = React.useCallback(
-    (fret: number, behavior: ScrollBehavior = 'smooth') => {
+    (fret: number, durationMs = 650) => {
       const el = scrollContainerRef.current;
       if (!el) return;
-      const target = (fret - CENTER_FRET_AT_0) * CENTER_PX_PER_FRET;
-      el.scrollTo({
-        left: Math.min(Math.max(target, 0), maxScroll),
-        behavior,
-      });
+      const target = Math.min(
+        Math.max((fret - CENTER_FRET_AT_0) * CENTER_PX_PER_FRET, 0),
+        maxScroll,
+      );
+      const from = el.scrollLeft;
+      if (Math.abs(target - from) < 1) {
+        el.scrollLeft = target;
+        return;
+      }
+      if (centerTweenRef.current !== null)
+        cancelAnimationFrame(centerTweenRef.current);
+      const start = performance.now();
+      const easeInOut = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const step = (now: number) => {
+        const p = Math.min((now - start) / durationMs, 1);
+        el.scrollLeft = from + (target - from) * easeInOut(p);
+        if (p < 1) centerTweenRef.current = requestAnimationFrame(step);
+        else centerTweenRef.current = null;
+      };
+      centerTweenRef.current = requestAnimationFrame(step);
     },
     [maxScroll],
+  );
+  React.useEffect(
+    () => () => {
+      if (centerTweenRef.current !== null)
+        cancelAnimationFrame(centerTweenRef.current);
+    },
+    [],
   );
 
   // On exercise change, present it centered — for BOTH authored paths AND generated Auto
