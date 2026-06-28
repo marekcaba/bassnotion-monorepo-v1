@@ -3100,16 +3100,6 @@ function DebugVisualization({
     litWindowActiveRef.current = true;
     recolorGymDots();
 
-    // Hide the letters on the CURRENT dot (sphere on it), the NEXT dot (approach ring), AND every
-    // RUNWAY ghost ahead — the faint preview dots must read clean. The window matches the runway
-    // chain (idx .. idx+count, wrapping the loop); with the runway off it's just current + next.
-    const labelWindow = ph.runwayOn > 0 ? Math.max(1, Math.round(ph.runwayCount)) : 1;
-    const hidden: Array<{ string: number; fret: number }> = [cur];
-    for (let k = 1; k <= labelWindow; k++) {
-      const n = playheadNotes[(idx + k) % playheadNotes.length];
-      if (n) hidden.push(n);
-    }
-    hideLabelsFor(hidden);
     const fromPos = dotPos(cur);
     if (!fromPos) {
       sphere.visible = false;
@@ -3128,6 +3118,19 @@ function DebugVisualization({
     const slot = Math.max(slotEnd - cur.startBeat, 1e-3);
     const noteProgress = Math.min(Math.max((beat - cur.startBeat) / slot, 0), 1);
     const { t, hop } = playheadGlide(noteProgress, ph);
+
+    // Hide the LETTER on the dots ahead (NEXT + any runway ghosts) — always, the sphere's heading
+    // there. The CURRENT dot's letter is hidden ONLY while the sphere is still sitting on it; the
+    // moment the glide starts (t past a hair), free it so the letter reappears AS the sphere leaves,
+    // not a beat later when idx finally flips. (Without this, `cur` stayed hidden the whole slot.)
+    const labelWindow = ph.runwayOn > 0 ? Math.max(1, Math.round(ph.runwayCount)) : 1;
+    const hidden: Array<{ string: number; fret: number }> = [];
+    if (t < 0.05) hidden.push(cur); // sphere still on the current dot
+    for (let k = 1; k <= labelWindow; k++) {
+      const n = playheadNotes[(idx + k) % playheadNotes.length];
+      if (n) hidden.push(n);
+    }
+    hideLabelsFor(hidden);
 
     const target = toPos ?? fromPos;
     sphere.position.set(

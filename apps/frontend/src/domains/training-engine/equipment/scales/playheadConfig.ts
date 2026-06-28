@@ -167,9 +167,10 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   ripple2On: 1,
   ripple2Color: '#b85e14',
   ripple2Delay: 0.18,
-  // Anticipation runway — eye-tuned: 2 flat black DOTS on the ground ahead, no tracer line.
+  // Anticipation runway — eye-tuned: 1 flat black DOT on the ground (the NEXT note only), no
+  // tracer line. The faint next-next ghost was dropped (cluttered the look).
   runwayOn: 1,
-  runwayCount: 2,
+  runwayCount: 1,
   runwayColor: '#000000',
   runwayOpacity: 0.95,
   runwaySize: 1.4,
@@ -193,7 +194,7 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   litWindowAhead: 1,
   litSmoothing: 0.18,
   litBrightColor: '#16a34a', // green-600
-  litDimColor: '#1d3a2a', // solid muted green
+  litDimColor: '#184936', // solid muted green (eye-tuned)
   litBrightRootColor: '#14532d', // green-900 (root home note)
   litDimRootColor: '#0f2a1c', // dim root green
   rootRingDimFactor: 0.35,
