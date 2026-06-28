@@ -309,56 +309,65 @@ export function ScaleFretboardWindow({
   };
   const endDrag = () => setIsDragging(false);
 
-  // ── AUTO-FOLLOW CAMERA — during playback, continuously + smoothly pan the neck so the
-  //    ACTIVE note stays centered (cinematic slide along the fretboard). Reads the gym's own
-  //    clock (getPlaybackBeat) → the active note's fret → target scrollLeft, and exponentially
-  //    lerps the container's scrollLeft toward it each frame (the easing = the smooth pan).
-  //    Pauses while the user is dragging; stops when not playing. The exercise-load centering
-  //    above handles the rest. ──
+  // ── AUTO-FOLLOW CAMERA — during playback, SLOWLY pan the neck to keep the active note in
+  //    view — but ONLY WHEN NEEDED. If the whole exercise's fret span already fits in the
+  //    window, the camera holds still (no sliding). When it doesn't fit, the view only nudges
+  //    (gently, slowly) as the active note nears the left/right edge, then settles. Reads the
+  //    gym's own clock (getPlaybackBeat). Pauses while dragging; stops when not playing. ──
   const isDraggingRef = React.useRef(isDragging);
   isDraggingRef.current = isDragging;
   React.useEffect(() => {
     if (!getPlaybackBeat || !playheadNotes || playheadNotes.length === 0)
       return;
+    // Does the WHOLE exercise fit in the view? View width in frets = viewport / px-per-fret.
+    // If the exercise span fits (with a margin), never pan — all notes are always visible.
+    const frets = playheadNotes.map((n) => n.fret);
+    const span = Math.max(...frets) - Math.min(...frets);
+    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
+    const fitsInView = span <= viewFrets - 1.5; // 1.5-fret margin so edges aren't jammed
+
     let raf = 0;
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const el = scrollContainerRef.current;
       const beat = getPlaybackBeat();
-      // Not playing, mid-drag, or counting in → don't fight the user / hold position.
-      if (!el || beat === null || beat < 0 || isDraggingRef.current) return;
-      // Active note = last note whose startBeat ≤ beat (the sphere's current note).
+      // Not playing, mid-drag, counting in, or the exercise fits → hold position, no pan.
+      if (
+        !el ||
+        beat === null ||
+        beat < 0 ||
+        isDraggingRef.current ||
+        fitsInView
+      )
+        return;
+
+      // Active note's fret (the sphere's current note).
       let idx = 0;
       for (let i = 0; i < playheadNotes.length; i++) {
         if (playheadNotes[i]!.startBeat <= beat) idx = i;
         else break;
       }
-      // Interpolate the fret toward the NEXT note across the beat so the pan tracks the
-      // gliding sphere continuously (not a per-note step). Wraps at the loop seam.
-      const cur = playheadNotes[idx]!;
-      const next = playheadNotes[(idx + 1) % playheadNotes.length]!;
-      const slotEnd =
-        idx + 1 < playheadNotes.length
-          ? playheadNotes[idx + 1]!.startBeat
-          : cur.startBeat + 0.5;
-      const frac = Math.min(
-        Math.max(
-          (beat - cur.startBeat) / Math.max(slotEnd - cur.startBeat, 1e-3),
-          0,
-        ),
-        1,
-      );
-      const followFret = cur.fret + (next.fret - cur.fret) * frac;
-      // scrollLeft that CENTERS this fret. Use the MEASURED screen-px-per-fret mapping (the
-      // same calibration the scroll range uses) — NOT the content geometry — because the 3D
-      // is rendered at contentScale through a perspective camera, so on-screen px/fret ≠
-      // content px/fret. At scroll 0 the visual center is ~DEFAULT_CENTER_FRET.
-      const target = Math.min(
-        Math.max((followFret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET, 0),
-        maxScroll,
-      );
-      // Exponential ease toward the target → the cinematic continuous slide.
-      el.scrollLeft += (target - el.scrollLeft) * 0.08;
+      const followFret = playheadNotes[idx]!.fret;
+
+      // Where the active note currently sits on screen (px from the left edge).
+      const fretScreenX =
+        (followFret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET - el.scrollLeft;
+      // EDGE BUFFER — only pan when the note drifts into the outer ~25% on either side; while
+      // it's comfortably in frame, the camera holds completely still.
+      const buffer = viewportWidth * 0.25;
+      let target = el.scrollLeft;
+      if (fretScreenX < buffer) {
+        // Drifting off the LEFT → pan left so the note returns to the buffer line.
+        target = el.scrollLeft + (fretScreenX - buffer);
+      } else if (fretScreenX > viewportWidth - buffer) {
+        // Drifting off the RIGHT → pan right.
+        target = el.scrollLeft + (fretScreenX - (viewportWidth - buffer));
+      } else {
+        return; // comfortably centered → no movement at all
+      }
+      target = Math.min(Math.max(target, 0), maxScroll);
+      // VERY SLOW ease toward the target — a calm drift, not a chase.
+      el.scrollLeft += (target - el.scrollLeft) * 0.02;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
