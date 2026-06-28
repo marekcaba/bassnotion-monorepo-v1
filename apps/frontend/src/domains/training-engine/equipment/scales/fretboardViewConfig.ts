@@ -33,15 +33,15 @@ export const FRETBOARD_WINDOW = {
 };
 
 export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
-  // MIRROR the tutorial's scroll-model scene config (YouTubeWidgetPage.tsx default preset),
-  // so the scroll container's ScrollOffsetGroup math lines up with the scene. sceneX is
-  // string-count-dependent exactly as the tutorial sets it (4-string 20, 5/6-string 3).
-  const sceneX = stringCount === 4 ? 20 : 3;
+  // Scroll-model scene config. Re-calibrated by eye on the gym board (5-string) 2026-06-28:
+  // sceneX 0, offsetX -62 (the rest mirrors the tutorial's default preset). sceneX is
+  // string-count-dependent — keep the old +17 gap for 4-string (it sits higher).
+  const sceneX = stringCount === 4 ? 17 : 0;
   return {
     rotationX: 0,
     rotationY: 0,
     rotationZ: 0,
-    offsetX: 25,
+    offsetX: -62,
     offsetY: 3,
     sceneX,
     sceneY: 0,
