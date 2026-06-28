@@ -195,17 +195,33 @@ export function ScaleFretboardWindow({
   // every frame (ScrollSyncManager) and translates the 3D content (ScrollOffsetGroup).
   // This is what gives us, for free: drag-to-move AND the scroll-gated LEFT FADE (off at
   // the nut, on once moved). The inner spacer is wider than the window so there's room to
-  // scroll the whole neck. Geometry mirrors Ring3DOverlayCanvas exactly.
-  const FRET_SPACING = 38;
-  const FRET_OFFSET = 46;
+  // scroll the whole neck. Geometry MUST match Ring3DOverlayCanvas's dot placement +
+  // FULL_CONTENT_WIDTH EXACTLY (it uses 36/38/15) — else the spacer is too narrow and the
+  // scroll caps before the neck's end (the bug: "barely see fret 12"). NOTE: the tutorial's
+  // own scrollToFret uses 38/46, but that's a looser approximation; the canvas geometry is
+  // the source of truth here.
+  const FRET_SPACING = 36;
+  const FRET_OFFSET = 38;
   const CENTER_OFFSET = 15;
-  const DOT_RADIUS = 13;
-  const fullContentWidth =
-    CENTER_OFFSET +
-    FRET_OFFSET +
-    (maxFrets - 1) * FRET_SPACING +
-    DOT_RADIUS * 2 +
-    20;
+
+  // SCROLL RANGE — scrollLeft (DOM px) does NOT pan content 1:1: the 3D is rendered at
+  // contentScale through a perspective camera, so DOM-px under-covers the scaled content.
+  // MEASURED on the real board: at maxScroll 660 the neck reached ~fret 17 (from the default
+  // center ~fret 2.5) → ≈45.5 on-screen px per fret. So to put the LAST fret at the viewport
+  // center we need ≈ (lastFret − 2.5) × 45.5 of scroll. maxScroll is that, clamped below so a
+  // drag can't go past the neck (the over-size bug = scrolling into empty void).
+  const SCREEN_PX_PER_FRET = 45.5;
+  const DEFAULT_CENTER_FRET = 2.5;
+  // A little slack (~2 frets) past the last fret so it isn't jammed against the right edge.
+  const SCROLL_SLACK = SCREEN_PX_PER_FRET * 2;
+  const maxScroll = Math.max(
+    0,
+    (maxFrets - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET + SCROLL_SLACK,
+  );
+  // Spacer is EXACTLY this scroll range wide (= maxScroll + viewportWidth), so the browser
+  // natively clamps scrollLeft to [0, maxScroll] — you can reach the last fret but not scroll
+  // into empty void past it.
+  const fullContentWidth = maxScroll + viewportWidth;
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -271,9 +287,14 @@ export function ScaleFretboardWindow({
           NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
       {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
 
-      {/* Scroll container (the tutorial's movement mechanism). overflow-x-auto + a wide
-          inner spacer = native scroll; the canvas reads scrollLeft each frame. Scrollbar
-          hidden; drag-to-pan on top of native scroll. */}
+      {/* MOVEMENT — mirrors the tutorial's layering EXACTLY:
+          (1) a scroll container holding ONLY a wide spacer → provides native scroll RANGE
+              (drag/scroll moves scrollLeft), but renders nothing visible;
+          (2) the canvas as an ABSOLUTE SIBLING outside the scroll container, pinned to the
+              viewport (viewportWidth wide, fixed). It reads scrollLeft each frame and pans
+              the 3D content via ScrollOffsetGroup.
+          Putting the canvas INSIDE the scroll container double-moved it (physical DOM scroll
+          + 3D translate) and shrank it against the fixed clip planes — the bug we just hit. */}
       <div
         ref={scrollContainerRef}
         onMouseDown={onMouseDown}
@@ -292,31 +313,47 @@ export function ScaleFretboardWindow({
             display: none;
           }
         `}</style>
-        {/* Wide spacer so there's room to scroll the whole neck. The canvas overlays it. */}
-        <div style={{ position: 'relative', width: fullContentWidth, height }}>
-          <Ring3DOverlayCanvas
-            exerciseNotes={exerciseNotes}
-            currentTime={0}
-            isPlaying={isPlaying}
-            config={ringConfig}
-            stringCount={stringCount}
-            maxFrets={maxFrets}
-            tempo={tempo}
-            overlay3DConfig={anchoredConfig}
-            viewportWidthOverride={viewportWidth}
-            // The canvas reads this each frame to pan the 3D content + gate the left fade.
-            // Cast: React 19 types useRef(null) as RefObject<T | null>; the canvas prop is
-            // RefObject<T> (it null-guards .current internally).
-            scrollContainerRef={
-              scrollContainerRef as React.RefObject<HTMLDivElement>
-            }
-            // Light the WHOLE scale at once (the scale shape), not a moving lookahead
-            // window — the active note still emphasizes as the sequence plays.
-            showAllNotes
-            // Root notes paint a DARKER green so the scale's home note stands out.
-            rootPositions={rootPositions}
-          />
-        </div>
+        {/* Invisible spacer — its width is the full neck so there's scroll range. */}
+        <div style={{ width: fullContentWidth, height: 1 }} />
+      </div>
+
+      {/* The 3D canvas — pinned to the viewport (NOT inside the scroll container), CENTERED
+          in the card. It reads scrollContainerRef.scrollLeft and translates the 3D content
+          itself. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: viewportWidth,
+          height,
+          pointerEvents: 'none',
+          overflow: 'visible',
+        }}
+      >
+        <Ring3DOverlayCanvas
+          exerciseNotes={exerciseNotes}
+          currentTime={0}
+          isPlaying={isPlaying}
+          config={ringConfig}
+          stringCount={stringCount}
+          maxFrets={maxFrets}
+          tempo={tempo}
+          overlay3DConfig={anchoredConfig}
+          viewportWidthOverride={viewportWidth}
+          // The canvas reads this each frame to pan the 3D content + gate the left fade.
+          // Cast: React 19 types useRef(null) as RefObject<T | null>; the canvas prop is
+          // RefObject<T> (it null-guards .current internally).
+          scrollContainerRef={
+            scrollContainerRef as React.RefObject<HTMLDivElement>
+          }
+          // Light the WHOLE scale at once (the scale shape), not a moving lookahead
+          // window — the active note still emphasizes as the sequence plays.
+          showAllNotes
+          // Root notes paint a DARKER green so the scale's home note stands out.
+          rootPositions={rootPositions}
+        />
       </div>
     </div>
   );
