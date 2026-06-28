@@ -53,6 +53,12 @@ export interface ScaleFretboardWindowProps {
    *  editor uses this to preview an explicitly-drawn note sequence. The first note is
    *  marked as the "root" (darker) so the path's start stands out. */
   litNotes?: { string: number; fret: number }[];
+  /** Current playback position in beats (from the sequencer) for the gliding playhead.
+   *  null when not playing. The gym doesn't run the AtomicPlaybackClock the canvas reads. */
+  getPlaybackBeat?: () => number | null;
+  /** The played note sequence (string/fret + startBeat) the orange playhead sphere glides
+   *  along — in PLAY order, from the sequencer's `path`. */
+  playheadNotes?: { string: number; fret: number; startBeat: number }[];
 }
 
 export function ScaleFretboardWindow({
@@ -66,6 +72,8 @@ export function ScaleFretboardWindow({
   blueprintOverride,
   calibrationOverride,
   litNotes,
+  getPlaybackBeat,
+  playheadNotes,
 }: ScaleFretboardWindowProps) {
   // Build the full note universe for the user's neck, then show either ONE box position
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
@@ -206,17 +214,21 @@ export function ScaleFretboardWindow({
 
   // SCROLL RANGE — scrollLeft (DOM px) does NOT pan content 1:1: the 3D is rendered at
   // contentScale through a perspective camera, so DOM-px under-covers the scaled content.
-  // MEASURED on the real board: at maxScroll 660 the neck reached ~fret 17 (from the default
-  // center ~fret 2.5) → ≈45.5 on-screen px per fret. So to put the LAST fret at the viewport
-  // center we need ≈ (lastFret − 2.5) × 45.5 of scroll. maxScroll is that, clamped below so a
-  // drag can't go past the neck (the over-size bug = scrolling into empty void).
+  // MEASURED on the real board: at scroll 660 the neck reached ~fret 17 (from the default
+  // center ~fret 2.5) → ≈45.5 on-screen px per fret. Scroll to put the last fret at the
+  // viewport CENTER would be (lastFret − 2.5)×45.5; we want it at the RIGHT EDGE instead
+  // (so the neck stops with the last fret flush right, no blank space), which is half a
+  // viewport less. The spacer is exactly this wide so the browser clamps scroll there.
   const SCREEN_PX_PER_FRET = 45.5;
   const DEFAULT_CENTER_FRET = 2.5;
-  // A little slack (~2 frets) past the last fret so it isn't jammed against the right edge.
-  const SCROLL_SLACK = SCREEN_PX_PER_FRET * 2;
+  // +200px of slack past the right-edge stop (eye-tuned 2026-06-28) so the last fret isn't
+  // jammed flush against the edge.
+  const SCROLL_SLACK = 200;
   const maxScroll = Math.max(
     0,
-    (maxFrets - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET + SCROLL_SLACK,
+    (maxFrets - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET -
+      viewportWidth / 2 +
+      SCROLL_SLACK,
   );
   // Spacer is EXACTLY this scroll range wide (= maxScroll + viewportWidth), so the browser
   // natively clamps scrollLeft to [0, maxScroll] — you can reach the last fret but not scroll
@@ -353,6 +365,9 @@ export function ScaleFretboardWindow({
           showAllNotes
           // Root notes paint a DARKER green so the scale's home note stands out.
           rootPositions={rootPositions}
+          // Gliding orange playhead: the sequencer's real clock + the played note sequence.
+          getPlaybackBeat={getPlaybackBeat}
+          playheadNotes={playheadNotes}
         />
       </div>
     </div>

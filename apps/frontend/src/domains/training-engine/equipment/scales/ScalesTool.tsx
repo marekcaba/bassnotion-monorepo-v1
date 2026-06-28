@@ -415,6 +415,19 @@ export function ScalesTool({
     [usingAuthored, path],
   );
 
+  // The PLAYHEAD sequence — the notes being played, in order, with their beat positions
+  // (from the play `path`, which is the source of truth for BOTH Auto + authored). The
+  // canvas glides the orange sphere along this using the sequencer's real clock.
+  const playheadNotes = React.useMemo(
+    () =>
+      path.map((n) => ({
+        string: n.string,
+        fret: n.fret,
+        startBeat: n.startBeat,
+      })),
+    [path],
+  );
+
   return (
     <GrooveCardShell
       title="Scales"
@@ -443,6 +456,11 @@ export function ScalesTool({
           view={view}
           // Authored exercise → light its exact notes; Auto → generate the scale/box.
           litNotes={litNotes}
+          // The real playback clock for the gliding playhead (the gym doesn't run the
+          // AtomicPlaybackClock the canvas's own active-note system reads).
+          getPlaybackBeat={sequencer.getPlaybackBeat}
+          // The played note sequence (string/fret + startBeat) the sphere glides along.
+          playheadNotes={playheadNotes}
         />
       }
       // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No

@@ -66,6 +66,10 @@ export interface UseScaleSequencerReturn {
   play: () => Promise<void>;
   stop: () => void;
   audioContext: AudioContext | null;
+  /** Current elapsed playback position in BEATS from the scale loop's beat 0, looped to
+   *  [0, loopBeats). Negative during the count-in (before beat 0). null when not playing.
+   *  Drives the fretboard playhead (the gym doesn't run the AtomicPlaybackClock). */
+  getPlaybackBeat: () => number | null;
 }
 
 export function useScaleSequencer({
@@ -387,6 +391,19 @@ export function useScaleSequencer({
     };
   }, []);
 
+  // Current playback position in BEATS from the scale loop's beat 0, looped to [0, loopBeats).
+  // Computed live from the shared audio clock: (now − loopStart) / beatDuration. Negative
+  // before beat 0 (count-in). null when not playing. Drives the fretboard playhead.
+  const getPlaybackBeat = React.useCallback((): number | null => {
+    const ctx = ctxRef.current;
+    if (!ctx || !isPlaying) return null;
+    const elapsed = ctx.currentTime - loopStartRef.current;
+    const beat = elapsed / beatDuration();
+    if (beat < 0) return beat; // count-in
+    const loop = loopBeatsRef.current || 1;
+    return beat % loop;
+  }, [isPlaying, beatDuration]);
+
   return {
     isPlaying,
     isReady,
@@ -394,5 +411,6 @@ export function useScaleSequencer({
     play,
     stop,
     audioContext: ctxRef.current,
+    getPlaybackBeat,
   };
 }

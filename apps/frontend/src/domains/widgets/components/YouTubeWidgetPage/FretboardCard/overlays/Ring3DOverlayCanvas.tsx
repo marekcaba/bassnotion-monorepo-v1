@@ -635,6 +635,11 @@ export interface Ring3DOverlayCanvasProps {
    *  DARKER green than the rest of the scale so the home note stands out. Scales-tool
    *  only; the tutorial passes nothing. */
   rootPositions?: Array<{ string: number; fret: number }>;
+  /** GYM PLAYHEAD: the sequencer's live position in beats (null when not playing) + the
+   *  played note sequence (string/fret + startBeat). The canvas glides an orange sphere
+   *  along it on its OWN clock (the gym doesn't run the AtomicPlaybackClock). */
+  getPlaybackBeat?: () => number | null;
+  playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -771,6 +776,8 @@ interface DebugVisualizationProps {
   isPlaying: boolean; // Playback state for enabling updates
   showAllNotes?: boolean; // light the WHOLE scale at once (gym Scales tool), not lookahead
   rootPositions?: Array<{ string: number; fret: number }>; // roots → darker green
+  getPlaybackBeat?: () => number | null; // gym playhead clock (beats)
+  playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>; // glide path
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
   activeRingZOffset?: number; // Z offset above the dot (default 1)
@@ -865,6 +872,8 @@ function DebugVisualization({
   isPlaying,
   showAllNotes = false,
   rootPositions,
+  getPlaybackBeat,
+  playheadNotes,
   countdownBeats = 4,
   activeRingZOffset = -1,
   activeRingRadius = 13,
@@ -1041,6 +1050,10 @@ function DebugVisualization({
   // Preview ring refs - shows the NEXT note (orange, pulsing)
   const previewRingRef = useRef<THREE.Mesh>(null); // Circular preview ring
   const previewRingRectRef = useRef<THREE.Mesh>(null); // Rounded rectangle preview ring
+  // PLAYHEAD SPHERE (gym Scales tool) — a small orange sphere that sits at the active note's
+  // dot center and glides center-to-center to the next note ("quick glide + hold"). Guitar
+  // Hero-style. Only used in showAllNotes mode (the active ring is held there).
+  const playheadSphereRef = useRef<THREE.Mesh>(null);
   // Track pulse animation time
   const pulseTimeRef = useRef(0);
   // Dynamic note label refs - shows note name on current and next notes
@@ -2450,6 +2463,7 @@ function DebugVisualization({
       }
     });
 
+
     // Pulse animation is calculated directly from real time and tempo below
 
     // Update active ring position - choose shape based on fret type
@@ -2743,6 +2757,79 @@ function DebugVisualization({
         }
       }
     });
+  });
+
+  // ── GYM PLAYHEAD SPHERE — its OWN useFrame, independent of the active-note one above ────
+  // The gym doesn't run the AtomicPlaybackClock, so the block above early-returns on a null
+  // clock. This drives the orange sphere from the SEQUENCER's beat (getPlaybackBeat) + the
+  // played note sequence (playheadNotes). "Quick glide + hold": sit on the active note for
+  // the first HOLD_FRAC of its slot, then a quick eased slide into the next dot. When not
+  // playing (beat null) it rests on the first note.
+  useFrame(() => {
+    const sphere = playheadSphereRef.current;
+    if (!sphere) return;
+    if (!showAllNotes || !playheadNotes || playheadNotes.length === 0) {
+      sphere.visible = false;
+      return;
+    }
+
+    const dotPos = (note: { string: number; fret: number }) => {
+      const key = `${noteStringToVisualIndex(note.string, stringCount)},${note.fret}`;
+      const mesh = dotMeshRefs.current.get(key);
+      return mesh ? mesh.position : null;
+    };
+
+    const beat = getPlaybackBeat ? getPlaybackBeat() : null;
+
+    // Not playing (or counting in) → rest on the first note.
+    if (beat === null || beat < 0) {
+      const pos = dotPos(playheadNotes[0]!);
+      if (pos) {
+        sphere.position.set(pos.x, pos.y, pos.z + 3);
+        sphere.visible = true;
+      } else {
+        sphere.visible = false;
+      }
+      return;
+    }
+
+    // Active note = the last note whose startBeat ≤ beat (sequence is ascending in beat).
+    let idx = 0;
+    for (let i = 0; i < playheadNotes.length; i++) {
+      if (playheadNotes[i]!.startBeat <= beat) idx = i;
+      else break;
+    }
+    const cur = playheadNotes[idx]!;
+    const next = playheadNotes[idx + 1] ?? null; // null on the last note → just hold
+    const fromPos = dotPos(cur);
+    if (!fromPos) {
+      sphere.visible = false;
+      return;
+    }
+    const toPos = next ? dotPos(next) : null;
+
+    // Progress through the CURRENT note's slot [0..1].
+    const slotEnd = next ? next.startBeat : cur.startBeat + 0.5;
+    const slot = Math.max(slotEnd - cur.startBeat, 1e-3);
+    const noteProgress = Math.min(Math.max((beat - cur.startBeat) / slot, 0), 1);
+    // Hold for HOLD_FRAC, then glide over the remainder, eased.
+    const HOLD_FRAC = 0.7;
+    const glideRaw =
+      noteProgress <= HOLD_FRAC
+        ? 0
+        : (noteProgress - HOLD_FRAC) / (1 - HOLD_FRAC);
+    const t =
+      glideRaw < 0.5
+        ? 2 * glideRaw * glideRaw
+        : 1 - Math.pow(-2 * glideRaw + 2, 2) / 2;
+
+    const target = toPos ?? fromPos;
+    sphere.position.set(
+      fromPos.x + (target.x - fromPos.x) * t,
+      fromPos.y + (target.y - fromPos.y) * t,
+      fromPos.z + (target.z - fromPos.z) * t + 3,
+    );
+    sphere.visible = true;
   });
 
   return (
@@ -3077,6 +3164,28 @@ function DebugVisualization({
         />
       </mesh>
 
+      {/* PLAYHEAD SPHERE (gym Scales tool) — a small orange sphere that sits at the active
+          note's dot center and glides to the next note. Positioned every frame by useFrame
+          (the showAllNotes glide block). Smaller than a dot (r≈7 vs 13) so it reads as a
+          marker on top of the green dot. */}
+      <mesh
+        ref={playheadSphereRef}
+        visible={false}
+        position={[0, 0, 6]}
+        name="playhead-sphere"
+      >
+        <sphereGeometry args={[7, 24, 24]} />
+        <meshStandardMaterial
+          color={DOT_COLORS.ACTIVE_RING}
+          emissive={DOT_COLORS.ACTIVE_RING}
+          emissiveIntensity={0.85}
+          transparent={true}
+          opacity={0.95}
+          depthWrite={false}
+          clippingPlanes={globalClippingPlanes}
+        />
+      </mesh>
+
       {/* ============================================================
           ACTIVE NOTE RING (ROUNDED RECTANGLE) - Yellow ring for open strings & fret 12
           Uses a tube geometry extruded along a rounded rectangle path
@@ -3394,6 +3503,8 @@ export function Ring3DOverlayCanvas({
   // (gym equipment tools). Undefined → the default 580.
   showAllNotes = false, // gym Scales tool: light the WHOLE scale, not a lookahead window
   rootPositions, // gym Scales tool: root notes paint a darker green
+  getPlaybackBeat, // gym Scales tool: live playhead clock (beats)
+  playheadNotes, // gym Scales tool: the glide path (string/fret + startBeat)
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -4344,6 +4455,8 @@ export function Ring3DOverlayCanvas({
                       isPlaying={isPlaying}
                       showAllNotes={showAllNotes}
                       rootPositions={rootPositions}
+                      getPlaybackBeat={getPlaybackBeat}
+                      playheadNotes={playheadNotes}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}
