@@ -4048,6 +4048,11 @@ export function Ring3DOverlayCanvas({
   const leftFadeZoneTarget = overlay3DConfig.leftFadeZone ?? 10;
   const rightFadeZone = overlay3DConfig.rightFadeZone ?? 10;
   const SCROLL_THRESHOLD = 1; // px threshold to trigger fade (any scroll triggers it)
+  // HYSTERESIS (gym): turn the left fade ON once we're meaningfully off the nut, but only OFF
+  // once we're FIRMLY back at the nut. This stops the fade flickering off mid-pan when a key
+  // change passes near (but not to) the nut — the fade stays on if the destination is scrolled.
+  const FADE_ON_AT = 8; // px — scrolled enough → fade on
+  const FADE_OFF_AT = 2; // px — back at the nut → fade off
 
   // Check scroll state and trigger animation
   useEffect(() => {
@@ -4097,8 +4102,22 @@ export function Ring3DOverlayCanvas({
 
     const checkScrollAndAnimate = () => {
       const currentScroll = scrollContainer.scrollLeft;
-      const newScrollState: 'start' | 'scrolled' =
-        currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
+      // Gym (showAllNotes) uses HYSTERESIS so a key-change pan that lands scrolled keeps the
+      // fade on the whole time; the tutorial keeps its simple single-threshold behavior.
+      let newScrollState: 'start' | 'scrolled';
+      if (showAllNotes) {
+        newScrollState =
+          lastScrollStateRef.current === 'scrolled'
+            ? currentScroll < FADE_OFF_AT
+              ? 'start'
+              : 'scrolled'
+            : currentScroll >= FADE_ON_AT
+              ? 'scrolled'
+              : 'start';
+      } else {
+        newScrollState =
+          currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
+      }
 
       // Only trigger animation if scroll state actually changed
       if (newScrollState !== lastScrollStateRef.current) {
