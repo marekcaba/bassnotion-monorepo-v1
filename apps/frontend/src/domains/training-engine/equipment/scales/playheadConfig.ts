@@ -50,18 +50,20 @@ export interface PlayheadConfig {
   bezier: [number, number, number, number];
 }
 
+// Eye-tuned on the gym board 2026-06-28 (panel → "Log values"): an Arc-hop playhead — the
+// sphere bounces note-to-note with a quick eased slide + an on-beat pulse.
 export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
-  radius: 7,
+  radius: 5,
   color: '#f97316', // orange-500
   opacity: 0.95,
-  emissiveIntensity: 0.85,
-  zOffset: 3,
-  pulseAmount: 0,
-  anim: 'glide_hold',
-  holdFrac: 0.7,
-  glideFrac: 0.3,
-  hopHeight: 10,
-  bezier: [0.4, 0, 0.2, 1], // a snappy ease-in-out
+  emissiveIntensity: 0.8,
+  zOffset: 7,
+  pulseAmount: 0.4,
+  anim: 'arc_hop',
+  holdFrac: 0,
+  glideFrac: 0.05,
+  hopHeight: 18,
+  bezier: [0, 0.77, 0.96, 1],
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */
