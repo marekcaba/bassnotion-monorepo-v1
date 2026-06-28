@@ -102,6 +102,8 @@ import {
 
 /** Max concentric rings in the playhead landing-ripple pool (config picks how many show). */
 const MAX_RIPPLE_RINGS = 6;
+/** Max ghost-ball notes in the anticipation runway pool (config picks how many show). */
+const MAX_RUNWAY = 6;
 
 /**
  * Custom perspective camera for 3D ring overlay.
@@ -1074,6 +1076,10 @@ function DebugVisualization({
   const rippleRefs = useRef<(THREE.Mesh | null)[]>([]);
   // Trailing SECOND ripple (its own pool), fires a beat behind the first in ripple2Color.
   const ripple2Refs = useRef<(THREE.Mesh | null)[]>([]);
+  // ANTICIPATION RUNWAY: ghost-ball spheres on the next few notes + connecting tracer lines
+  // between them (fixed pools; `runwayCount` config decides how many show). Pass 1.
+  const ghostRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const tracerRefs = useRef<(THREE.Mesh | null)[]>([]);
   const rippleStateRef = useRef<{ noteIdx: number; t: number }>({
     noteIdx: -1,
     t: 1,
@@ -2808,6 +2814,8 @@ function DebugVisualization({
       sphere.visible = false;
       rippleRefs.current.forEach((r) => r && (r.visible = false));
       ripple2Refs.current.forEach((r) => r && (r.visible = false));
+      ghostRefs.current.forEach((g) => g && (g.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
       return;
     }
 
@@ -2824,6 +2832,8 @@ function DebugVisualization({
     if (beat === null || beat < 0) {
       rippleRefs.current.forEach((r) => r && (r.visible = false));
       ripple2Refs.current.forEach((r) => r && (r.visible = false));
+      ghostRefs.current.forEach((g) => g && (g.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
       rippleStateRef.current = { noteIdx: -1, t: 1 };
       const pos = dotPos(playheadNotes[0]!);
       if (pos) {
@@ -2922,6 +2932,74 @@ function DebugVisualization({
       ph.ripple2Color,
       ph.ripple2Delay,
     );
+
+    // ── ANTICIPATION RUNWAY (Pass 1) — ghost spheres on the next `count` notes, fading with
+    //    distance, + tracer segments connecting them (the road). Tempo-scaled: shorten at
+    //    fast BPM so the screen doesn't clutter. ──
+    const hideRunway = () => {
+      ghostRefs.current.forEach((g) => g && (g.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+    };
+    if (ph.runwayOn <= 0) {
+      hideRunway();
+    } else {
+      // Tempo scale: at/above runwayTempoCap, halve the count (floor 1); below, full count.
+      const tempoScale =
+        ph.runwayTempoCap > 0 && tempo >= ph.runwayTempoCap ? 0.5 : 1;
+      const count = Math.min(
+        Math.max(Math.round(ph.runwayCount * tempoScale), 1),
+        MAX_RUNWAY,
+      );
+      // Chain of positions: the active dot, then the next `count` notes' dots.
+      const chain: ({ x: number; y: number; z: number } | null)[] = [fromPos];
+      for (let k = 1; k <= count; k++) {
+        const n = playheadNotes[idx + k];
+        chain.push(n ? dotPos(n) : null);
+      }
+      // GHOSTS — one per upcoming note (chain index 1..count).
+      ghostRefs.current.forEach((g, i) => {
+        if (!g) return;
+        const pos = i < count ? chain[i + 1] : null;
+        if (!pos) {
+          g.visible = false;
+          return;
+        }
+        // Fade + shrink with distance (i=0 nearest → brightest/biggest).
+        const falloff = 1 - i / count;
+        g.position.set(pos.x, pos.y, pos.z + ph.zOffset);
+        g.scale.setScalar(ph.radius * ph.runwaySize * (0.6 + 0.4 * falloff));
+        const gmat = g.material as THREE.MeshStandardMaterial;
+        gmat.color.set(ph.runwayColor);
+        gmat.emissive.set(ph.runwayColor);
+        gmat.opacity = ph.runwayOpacity * falloff;
+        g.visible = true;
+      });
+      // TRACERS — a thin box stretched between each consecutive pair in the chain.
+      tracerRefs.current.forEach((tr, i) => {
+        if (!tr) return;
+        const a = chain[i];
+        const b = chain[i + 1];
+        if (ph.runwayTracer <= 0 || i >= count || !a || !b) {
+          tr.visible = false;
+          return;
+        }
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-3) {
+          tr.visible = false;
+          return;
+        }
+        tr.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, a.z + 1);
+        tr.rotation.set(0, 0, Math.atan2(dy, dx));
+        tr.scale.set(len, ph.radius * 0.18, 1); // length × thin
+        const tmat = tr.material as THREE.MeshBasicMaterial;
+        tmat.color.set(ph.runwayColor);
+        const falloff = 1 - i / count;
+        tmat.opacity = ph.runwayTracer * falloff;
+        tr.visible = true;
+      });
+    }
   });
 
   return (
@@ -3323,6 +3401,55 @@ function DebugVisualization({
             opacity={0}
             depthWrite={false}
             side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* ANTICIPATION RUNWAY (Pass 1) — ghost-ball spheres previewing the next few notes.
+          Unit spheres positioned/scaled/faded each frame in the playhead useFrame (nearest
+          ghost brightest+biggest, fading with distance). */}
+      {Array.from({ length: MAX_RUNWAY }).map((_, i) => (
+        <mesh
+          key={`ghost-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            ghostRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5.5]}
+          name={`playhead-ghost-${i}`}
+        >
+          <sphereGeometry args={[1, 20, 20]} />
+          <meshStandardMaterial
+            color={ph.runwayColor}
+            emissive={ph.runwayColor}
+            emissiveIntensity={0.5}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* RUNWAY TRACER — thin box segments connecting consecutive ghost dots (the "road").
+          A unit box stretched + rotated to span each pair in the playhead useFrame. */}
+      {Array.from({ length: MAX_RUNWAY }).map((_, i) => (
+        <mesh
+          key={`tracer-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            tracerRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5]}
+          name={`playhead-tracer-${i}`}
+        >
+          <boxGeometry args={[1, 1, 0.1]} />
+          <meshBasicMaterial
+            color={ph.runwayColor}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
             clippingPlanes={globalClippingPlanes}
           />
         </mesh>

@@ -70,6 +70,23 @@ export interface PlayheadConfig {
   ripple2Color: string;
   /** How far behind the first ripple it fires, in ripple-progress units [0..1]. */
   ripple2Delay: number;
+
+  // ── ANTICIPATION: ghost-ball RUNWAY — the next few notes previewed as fading ghost
+  //    spheres + a connecting tracer, so the route ahead reads early (Guitar-Hero style) ──
+  /** Toggle the runway (0 = off, 1 = on). */
+  runwayOn: number;
+  /** How many notes ahead to preview (the runway length). Auto-shortened at fast tempo. */
+  runwayCount: number;
+  /** Ghost color (hex). */
+  runwayColor: string;
+  /** Opacity of the NEAREST ghost (the next note). Further ghosts fade toward 0. */
+  runwayOpacity: number;
+  /** The nearest ghost's radius as a fraction of the sphere radius (further ones shrink). */
+  runwaySize: number;
+  /** Connecting tracer line opacity (0 = no tracer, just ghost balls). */
+  runwayTracer: number;
+  /** Above this BPM the runway shortens (declutter at speed). 0 = never shorten. */
+  runwayTempoCap: number;
 }
 
 // Eye-tuned on the gym board 2026-06-28 (panel → "Log values"): an Arc-hop playhead — the
@@ -97,6 +114,14 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   ripple2On: 1,
   ripple2Color: '#b85e14',
   ripple2Delay: 0.18,
+  // Anticipation runway (Pass 1) — on by default; tune in Pass 2's panel.
+  runwayOn: 1,
+  runwayCount: 3,
+  runwayColor: '#fbbf24', // amber-400 — distinct from the orange playhead
+  runwayOpacity: 0.45,
+  runwaySize: 0.7,
+  runwayTracer: 0.25,
+  runwayTempoCap: 150,
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */
