@@ -3076,15 +3076,26 @@ function DebugVisualization({
     }
   });
 
-  // ── ROOT MARKER RINGS — STATIC rings around the root + octave dots (the dark-green ones).
-  //    Independent of playback (always on for the gym), so its OWN useFrame. ──
+  // ── ROOT MARKER RINGS — STATIC, EXACTLY like the yellow active ring (same torus, already
+  //    dot-sized; positioned at the dot + activeRingZOffset, no scaling). Only the color
+  //    differs. Independent of playback (always on for the gym), so its OWN useFrame. ──
   useFrame(() => {
+    // GYM: the tutorial's yellow rings are DISMISSED — force ALL of them hidden every frame
+    // (active circular + rounded-rect + glows, AND the preview rings) so none can linger.
+    if (showAllNotes) {
+      if (activeRingRef.current) activeRingRef.current.visible = false;
+      if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
+      if (activeRingRectRef.current) activeRingRectRef.current.visible = false;
+      if (activeRingRectGlowRef.current)
+        activeRingRectGlowRef.current.visible = false;
+      if (previewRingRef.current) previewRingRef.current.visible = false;
+      if (previewRingRectRef.current) previewRingRectRef.current.visible = false;
+    }
     const rings = rootRingRefs.current;
     if (!showAllNotes || ph.rootRingOn <= 0 || !rootPositions) {
       rings.forEach((r) => r && (r.visible = false));
       return;
     }
-    const dotR = 13; // dot radius in canvas px (the ring sizes to the dot, not the sphere)
     rings.forEach((ring, i) => {
       if (!ring) return;
       const root = rootPositions[i];
@@ -3098,11 +3109,15 @@ function DebugVisualization({
         ring.visible = false;
         return;
       }
-      ring.position.set(mesh.position.x, mesh.position.y, mesh.position.z + 0.8);
-      ring.scale.setScalar(dotR * ph.rootRingSize);
-      const rmat = ring.material as THREE.MeshBasicMaterial;
+      // Identical placement to the active ring (dot center + the same Z offset, no scale).
+      ring.position.set(
+        mesh.position.x,
+        mesh.position.y,
+        mesh.position.z + activeRingZOffset,
+      );
+      const rmat = ring.material as THREE.MeshStandardMaterial;
       rmat.color.set(ph.rootRingColor);
-      rmat.opacity = ph.rootRingOpacity;
+      rmat.emissive.set(ph.rootRingColor);
       ring.visible = true;
     });
   });
@@ -3580,9 +3595,9 @@ function DebugVisualization({
         />
       </mesh>
 
-      {/* ROOT MARKER RINGS — static rings around the root + octave dots (the dark-green ones),
-          marking the home note / intervals. One per root position; placed in the playhead
-          useFrame. Replaces the dismissed yellow active-note ring. */}
+      {/* ROOT MARKER RINGS — EXACTLY the yellow active-note ring's mesh (same torus geometry +
+          material), just recolored, placed STATICALLY on each root/octave dot. The yellow ring
+          is the template; we don't restyle it, only its color. One per root position. */}
       {Array.from({ length: MAX_ROOT_RINGS }).map((_, i) => (
         <mesh
           key={`root-ring-${i}`}
@@ -3590,16 +3605,19 @@ function DebugVisualization({
             rootRingRefs.current[i] = m;
           }}
           visible={false}
-          position={[0, 0, 4.5]}
+          position={[0, 0, 5]}
           name={`root-marker-ring-${i}`}
         >
-          <ringGeometry args={[0.86, 1, 48]} />
-          <meshBasicMaterial
+          <torusGeometry
+            args={[activeRingRadius, activeRingTubeRadius, 16, 32]}
+          />
+          <meshStandardMaterial
             color={ph.rootRingColor}
+            emissive={ph.rootRingColor}
+            emissiveIntensity={0.6}
             transparent={true}
-            opacity={0}
+            opacity={0.8}
             depthWrite={false}
-            side={THREE.DoubleSide}
             clippingPlanes={globalClippingPlanes}
           />
         </mesh>

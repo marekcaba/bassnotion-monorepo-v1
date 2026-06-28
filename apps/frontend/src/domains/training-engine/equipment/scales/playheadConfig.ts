@@ -109,16 +109,13 @@ export interface PlayheadConfig {
   /** Ring opacity (fades in as it closes). */
   approachOpacity: number;
 
-  // ── ROOT MARKER RINGS — static rings around the root + octave notes (the dark-green dots),
-  //    marking the home note / intervals. Replaces the old yellow active-note ring. ──
+  // ── ROOT MARKER RINGS — static rings (EXACTLY the yellow active ring's mesh, recolored)
+  //    around the root + octave notes (the dark-green dots). Only on/off + color are tunable;
+  //    geometry/opacity match the active-ring template. ──
   /** Toggle the root rings (0 = off, 1 = on). */
   rootRingOn: number;
   /** Ring color (hex) — green or blue to mark the roots. */
   rootRingColor: string;
-  /** Ring opacity. */
-  rootRingOpacity: number;
-  /** Ring size as a multiple of the dot radius (~1.3 sits just outside the dot). */
-  rootRingSize: number;
 }
 
 export type GhostShape = 'sphere' | 'disc';
@@ -173,8 +170,6 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   // Root marker rings — green by default, around the root + octave dots.
   rootRingOn: 1,
   rootRingColor: '#22c55e', // green-500
-  rootRingOpacity: 0.9,
-  rootRingSize: 1.35,
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */
