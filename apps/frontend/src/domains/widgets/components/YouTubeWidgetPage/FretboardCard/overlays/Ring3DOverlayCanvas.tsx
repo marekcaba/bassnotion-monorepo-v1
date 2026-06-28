@@ -1106,6 +1106,10 @@ function DebugVisualization({
   // target every frame so the highlight FADES in/out (ease-in-out) instead of snapping. Keyed by
   // dot position. Window size / smoothing / colors are panel-tunable (ph.lit*).
   const dotBrightnessRef = useRef<Map<string, number>>(new Map());
+  // Continuous WAITING-bounce phase [0..1) — advances every frame so the pending bounce and the
+  // count-in bounce are ONE animation. While pending it free-runs at the tempo; when the count-in
+  // starts it eases (hurries/slows) onto the click grid instead of snapping. Survives the play press.
+  const bouncePhaseRef = useRef<number>(0);
   // Reusable scratch colors for the per-frame dim↔bright lerp (no per-frame allocation).
   const scratchDimColor = useRef(new THREE.Color());
   const scratchBrightColor = useRef(new THREE.Color());
@@ -3057,11 +3061,27 @@ function DebugVisualization({
       hideLabelsFor([playheadNotes[0]!]);
       const pos = startPos;
       if (pos) {
-        // IDLE "pending" BOUNCE — a gentle hover on the first dot so the sphere feels alive
-        // while waiting to start. A rectified sine (|sin|) reads as soft little bounces; the
-        // sphere squashes slightly when it's lowest (near the dot).
-        const tt = state.clock.elapsedTime * 3.2; // bounce speed
-        const bob = Math.abs(Math.sin(tt)); // 0 (on the dot) → 1 (apex) → 0
+        // ONE CONTINUOUS BOUNCE through pending → play press → count-in. A persistent phase advances
+        // every frame at the tempo (one touchdown per beat). While PENDING it free-runs. During the
+        // COUNT-IN (beat < 0) it eases onto the click grid: each frame it also nudges toward the
+        // count-in's true beat phase (shortest wrap distance), so whenever the user hits play the
+        // bounce HURRIES or SLOWS to catch the downbeat instead of snapping — pending + count-in
+        // read as a single bounce. It lands on the start dot at beat 0 and the exercise takes over.
+        const beatsPerSec = Math.max(tempo, 1) / 60;
+        let phase = bouncePhaseRef.current + delta * beatsPerSec; // base advance at tempo
+
+        if (beat !== null) {
+          // Count-in: ease toward the real beat phase. Shortest signed distance on the [0,1) ring.
+          const target = beat - Math.floor(beat);
+          let d = target - (phase - Math.floor(phase));
+          if (d > 0.5) d -= 1;
+          else if (d < -0.5) d += 1;
+          phase += d * Math.min(delta * 6, 1); // catch-up: converges within ~a beat, frame-rate safe
+        }
+
+        phase -= Math.floor(phase); // wrap to [0,1)
+        bouncePhaseRef.current = phase;
+        const bob = Math.abs(Math.sin(phase * Math.PI)); // 0 (on dot) → 1 (apex) → 0 (next beat)
         const lift = ph.zOffset + bob * ph.radius * 0.9; // hover height
         const squash = 1 - (1 - bob) * 0.18; // a touch flatter at the bottom
         sphere.position.set(pos.x, pos.y, pos.z + lift);
