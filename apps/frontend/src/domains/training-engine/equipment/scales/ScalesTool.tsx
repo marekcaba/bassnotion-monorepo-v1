@@ -103,7 +103,8 @@ export function ScalesTool({
 }: ScalesToolProps) {
   const [scaleType, setScaleType] = React.useState<ScaleType>('major');
   const [view, setView] = React.useState<ScaleView>(1); // box position 1, or 'whole'
-  const [bpm, setBpm] = React.useState(backingConfig.originalBpm || 90);
+  // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
+  const [bpm, setBpm] = React.useState(70);
   const [masterVolume, setMasterVolume] = React.useState(0.8);
 
   // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
