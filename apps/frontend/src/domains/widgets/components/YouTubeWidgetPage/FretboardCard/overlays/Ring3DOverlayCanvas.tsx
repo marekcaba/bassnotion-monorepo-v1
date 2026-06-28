@@ -2804,7 +2804,7 @@ function DebugVisualization({
   // bezier easing decide the in-between (see playheadGlide). When not playing (beat null) it
   // rests on the first note. Appearance (radius/color/opacity/emissive) is applied live so
   // the dev panel updates it without remounting.
-  useFrame(() => {
+  useFrame((state) => {
     const sphere = playheadSphereRef.current;
     if (!sphere) return;
 
@@ -2845,8 +2845,15 @@ function DebugVisualization({
       rippleStateRef.current = { noteIdx: -1, t: 1 };
       const pos = dotPos(playheadNotes[0]!);
       if (pos) {
-        sphere.position.set(pos.x, pos.y, pos.z + ph.zOffset);
-        sphere.scale.setScalar(ph.radius);
+        // IDLE "pending" BOUNCE — a gentle hover on the first dot so the sphere feels alive
+        // while waiting to start. A rectified sine (|sin|) reads as soft little bounces; the
+        // sphere squashes slightly when it's lowest (near the dot).
+        const tt = state.clock.elapsedTime * 3.2; // bounce speed
+        const bob = Math.abs(Math.sin(tt)); // 0 (on the dot) → 1 (apex) → 0
+        const lift = ph.zOffset + bob * ph.radius * 0.9; // hover height
+        const squash = 1 - (1 - bob) * 0.18; // a touch flatter at the bottom
+        sphere.position.set(pos.x, pos.y, pos.z + lift);
+        sphere.scale.set(ph.radius, ph.radius * squash, ph.radius);
         sphere.visible = true;
       } else {
         sphere.visible = false;
