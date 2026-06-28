@@ -226,16 +226,10 @@ export function ScaleFretboardWindow({
   // ── MOVEMENT: the tutorial's model (the working reference) ─────────────────────────
   // A native horizontal scroll container drives the pan: the canvas reads its scrollLeft
   // every frame (ScrollSyncManager) and translates the 3D content (ScrollOffsetGroup).
-  // This is what gives us, for free: drag-to-move AND the scroll-gated LEFT FADE (off at
-  // the nut, on once moved). The inner spacer is wider than the window so there's room to
-  // scroll the whole neck. Geometry MUST match Ring3DOverlayCanvas's dot placement +
-  // FULL_CONTENT_WIDTH EXACTLY (it uses 36/38/15) — else the spacer is too narrow and the
-  // scroll caps before the neck's end (the bug: "barely see fret 12"). NOTE: the tutorial's
-  // own scrollToFret uses 38/46, but that's a looser approximation; the canvas geometry is
-  // the source of truth here.
-  const FRET_SPACING = 36;
-  const FRET_OFFSET = 38;
-  const CENTER_OFFSET = 15;
+  // This gives, for free: drag-to-move AND the scroll-gated LEFT FADE. The inner spacer is
+  // wider than the window so there's room to scroll the whole neck. Positioning + the scroll
+  // range use the MEASURED screen-px-per-fret mapping (SCREEN_PX_PER_FRET) below, since the
+  // 3D renders at contentScale through a perspective camera (on-screen px/fret ≠ content).
 
   // SCROLL RANGE — scrollLeft (DOM px) does NOT pan content 1:1: the 3D is rendered at
   // contentScale through a perspective camera, so DOM-px under-covers the scaled content.
@@ -264,38 +258,50 @@ export function ScaleFretboardWindow({
   const [isDragging, setIsDragging] = React.useState(false);
   const dragStartRef = React.useRef({ x: 0, scrollLeft: 0 });
 
-  // Center a fret in the viewport (tutorial's scrollToFret, smooth). fret can be fractional.
+  // Center a fret in the viewport (smooth). fret can be fractional. Uses the MEASURED
+  // screen-px-per-fret mapping (NOT the content geometry) so the fret lands at the actual
+  // visual center — the 3D renders at contentScale through a perspective camera, so on-screen
+  // px/fret (~45.5) ≠ content px/fret (36). At scroll 0 the visual center is DEFAULT_CENTER_FRET.
   const scrollToFret = React.useCallback(
     (fret: number, behavior: ScrollBehavior = 'smooth') => {
       const el = scrollContainerRef.current;
       if (!el) return;
-      const fretX = CENTER_OFFSET + FRET_OFFSET + (fret - 1) * FRET_SPACING;
-      const target = fretX - viewportWidth / 2;
-      el.scrollTo({ left: Math.max(0, target), behavior });
+      const target = (fret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET;
+      el.scrollTo({
+        left: Math.min(Math.max(target, 0), maxScroll),
+        behavior,
+      });
     },
-    [viewportWidth],
+    [maxScroll],
   );
 
-  // On exercise change (litNotes), present it centered. If the WHOLE exercise FITS in the
-  // view → center on the fret-SPAN's middle (all the dots sit centered as a group). If it's
-  // WIDER than the view → center on the FIRST note (the run starts left-ish, the camera then
-  // follows). Matches the auto-follow's "fits in view" rule so load + follow agree.
+  // On exercise change, present it centered — for BOTH authored paths AND generated Auto
+  // scales (use exerciseNotes, the dots actually shown). If the WHOLE exercise FITS in the
+  // view → center on the fret-SPAN's middle (the lit dots sit balanced in the middle, not
+  // pushed to one side). If it's WIDER than the view → center on the FIRST note (the run
+  // starts left-ish, the camera then follows). Matches the auto-follow's "fits" rule.
   React.useEffect(() => {
-    if (!litNotes || litNotes.length === 0) {
+    const shownFrets = exerciseNotes
+      .map((n) => (typeof n.fret === 'number' ? n.fret : 0))
+      .filter((f) => f > 0); // ignore open strings for the span
+    if (shownFrets.length === 0) {
       scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
       return;
     }
-    const frets = litNotes.map((n) => n.fret);
-    const lo = Math.min(...frets);
-    const hi = Math.max(...frets);
+    const lo = Math.min(...shownFrets);
+    const hi = Math.max(...shownFrets);
     const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
     const fitsInView = hi - lo <= viewFrets - 1.5;
-    // Fits → center the whole fret SPAN; doesn't fit → center the FIRST note (litNotes[0]).
-    const centerFret = fitsInView ? (lo + hi) / 2 : litNotes[0]!.fret;
+    // Fits → center the whole fret SPAN's midpoint; doesn't fit → center the first lit fret.
+    const firstFret =
+      typeof exerciseNotes[0]?.fret === 'number'
+        ? (exerciseNotes[0]!.fret as number)
+        : lo;
+    const centerFret = fitsInView ? (lo + hi) / 2 : firstFret;
     // rAF so the container has laid out before we scroll.
     const id = requestAnimationFrame(() => scrollToFret(centerFret));
     return () => cancelAnimationFrame(id);
-  }, [litNotes, scrollToFret, viewportWidth]);
+  }, [exerciseNotes, scrollToFret, viewportWidth]);
 
   // Drag-to-pan (mouse), mirroring the tutorial: 2× walk for responsiveness.
   const onMouseDown = (e: React.MouseEvent) => {
