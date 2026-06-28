@@ -2983,12 +2983,17 @@ function DebugVisualization({
         gmat.opacity = ph.runwayOpacity * falloff;
         g.visible = true;
       });
-      // TRACERS — a thin box stretched between each consecutive pair in the chain.
+      // TRACERS — a thin box stretched between each consecutive pair in the chain. Own
+      // color/thickness; `tracerCount` caps how many segments draw (≤ the gaps available).
+      const tracerCap = Math.min(
+        Math.max(Math.round(ph.tracerCount), 0),
+        count,
+      );
       tracerRefs.current.forEach((tr, i) => {
         if (!tr) return;
         const a = chain[i];
         const b = chain[i + 1];
-        if (ph.runwayTracer <= 0 || i >= count || !a || !b) {
+        if (ph.runwayTracer <= 0 || i >= tracerCap || !a || !b) {
           tr.visible = false;
           return;
         }
@@ -3001,9 +3006,9 @@ function DebugVisualization({
         }
         tr.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, a.z + 1);
         tr.rotation.set(0, 0, Math.atan2(dy, dx));
-        tr.scale.set(len, ph.radius * 0.18, 1); // length × thin
+        tr.scale.set(len, ph.radius * ph.tracerThickness, 1); // length × thickness
         const tmat = tr.material as THREE.MeshBasicMaterial;
-        tmat.color.set(ph.runwayColor);
+        tmat.color.set(ph.tracerColor);
         const falloff = 1 - i / count;
         tmat.opacity = ph.runwayTracer * falloff;
         tr.visible = true;

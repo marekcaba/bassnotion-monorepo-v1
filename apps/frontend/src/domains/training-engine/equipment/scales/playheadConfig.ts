@@ -85,6 +85,12 @@ export interface PlayheadConfig {
   runwaySize: number;
   /** Connecting tracer line opacity (0 = no tracer, just ghost balls). */
   runwayTracer: number;
+  /** How MANY connecting line segments to draw (0 = none; caps at the gaps available). */
+  tracerCount: number;
+  /** Tracer line thickness, as a fraction of the sphere radius. */
+  tracerThickness: number;
+  /** Tracer line color (hex) — independent of the dot/ghost color. */
+  tracerColor: string;
   /** Above this BPM the runway shortens (declutter at speed). 0 = never shorten. */
   runwayTempoCap: number;
   /** Ghost SHAPE: 'sphere' = raised 3D ball, 'disc' = flat dot lying on the fretboard. */
@@ -114,7 +120,7 @@ export const GHOST_SHAPES: { value: GhostShape; label: string }[] = [
 // sphere bounces note-to-note with a quick eased slide + an on-beat pulse.
 export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   radius: 5,
-  color: '#c14706', // deep orange
+  color: '#bdbdbd', // light grey sphere
   opacity: 0.95,
   emissiveIntensity: 0.8,
   zOffset: 7,
@@ -142,6 +148,9 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   runwayOpacity: 0.95,
   runwaySize: 1.4,
   runwayTracer: 0,
+  tracerCount: 2,
+  tracerThickness: 0.72,
+  tracerColor: '#000000',
   runwayTempoCap: 0,
   runwayShape: 'disc',
   // Approach ring (timing layer) — orange ring, long 3.25-beat lead, starts near the dot.

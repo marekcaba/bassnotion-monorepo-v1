@@ -23,6 +23,8 @@ type NumKey =
   | 'runwayOpacity'
   | 'runwaySize'
   | 'runwayTracer'
+  | 'tracerCount'
+  | 'tracerThickness'
   | 'runwayTempoCap'
   | 'approachOn'
   | 'approachLead'
@@ -54,6 +56,14 @@ const SLIDERS: {
     step: 0.05,
   },
   { key: 'runwayTracer', label: 'line opacity', min: 0, max: 1, step: 0.05 },
+  { key: 'tracerCount', label: 'line count', min: 0, max: 6, step: 1 },
+  {
+    key: 'tracerThickness',
+    label: 'line thickness ×',
+    min: 0.02,
+    max: 1.5,
+    step: 0.02,
+  },
   {
     key: 'runwayTempoCap',
     label: 'declutter ≥ BPM (0=off)',
@@ -221,6 +231,11 @@ export function AnticipationPanel({
           label="preview color"
           value={values.runwayColor}
           onChange={(v) => onChange({ ...values, runwayColor: v })}
+        />
+        <ColorRow
+          label="line color"
+          value={values.tracerColor}
+          onChange={(v) => onChange({ ...values, tracerColor: v })}
         />
         <ColorRow
           label="ring color"
