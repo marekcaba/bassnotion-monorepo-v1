@@ -276,20 +276,26 @@ export function ScaleFretboardWindow({
     [viewportWidth],
   );
 
-  // On exercise change (litNotes), auto-center on the exercise's middle fret so it's
-  // presented in front of the student. A manual drag afterwards is free to move it; the
-  // next exercise re-centers.
+  // On exercise change (litNotes), present it centered. If the WHOLE exercise FITS in the
+  // view → center on the fret-SPAN's middle (all the dots sit centered as a group). If it's
+  // WIDER than the view → center on the FIRST note (the run starts left-ish, the camera then
+  // follows). Matches the auto-follow's "fits in view" rule so load + follow agree.
   React.useEffect(() => {
     if (!litNotes || litNotes.length === 0) {
       scrollContainerRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
       return;
     }
     const frets = litNotes.map((n) => n.fret);
-    const centerFret = (Math.min(...frets) + Math.max(...frets)) / 2;
+    const lo = Math.min(...frets);
+    const hi = Math.max(...frets);
+    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
+    const fitsInView = hi - lo <= viewFrets - 1.5;
+    // Fits → center the whole fret SPAN; doesn't fit → center the FIRST note (litNotes[0]).
+    const centerFret = fitsInView ? (lo + hi) / 2 : litNotes[0]!.fret;
     // rAF so the container has laid out before we scroll.
     const id = requestAnimationFrame(() => scrollToFret(centerFret));
     return () => cancelAnimationFrame(id);
-  }, [litNotes, scrollToFret]);
+  }, [litNotes, scrollToFret, viewportWidth]);
 
   // Drag-to-pan (mouse), mirroring the tutorial: 2× walk for responsiveness.
   const onMouseDown = (e: React.MouseEvent) => {
