@@ -44,7 +44,10 @@ import {
   type StringCount,
 } from './scaleGenerator';
 import { useGymExerciseLibrary } from '../../hooks/useGymExerciseLibrary';
-import { useEquipmentListening } from '../listening/useEquipmentListening';
+import {
+  useEquipmentListening,
+  type EquipmentScoreResult,
+} from '../listening/useEquipmentListening';
 
 /** Tempo bounds for the scale sequencer (BPM). */
 const MIN_BPM = 40;
@@ -109,6 +112,15 @@ export function ScalesTool({
   // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
   const [bpm, setBpm] = React.useState(70);
   const [masterVolume, setMasterVolume] = React.useState(0.8);
+  // RECORD MODE: the ▶ play button becomes a ● record button. In record mode the scale-note
+  // bass is MUTED (only count-in + click + backing drone play) so the student plays the scale
+  // themselves and the mic captures only THEM — every take is auto-armed, graded, and saved.
+  const [recordMode, setRecordMode] = React.useState(false);
+  // The most recent graded take (record mode) — shown as a small result banner. No persistence
+  // yet; the take_results history table is a later phase.
+  const [lastTake, setLastTake] = React.useState<EquipmentScoreResult | null>(
+    null,
+  );
 
   // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
   // which fingering VARIANT within the group. groupIdx === -1 = "Auto" (generated box scale).
@@ -257,15 +269,21 @@ export function ScalesTool({
     bpm,
     droneSymbol,
     onBeforePlay,
+    // Record mode mutes the scale-note bass so the student plays it (clean mic capture).
+    silentBass: recordMode,
   });
 
-  // LISTENING (stubbed): every play is a take the platform hears. No-op until the
-  // bass-coach engine is wired; the seam exists now so the tool is listening-ready.
+  // LISTENING: in RECORD mode every play is a graded take. The seam captures the player's bass,
+  // scores their onsets against the exercise grid (anchored at loopStart), and grades the timing.
+  // Outside record mode it's inert. Flag-gated by NEXT_PUBLIC_EQUIPMENT_LISTENING.
   useEquipmentListening({
     station: 'scales',
     audioContext: sequencer.audioContext,
-    isPlaying: sequencer.isPlaying,
-    loopStartAudioTime: null,
+    isPlaying: recordMode && sequencer.isPlaying,
+    loopStartAudioTime: sequencer.getLoopStartAudioTime(),
+    bpm,
+    loopBeats,
+    onTakeScored: setLastTake,
   });
 
   const onPlayPause = React.useCallback(() => {
@@ -472,25 +490,32 @@ export function ScalesTool({
       onMasterVolumeChange={setMasterVolume}
       // The fretboard replaces the waveform as the main window.
       waveform={
-        <ScaleFretboardWindow
-          root={root}
-          scaleType={scaleType}
-          stringCount={stringCount}
-          maxFrets={maxFrets}
-          isPlaying={sequencer.isPlaying}
-          tempo={bpm}
-          view={view}
-          // Authored exercise → light its exact notes; Auto → generate the scale/box.
-          litNotes={litNotes}
-          // The real playback clock for the gliding playhead (the gym doesn't run the
-          // AtomicPlaybackClock the canvas's own active-note system reads).
-          getPlaybackBeat={sequencer.getPlaybackBeat}
-          // The played note sequence (string/fret + startBeat) the sphere glides along.
-          playheadNotes={playheadNotes}
-          // The loop length in beats — lets the sphere glide ACROSS the loop seam (last note
-          // → first note of the next cycle) instead of snapping.
-          loopBeats={loopBeats}
-        />
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <ScaleFretboardWindow
+            root={root}
+            scaleType={scaleType}
+            stringCount={stringCount}
+            maxFrets={maxFrets}
+            isPlaying={sequencer.isPlaying}
+            tempo={bpm}
+            view={view}
+            // Authored exercise → light its exact notes; Auto → generate the scale/box.
+            litNotes={litNotes}
+            // The real playback clock for the gliding playhead (the gym doesn't run the
+            // AtomicPlaybackClock the canvas's own active-note system reads).
+            getPlaybackBeat={sequencer.getPlaybackBeat}
+            // The played note sequence (string/fret + startBeat) the sphere glides along.
+            playheadNotes={playheadNotes}
+            // The loop length in beats — lets the sphere glide ACROSS the loop seam (last note
+            // → first note of the next cycle) instead of snapping.
+            loopBeats={loopBeats}
+          />
+          {/* RECORD-mode result: the graded take (or the refusal reason). Minimal banner; the
+              full history list is a later phase. */}
+          {recordMode && lastTake && !sequencer.isPlaying && (
+            <TakeResultBanner take={lastTake} />
+          )}
+        </div>
       }
       // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No
       // footer panel needed.
@@ -509,8 +534,52 @@ export function ScalesTool({
           keyRoller={keyRoller}
           tempo={tempoRoller}
           onPlayPause={onPlayPause}
+          recordMode={recordMode}
+          onToggleRecordMode={setRecordMode}
         />
       }
     />
+  );
+}
+
+/** Minimal record-mode result banner: the timing grade + 2 stats, or the refusal reason when the
+ *  trust gates couldn't grade the take. Pinned top-center over the fretboard. */
+function TakeResultBanner({ take }: { take: EquipmentScoreResult }) {
+  const refused = take.grade == null;
+  const color = refused ? '#e0b24a' : take.grade!.color;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 12,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 20,
+        padding: '8px 16px',
+        borderRadius: 12,
+        background: 'rgba(14,16,20,0.92)',
+        border: `1px solid ${color}`,
+        color: '#e6e8ec',
+        fontFamily: 'system-ui, sans-serif',
+        textAlign: 'center',
+        pointerEvents: 'none',
+        maxWidth: 360,
+      }}
+    >
+      {refused ? (
+        <div style={{ fontSize: 13, color }}>{take.refusedReason}</div>
+      ) : (
+        <>
+          <div style={{ fontSize: 18, fontWeight: 700, color }}>
+            {take.grade!.label} · {take.grade!.score}
+          </div>
+          <div style={{ fontSize: 12, color: '#9aa3ad', marginTop: 2 }}>
+            jitter {Math.round(take.jitterMs)}ms · offset{' '}
+            {take.offsetMs >= 0 ? '+' : ''}
+            {Math.round(take.offsetMs)}ms · {take.noteCount} notes
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -63,6 +63,10 @@ export interface ScalesControlsProps {
   keyRoller: RollerSpec;
   tempo: RollerSpec;
   onPlayPause: () => void;
+  /** RECORD MODE: a little switch flips the orange ▶ Play into a red ● Record. In record mode
+   *  the scale bass is muted and every take is captured + graded. Omit to hide the switch. */
+  recordMode?: boolean;
+  onToggleRecordMode?: (next: boolean) => void;
 }
 
 export function ScalesControls({
@@ -79,6 +83,8 @@ export function ScalesControls({
   keyRoller,
   tempo,
   onPlayPause,
+  recordMode = false,
+  onToggleRecordMode,
 }: ScalesControlsProps) {
   const showBeat =
     countdownState.isCountingDown && countdownState.currentBeat > 0;
@@ -131,7 +137,8 @@ export function ScalesControls({
           <RollerPicker {...keyRoller} anim={anim} ariaLabel="Key" />
         </div>
 
-        {/* CENTER — Play (fixed island, always centered) */}
+        {/* CENTER — Play (orange) or RECORD (red), fixed island, always centered. In record
+            mode the orange ▶ becomes a red ● (and a ■ stop while a take is recording). */}
         <button
           type="button"
           onClick={onPlayPause}
@@ -140,16 +147,30 @@ export function ScalesControls({
           aria-label={
             showBeat
               ? `Countdown beat ${countdownState.currentBeat}`
-              : isPlaying
-                ? 'Pause'
-                : 'Play'
+              : recordMode
+                ? isPlaying
+                  ? 'Stop recording'
+                  : 'Record'
+                : isPlaying
+                  ? 'Pause'
+                  : 'Play'
           }
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-400 focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white transition-colors focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${
+            recordMode
+              ? 'bg-red-600 hover:bg-red-500'
+              : 'bg-orange-500 hover:bg-orange-400'
+          }`}
         >
           {showBeat ? (
             <span className="text-xl font-bold">
               {countdownState.currentBeat}
             </span>
+          ) : recordMode ? (
+            isPlaying ? (
+              <StopIcon />
+            ) : (
+              <RecordIcon />
+            )
           ) : isPlaying ? (
             <PauseIcon />
           ) : (
@@ -157,11 +178,38 @@ export function ScalesControls({
           )}
         </button>
 
-        {/* RIGHT group — Tempo */}
-        <div className="flex flex-1 items-center justify-evenly">
+        {/* RIGHT group — Tempo + the Record-mode switch */}
+        <div className="flex flex-1 items-center justify-evenly gap-2">
           {/* Tempo: press-and-hold the arrows to fly through BPM (stepping one at a time
               is tedious over a big range). */}
           <RollerPicker {...tempo} anim={anim} ariaLabel="Tempo" holdRepeat />
+          {onToggleRecordMode && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={recordMode}
+              aria-label="Record mode — grade your playing"
+              disabled={isPlaying}
+              onClick={() => onToggleRecordMode(!recordMode)}
+              className="flex flex-col items-center gap-1 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Record mode: mute the scale, play it yourself, get graded"
+            >
+              <span
+                className={`relative h-5 w-9 rounded-full transition-colors ${
+                  recordMode ? 'bg-red-600' : 'bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                    recordMode ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Rec
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -191,6 +239,20 @@ function PauseIcon() {
       aria-hidden
     >
       <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+    </svg>
+  );
+}
+function RecordIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="12" r="7" />
+    </svg>
+  );
+}
+function StopIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </svg>
   );
 }

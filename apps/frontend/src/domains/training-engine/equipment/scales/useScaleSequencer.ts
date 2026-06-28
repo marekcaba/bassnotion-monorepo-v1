@@ -64,6 +64,9 @@ export interface UseScaleSequencerOptions {
   droneSymbol: string;
   /** Resume a prewarmed context inside the play gesture (Safari). */
   onBeforePlay?: () => Promise<void> | void;
+  /** RECORD MODE: when true, the scale-note SAMPLER is muted (drone + click still play), so the
+   *  student plays the scale THEMSELVES and the mic doesn't capture our own bass into the grade. */
+  silentBass?: boolean;
 }
 
 export interface UseScaleSequencerReturn {
@@ -78,6 +81,9 @@ export interface UseScaleSequencerReturn {
    *  [0, loopBeats). Negative during the count-in (before beat 0). null when not playing.
    *  Drives the fretboard playhead (the gym doesn't run the AtomicPlaybackClock). */
   getPlaybackBeat: () => number | null;
+  /** Absolute audioContext time (seconds) of the scale loop's beat 0 — the grid anchor the
+   *  listening engine needs to align the player's recorded onsets. null before the first play. */
+  getLoopStartAudioTime: () => number | null;
 }
 
 export function useScaleSequencer({
@@ -86,6 +92,7 @@ export function useScaleSequencer({
   bpm,
   droneSymbol,
   onBeforePlay,
+  silentBass = false,
 }: UseScaleSequencerOptions): UseScaleSequencerReturn {
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [countInBeat, setCountInBeat] = React.useState(0);
@@ -118,6 +125,7 @@ export function useScaleSequencer({
   const pathRef = React.useRef(path);
   const loopBeatsRef = React.useRef(loopBeats);
   const bpmRef = React.useRef(bpm);
+  const silentBassRef = React.useRef(silentBass);
   React.useEffect(() => {
     pathRef.current = path;
   }, [path]);
@@ -127,6 +135,9 @@ export function useScaleSequencer({
   React.useEffect(() => {
     bpmRef.current = bpm;
   }, [bpm]);
+  React.useEffect(() => {
+    silentBassRef.current = silentBass;
+  }, [silentBass]);
 
   const beatDuration = React.useCallback(() => 60 / bpmRef.current, []);
 
@@ -262,7 +273,9 @@ export function useScaleSequencer({
         note.startBeat * bd;
 
       if (noteTime > horizon) break; // nothing more to arm this frame
-      if (noteTime >= now - 0.01) {
+      // RECORD MODE (silentBass): skip the audible note but KEEP advancing the note pointer
+      // below, so the grid + visual playhead stay in lockstep — the student plays the scale.
+      if (noteTime >= now - 0.01 && !silentBassRef.current) {
         // Tone.Sampler: note name + duration + absolute time + velocity (0..1). It
         // pitch-shifts from the nearest loaded anchor sample if this exact note wasn't
         // one of the anchors. Let the note ring MOST of its slot (0.85×) so the sample's
@@ -418,6 +431,13 @@ export function useScaleSequencer({
     return beat % loop;
   }, [isPlaying, beatDuration]);
 
+  // Absolute audioContext time of beat 0 — the grid anchor the listening engine aligns the
+  // player's recorded onsets to. null until the first play() has set loopStart.
+  const getLoopStartAudioTime = React.useCallback((): number | null => {
+    if (!ctxRef.current || !isPlaying) return null;
+    return loopStartRef.current || null;
+  }, [isPlaying]);
+
   return {
     isPlaying,
     isReady,
@@ -426,5 +446,6 @@ export function useScaleSequencer({
     stop,
     audioContext: ctxRef.current,
     getPlaybackBeat,
+    getLoopStartAudioTime,
   };
 }
