@@ -31,6 +31,7 @@ import {
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
 import { PlayheadPanel } from './PlayheadPanel';
+import { AnticipationPanel } from './AnticipationPanel';
 import { DEFAULT_PLAYHEAD_CONFIG, type PlayheadConfig } from './playheadConfig';
 
 export interface ScaleFretboardWindowProps {
@@ -320,9 +321,11 @@ export function ScaleFretboardWindow({
           NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
       {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
 
-      {/* DEV playhead tuner — draggable; renders null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
-          Tune sphere size/color/animation/bezier live, then bake into playheadConfig.ts. */}
+      {/* DEV playhead tuners — draggable; render null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
+          PlayheadPanel = the sphere (size/color/anim/bezier/ripple). AnticipationPanel = the
+          runway + approach ring. Both edit the same playheadCfg; bake into playheadConfig.ts. */}
       <PlayheadPanel values={playheadCfg} onChange={setPlayheadCfg} />
+      <AnticipationPanel values={playheadCfg} onChange={setPlayheadCfg} />
 
       {/* MOVEMENT — mirrors the tutorial's layering EXACTLY:
           (1) a scroll container holding ONLY a wide spacer → provides native scroll RANGE

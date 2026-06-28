@@ -87,13 +87,34 @@ export interface PlayheadConfig {
   runwayTracer: number;
   /** Above this BPM the runway shortens (declutter at speed). 0 = never shorten. */
   runwayTempoCap: number;
+  /** Ghost SHAPE: 'sphere' = raised 3D ball, 'disc' = flat dot lying on the fretboard. */
+  runwayShape: GhostShape;
+
+  // ── ANTICIPATION: APPROACH RING (the timing layer) — a ring shrinks onto the NEXT dot,
+  //    collapsing to it exactly on the downbeat = "play now", then hands off to the ripple ──
+  /** Toggle the approach ring (0 = off, 1 = on). */
+  approachOn: number;
+  /** Ring color (hex). */
+  approachColor: string;
+  /** How many beats BEFORE the note the ring starts (its lead time). */
+  approachLead: number;
+  /** The ring's start size, as a multiple of the sphere radius (shrinks to ~1× = the dot). */
+  approachStart: number;
+  /** Ring opacity (fades in as it closes). */
+  approachOpacity: number;
 }
+
+export type GhostShape = 'sphere' | 'disc';
+export const GHOST_SHAPES: { value: GhostShape; label: string }[] = [
+  { value: 'sphere', label: 'Spheres (raised)' },
+  { value: 'disc', label: 'Dots on the ground' },
+];
 
 // Eye-tuned on the gym board 2026-06-28 (panel → "Log values"): an Arc-hop playhead — the
 // sphere bounces note-to-note with a quick eased slide + an on-beat pulse.
 export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   radius: 5,
-  color: '#f97316', // orange-500
+  color: '#c14706', // deep orange
   opacity: 0.95,
   emissiveIntensity: 0.8,
   zOffset: 7,
@@ -114,14 +135,21 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   ripple2On: 1,
   ripple2Color: '#b85e14',
   ripple2Delay: 0.18,
-  // Anticipation runway (Pass 1) — on by default; tune in Pass 2's panel.
+  // Anticipation runway — eye-tuned: 2 flat black DOTS on the ground ahead, no tracer line.
   runwayOn: 1,
-  runwayCount: 3,
-  runwayColor: '#fbbf24', // amber-400 — distinct from the orange playhead
-  runwayOpacity: 0.45,
-  runwaySize: 0.7,
-  runwayTracer: 0.25,
-  runwayTempoCap: 150,
+  runwayCount: 2,
+  runwayColor: '#000000',
+  runwayOpacity: 0.95,
+  runwaySize: 1.4,
+  runwayTracer: 0,
+  runwayTempoCap: 0,
+  runwayShape: 'disc',
+  // Approach ring (timing layer) — orange ring, long 3.25-beat lead, starts near the dot.
+  approachOn: 1,
+  approachColor: '#ff9500',
+  approachLead: 3.25,
+  approachStart: 1.5,
+  approachOpacity: 1,
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */

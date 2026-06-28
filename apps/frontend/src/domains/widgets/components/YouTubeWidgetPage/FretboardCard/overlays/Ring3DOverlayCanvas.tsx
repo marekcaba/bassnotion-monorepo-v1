@@ -1080,6 +1080,8 @@ function DebugVisualization({
   // between them (fixed pools; `runwayCount` config decides how many show). Pass 1.
   const ghostRefs = useRef<(THREE.Mesh | null)[]>([]);
   const tracerRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // APPROACH RING — shrinks onto the NEXT dot as its beat arrives (timing cue). Pass 2.
+  const approachRingRef = useRef<THREE.Mesh>(null);
   const rippleStateRef = useRef<{ noteIdx: number; t: number }>({
     noteIdx: -1,
     t: 1,
@@ -2816,6 +2818,7 @@ function DebugVisualization({
       ripple2Refs.current.forEach((r) => r && (r.visible = false));
       ghostRefs.current.forEach((g) => g && (g.visible = false));
       tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+      if (approachRingRef.current) approachRingRef.current.visible = false;
       return;
     }
 
@@ -2834,6 +2837,7 @@ function DebugVisualization({
       ripple2Refs.current.forEach((r) => r && (r.visible = false));
       ghostRefs.current.forEach((g) => g && (g.visible = false));
       tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+      if (approachRingRef.current) approachRingRef.current.visible = false;
       rippleStateRef.current = { noteIdx: -1, t: 1 };
       const pos = dotPos(playheadNotes[0]!);
       if (pos) {
@@ -2956,7 +2960,9 @@ function DebugVisualization({
         const n = playheadNotes[idx + k];
         chain.push(n ? dotPos(n) : null);
       }
-      // GHOSTS — one per upcoming note (chain index 1..count).
+      // GHOSTS — one per upcoming note (chain index 1..count). Shape: raised SPHERE or a
+      // flat DISC lying on the fretboard (a near-zero z-scale flattens the sphere to a disc).
+      const isDisc = ph.runwayShape === 'disc';
       ghostRefs.current.forEach((g, i) => {
         if (!g) return;
         const pos = i < count ? chain[i + 1] : null;
@@ -2966,8 +2972,11 @@ function DebugVisualization({
         }
         // Fade + shrink with distance (i=0 nearest → brightest/biggest).
         const falloff = 1 - i / count;
-        g.position.set(pos.x, pos.y, pos.z + ph.zOffset);
-        g.scale.setScalar(ph.radius * ph.runwaySize * (0.6 + 0.4 * falloff));
+        const r = ph.radius * ph.runwaySize * (0.6 + 0.4 * falloff);
+        // Disc sits ON the plane (no z-lift, flat); sphere is raised by zOffset.
+        g.position.set(pos.x, pos.y, pos.z + (isDisc ? 0.5 : ph.zOffset));
+        if (isDisc) g.scale.set(r, r, 0.06);
+        else g.scale.setScalar(r);
         const gmat = g.material as THREE.MeshStandardMaterial;
         gmat.color.set(ph.runwayColor);
         gmat.emissive.set(ph.runwayColor);
@@ -2999,6 +3008,29 @@ function DebugVisualization({
         tmat.opacity = ph.runwayTracer * falloff;
         tr.visible = true;
       });
+    }
+
+    // ── APPROACH RING (Pass 2) — shrinks onto the NEXT dot as its beat arrives, collapsing
+    //    to the dot on the downbeat ("play now"). Lead = approachLead beats. ──
+    const ar = approachRingRef.current;
+    if (ar) {
+      const nextNote = playheadNotes[idx + 1] ?? null;
+      const nextPos = nextNote ? dotPos(nextNote) : null;
+      const lead = Math.max(ph.approachLead, 1e-3);
+      // a ∈ [0..1]: 0 = `lead` beats before the next note, 1 = ON the downbeat.
+      const a = nextNote ? (beat - (nextNote.startBeat - lead)) / lead : -1;
+      if (ph.approachOn <= 0 || !nextPos || a <= 0 || a >= 1) {
+        ar.visible = false;
+      } else {
+        // Shrink from approachStart× down to ~1× (the dot) as a → 1.
+        const scale = ph.radius * (1 + (ph.approachStart - 1) * (1 - a));
+        ar.position.set(nextPos.x, nextPos.y, nextPos.z + 1.5);
+        ar.scale.setScalar(scale);
+        const armat = ar.material as THREE.MeshBasicMaterial;
+        armat.color.set(ph.approachColor);
+        armat.opacity = ph.approachOpacity * a; // fades IN as it closes
+        ar.visible = true;
+      }
     }
   });
 
@@ -3454,6 +3486,26 @@ function DebugVisualization({
           />
         </mesh>
       ))}
+
+      {/* APPROACH RING (Pass 2) — a unit ring that shrinks onto the NEXT dot as its beat
+          arrives, collapsing to the dot on the downbeat = "play now". Positioned/scaled/faded
+          in the playhead useFrame. */}
+      <mesh
+        ref={approachRingRef}
+        visible={false}
+        position={[0, 0, 5.2]}
+        name="playhead-approach-ring"
+      >
+        <ringGeometry args={[0.82, 1, 48]} />
+        <meshBasicMaterial
+          color={ph.approachColor}
+          transparent={true}
+          opacity={0}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          clippingPlanes={globalClippingPlanes}
+        />
+      </mesh>
 
       {/* ============================================================
           ACTIVE NOTE RING (ROUNDED RECTANGLE) - Yellow ring for open strings & fret 12
