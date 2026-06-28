@@ -58,8 +58,8 @@ export interface PlayheadConfig {
   rippleRings: number;
   /** How far the rings expand, as a multiple of the sphere radius (1 = no growth). */
   rippleExpand: number;
-  /** Per-frame ripple advance (higher = faster/shorter ripple). 0.06 ≈ ~0.27s @60fps. */
-  rippleSpeed: number;
+  /** How long ONE ripple lasts, in milliseconds (impact → fully faded). Frame-rate independent. */
+  rippleDurationMs: number;
   /** Peak ring opacity on impact (fades to 0 as it expands). */
   rippleOpacity: number;
 
@@ -116,6 +116,24 @@ export interface PlayheadConfig {
   rootRingOn: number;
   /** Ring color (hex) — green or blue to mark the roots. */
   rootRingColor: string;
+
+  // ── HIGHLIGHT WINDOW (gym Scales) — while PLAYING, only a small moving window of dots is
+  //    BRIGHT green; the rest stay a SOLID muted green. The bright highlight EASES in/out as the
+  //    window slides. Dimming is by COLOR (opacity stays 1 → solid, never see-through). ──
+  /** How many notes AHEAD of the current note are bright (the window size). 1 = just the next. */
+  litWindowAhead: number;
+  /** Per-frame lerp toward the brightness target (0–1). Higher = snappier fade; lower = slower. */
+  litSmoothing: number;
+  /** Bright (in-window) green for a normal scale note (hex). */
+  litBrightColor: string;
+  /** Dim (out-of-window) green for a normal scale note (hex) — solid, just muted. */
+  litDimColor: string;
+  /** Bright green for a ROOT/octave note (hex) — the home note stands out. */
+  litBrightRootColor: string;
+  /** Dim green for a ROOT/octave note (hex). */
+  litDimRootColor: string;
+  /** Out-of-window root RING brightness factor (0–1) — its RGB scales by this while playing. */
+  rootRingDimFactor: number;
 }
 
 export type GhostShape = 'sphere' | 'disc';
@@ -141,9 +159,9 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   rippleOn: 1,
   rippleColor: '#f97316',
   rippleRings: 1,
-  rippleExpand: 2.4,
-  rippleSpeed: 0.01,
-  rippleOpacity: 0.95,
+  rippleExpand: 1.1, // eye-tuned: a tight, subtle pop (barely grows)
+  rippleDurationMs: 100, // eye-tuned: quick flash that self-fades
+  rippleOpacity: 0.2, // eye-tuned: faint
   // Trailing second ripple: same params, fires a beat behind the first, in a darker orange
   // so the landing reads as a bright flash chased by a dim ring.
   ripple2On: 1,
@@ -170,6 +188,15 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   // Root marker rings — green by default, around the root + octave dots.
   rootRingOn: 1,
   rootRingColor: '#22c55e', // green-500
+  // Highlight window — eased dim↔bright. Baked from the in-code constants: bright = green-600 /
+  // root green-900; dim = solid muted greens; smoothing 0.18 (a few-frame ease).
+  litWindowAhead: 1,
+  litSmoothing: 0.18,
+  litBrightColor: '#16a34a', // green-600
+  litDimColor: '#1d3a2a', // solid muted green
+  litBrightRootColor: '#14532d', // green-900 (root home note)
+  litDimRootColor: '#0f2a1c', // dim root green
+  rootRingDimFactor: 0.35,
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */

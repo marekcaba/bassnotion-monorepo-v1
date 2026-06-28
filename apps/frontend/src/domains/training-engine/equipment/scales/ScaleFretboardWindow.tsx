@@ -32,6 +32,7 @@ import {
 } from './FretboardCalibrationPanel';
 import { PlayheadPanel } from './PlayheadPanel';
 import { AnticipationPanel } from './AnticipationPanel';
+import { HighlightPanel } from './HighlightPanel';
 import { DEFAULT_PLAYHEAD_CONFIG, type PlayheadConfig } from './playheadConfig';
 
 export interface ScaleFretboardWindowProps {
@@ -433,9 +434,11 @@ export function ScaleFretboardWindow({
 
       {/* DEV playhead tuners — draggable; render null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
           PlayheadPanel = the sphere (size/color/anim/bezier/ripple). AnticipationPanel = the
-          runway + approach ring. Both edit the same playheadCfg; bake into playheadConfig.ts. */}
+          runway + approach ring. HighlightPanel = the rolling dim↔bright dot highlight (window
+          size, fade speed, greens). All edit the same playheadCfg; bake into playheadConfig.ts. */}
       <PlayheadPanel values={playheadCfg} onChange={setPlayheadCfg} />
       <AnticipationPanel values={playheadCfg} onChange={setPlayheadCfg} />
+      <HighlightPanel values={playheadCfg} onChange={setPlayheadCfg} />
 
       {/* MOVEMENT — mirrors the tutorial's layering EXACTLY:
           (1) a scroll container holding ONLY a wide spacer → provides native scroll RANGE

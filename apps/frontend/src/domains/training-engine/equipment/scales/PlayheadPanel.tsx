@@ -62,11 +62,11 @@ const SLIDERS: {
   },
   { key: 'rippleExpand', label: 'ripple expand ×', min: 1, max: 8, step: 0.1 },
   {
-    key: 'rippleSpeed',
-    label: 'ripple speed',
-    min: 0.01,
-    max: 0.3,
-    step: 0.01,
+    key: 'rippleDurationMs',
+    label: 'ripple duration (ms)',
+    min: 100,
+    max: 4000,
+    step: 50,
   },
   { key: 'rippleOpacity', label: 'ripple opacity', min: 0, max: 1, step: 0.05 },
   // ── Trailing second ripple ──
