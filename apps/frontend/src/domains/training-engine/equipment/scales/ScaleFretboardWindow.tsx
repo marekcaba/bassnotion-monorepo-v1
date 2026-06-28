@@ -14,7 +14,12 @@ import React from 'react';
 import { Ring3DOverlayCanvas } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/overlays/Ring3DOverlayCanvas';
 import { DEFAULT_RING_CONFIG } from '@/domains/widgets/components/YouTubeWidgetPage/FretboardCard/overlays/RingOverlayConfig';
 import type { PitchClass, ScaleType, StringCount } from './scaleGenerator';
-import { buildNoteUniverse, selectBox } from './noteUniverse';
+import {
+  buildNoteUniverse,
+  selectBox,
+  OPEN_STRING_MIDI,
+  rootToPc,
+} from './noteUniverse';
 import {
   getFretboardOverlayConfig,
   FRETBOARD_CANVAS_HEIGHT,
@@ -26,10 +31,7 @@ import {
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
 import { PlayheadPanel } from './PlayheadPanel';
-import {
-  DEFAULT_PLAYHEAD_CONFIG,
-  type PlayheadConfig,
-} from './playheadConfig';
+import { DEFAULT_PLAYHEAD_CONFIG, type PlayheadConfig } from './playheadConfig';
 
 export interface ScaleFretboardWindowProps {
   root: PitchClass;
@@ -84,8 +86,16 @@ export function ScaleFretboardWindow({
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
   // play-along sequence steps through it).
   const { exerciseNotes, rootPositions } = React.useMemo(() => {
-    // EXPLICIT note list (path editor): light exactly these, first = the path start (root).
+    // EXPLICIT note list (path editor): light exactly these. ROOT = every note whose pitch
+    // class equals the scale root's — so EVERY octave root is dark green, not just the first.
     if (litNotes) {
+      const open = OPEN_STRING_MIDI[stringCount];
+      const rootPc = rootToPc(root);
+      const isRoot = (n: { string: number; fret: number }) => {
+        const openMidi = open?.[n.string];
+        if (openMidi === undefined) return false;
+        return (openMidi + n.fret) % 12 === rootPc;
+      };
       return {
         exerciseNotes: litNotes.map((n, i) => ({
           string: n.string as 1 | 2 | 3 | 4 | 5 | 6,
@@ -93,7 +103,7 @@ export function ScaleFretboardWindow({
           duration: '4n',
           position: { measure: Math.floor(i / 4) + 1, beat: (i % 4) + 1 },
         })),
-        rootPositions: litNotes.length > 0 ? [litNotes[0]!] : [],
+        rootPositions: litNotes.filter(isRoot),
       };
     }
     const fretboard = { stringCount, maxFrets };
