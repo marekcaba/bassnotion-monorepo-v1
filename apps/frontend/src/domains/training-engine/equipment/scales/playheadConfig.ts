@@ -48,6 +48,28 @@ export interface PlayheadConfig {
   hopHeight: number;
   /** bezier: cubic-bezier easing control points [x1,y1,x2,y2] (CSS-style, 0–1 x). */
   bezier: [number, number, number, number];
+
+  // ── Landing ripple ("dartboard") — concentric rings at the dot on each bounce touchdown ──
+  /** Master toggle for the ripple (0 = off, 1 = on). */
+  rippleOn: number;
+  /** Ring color (hex). Independent of the sphere so the dartboard can contrast. */
+  rippleColor: string;
+  /** DENSITY — how many concentric rings expand together (1 = single shockwave). */
+  rippleRings: number;
+  /** How far the rings expand, as a multiple of the sphere radius (1 = no growth). */
+  rippleExpand: number;
+  /** Per-frame ripple advance (higher = faster/shorter ripple). 0.06 ≈ ~0.27s @60fps. */
+  rippleSpeed: number;
+  /** Peak ring opacity on impact (fades to 0 as it expands). */
+  rippleOpacity: number;
+
+  // ── Trailing second ripple — same expand/speed/opacity, fires DELAY behind the first ──
+  /** Toggle the trailing ripple (0 = off, 1 = on). */
+  ripple2On: number;
+  /** The trailing ring's color (hex; default black for an orange-then-dark chase). */
+  ripple2Color: string;
+  /** How far behind the first ripple it fires, in ripple-progress units [0..1]. */
+  ripple2Delay: number;
 }
 
 // Eye-tuned on the gym board 2026-06-28 (panel → "Log values"): an Arc-hop playhead — the
@@ -64,6 +86,17 @@ export const DEFAULT_PLAYHEAD_CONFIG: PlayheadConfig = {
   glideFrac: 0.05,
   hopHeight: 18,
   bezier: [0, 0.77, 0.96, 1],
+  rippleOn: 1,
+  rippleColor: '#f97316',
+  rippleRings: 1,
+  rippleExpand: 2.4,
+  rippleSpeed: 0.01,
+  rippleOpacity: 0.95,
+  // Trailing second ripple: same params, fires a beat behind the first, in a darker orange
+  // so the landing reads as a bright flash chased by a dim ring.
+  ripple2On: 1,
+  ripple2Color: '#b85e14',
+  ripple2Delay: 0.18,
 };
 
 /** Solve a cubic-bezier easing y for a given x (Newton's method, CSS-style). Pure. */

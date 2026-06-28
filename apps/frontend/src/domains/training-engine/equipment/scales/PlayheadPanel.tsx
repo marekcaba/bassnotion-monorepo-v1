@@ -19,7 +19,10 @@ import {
 export const PLAYHEAD_PANEL_ENABLED =
   process.env.NEXT_PUBLIC_PLAYHEAD_PANEL === 'true';
 
-type NumKey = Exclude<keyof PlayheadConfig, 'anim' | 'color' | 'bezier'>;
+type NumKey = Exclude<
+  keyof PlayheadConfig,
+  'anim' | 'color' | 'rippleColor' | 'ripple2Color' | 'bezier'
+>;
 
 const SLIDERS: {
   key: NumKey;
@@ -48,6 +51,39 @@ const SLIDERS: {
   },
   { key: 'glideFrac', label: 'glide fraction', min: 0.05, max: 1, step: 0.05 },
   { key: 'hopHeight', label: 'arc hop height', min: 0, max: 60, step: 1 },
+  // ── Landing ripple ("dartboard") ──
+  { key: 'rippleOn', label: '◎ ripple ON (0/1)', min: 0, max: 1, step: 1 },
+  {
+    key: 'rippleRings',
+    label: 'ripple density (rings)',
+    min: 1,
+    max: 6,
+    step: 1,
+  },
+  { key: 'rippleExpand', label: 'ripple expand ×', min: 1, max: 8, step: 0.1 },
+  {
+    key: 'rippleSpeed',
+    label: 'ripple speed',
+    min: 0.01,
+    max: 0.3,
+    step: 0.01,
+  },
+  { key: 'rippleOpacity', label: 'ripple opacity', min: 0, max: 1, step: 0.05 },
+  // ── Trailing second ripple ──
+  {
+    key: 'ripple2On',
+    label: '◎◎ 2nd ripple ON (0/1)',
+    min: 0,
+    max: 1,
+    step: 1,
+  },
+  {
+    key: 'ripple2Delay',
+    label: '2nd ripple delay',
+    min: 0,
+    max: 0.9,
+    step: 0.02,
+  },
 ];
 
 /** Tiny SVG preview of the current bezier easing curve. */
@@ -188,7 +224,7 @@ export function PlayheadPanel({
           </select>
         </div>
 
-        {/* COLOR */}
+        {/* COLORS — sphere + ripple */}
         <div
           style={{
             display: 'flex',
@@ -197,11 +233,57 @@ export function PlayheadPanel({
             marginBottom: 10,
           }}
         >
-          <span>color</span>
+          <span>sphere color</span>
           <input
             type="color"
             value={values.color}
             onChange={(e) => onChange({ ...values, color: e.target.value })}
+            style={{
+              width: 44,
+              height: 24,
+              background: 'transparent',
+              border: 'none',
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 10,
+          }}
+        >
+          <span>ripple color</span>
+          <input
+            type="color"
+            value={values.rippleColor}
+            onChange={(e) =>
+              onChange({ ...values, rippleColor: e.target.value })
+            }
+            style={{
+              width: 44,
+              height: 24,
+              background: 'transparent',
+              border: 'none',
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 10,
+          }}
+        >
+          <span>2nd ripple color</span>
+          <input
+            type="color"
+            value={values.ripple2Color}
+            onChange={(e) =>
+              onChange({ ...values, ripple2Color: e.target.value })
+            }
             style={{
               width: 44,
               height: 24,

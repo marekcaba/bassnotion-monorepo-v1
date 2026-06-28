@@ -100,6 +100,9 @@ import {
   playheadPulse,
 } from '@/domains/training-engine/equipment/scales/playheadConfig';
 
+/** Max concentric rings in the playhead landing-ripple pool (config picks how many show). */
+const MAX_RIPPLE_RINGS = 6;
+
 /**
  * Custom perspective camera for 3D ring overlay.
  * Positioned to view the fretboard from the same angle as the CSS tilt.
@@ -1064,6 +1067,17 @@ function DebugVisualization({
   // dot center and glides center-to-center to the next note ("quick glide + hold"). Guitar
   // Hero-style. Only used in showAllNotes mode (the active ring is held there).
   const playheadSphereRef = useRef<THREE.Mesh>(null);
+  // LANDING RIPPLE ("dartboard"): concentric rings that expand at the dot when the sphere
+  // touches down — like it bounced off an invisible platform. A FIXED pool of ring meshes
+  // (MAX_RIPPLE_RINGS); `rippleRings` config controls how many are shown (density). The
+  // others stay hidden. rippleStateRef tracks which note last triggered it + elapsed [0..1].
+  const rippleRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // Trailing SECOND ripple (its own pool), fires a beat behind the first in ripple2Color.
+  const ripple2Refs = useRef<(THREE.Mesh | null)[]>([]);
+  const rippleStateRef = useRef<{ noteIdx: number; t: number }>({
+    noteIdx: -1,
+    t: 1,
+  });
   // Normalized playhead config (sphere appearance + animation), default-filled.
   const ph = playheadConfig ?? DEFAULT_PLAYHEAD_CONFIG;
   // Track pulse animation time
@@ -2792,6 +2806,8 @@ function DebugVisualization({
 
     if (!showAllNotes || !playheadNotes || playheadNotes.length === 0) {
       sphere.visible = false;
+      rippleRefs.current.forEach((r) => r && (r.visible = false));
+      ripple2Refs.current.forEach((r) => r && (r.visible = false));
       return;
     }
 
@@ -2803,8 +2819,12 @@ function DebugVisualization({
 
     const beat = getPlaybackBeat ? getPlaybackBeat() : null;
 
-    // Not playing (or counting in) → rest on the first note.
+    // Not playing (or counting in) → rest on the first note. Hide + reset the ripple so it
+    // re-fires from the first note when playback (re)starts.
     if (beat === null || beat < 0) {
+      rippleRefs.current.forEach((r) => r && (r.visible = false));
+      ripple2Refs.current.forEach((r) => r && (r.visible = false));
+      rippleStateRef.current = { noteIdx: -1, t: 1 };
       const pos = dotPos(playheadNotes[0]!);
       if (pos) {
         sphere.position.set(pos.x, pos.y, pos.z + ph.zOffset);
@@ -2847,6 +2867,61 @@ function DebugVisualization({
     // On-beat pulse scales the sphere up then settles.
     sphere.scale.setScalar(ph.radius * playheadPulse(noteProgress, ph));
     sphere.visible = true;
+
+    // ── LANDING RIPPLE — fire concentric rings at the dot each time the sphere lands on a
+    //    NEW note (the bounce touchdown). `rippleRings` of them, STAGGERED so the inner ring
+    //    leads and outer ones trail → a dartboard shockwave. A trailing SECOND ripple fires
+    //    `ripple2Delay` behind in ripple2Color. All tunable via ph.ripple*.
+    const ringCount = Math.min(
+      Math.max(Math.round(ph.rippleRings), 1),
+      MAX_RIPPLE_RINGS,
+    );
+    const st = rippleStateRef.current;
+    // New note → retrigger both ripples at this dot.
+    if (idx !== st.noteIdx) {
+      st.noteIdx = idx;
+      st.t = 0;
+    }
+    if (st.t < 1) st.t = Math.min(st.t + Math.max(ph.rippleSpeed, 1e-3), 1);
+
+    // Render one ripple pool with a given color + a time delay (0 = first, ripple2Delay =
+    // trailing). Each ring in the pool is staggered so they read as concentric.
+    const renderRipple = (
+      refs: (THREE.Mesh | null)[],
+      on: boolean,
+      color: string,
+      delay: number,
+    ) => {
+      refs.forEach((ring, i) => {
+        if (!ring) return;
+        const localT = st.t - delay; // shift this pool's clock back by the delay
+        if (!on || i >= ringCount || localT <= 0 || localT >= 1) {
+          ring.visible = false;
+          return;
+        }
+        const stagger = (i / ringCount) * 0.45;
+        const e = Math.min(Math.max((localT - stagger) / (1 - stagger), 0), 1);
+        if (e <= 0 || e >= 1) {
+          ring.visible = false;
+          return;
+        }
+        const scale = ph.radius * (1 + e * (ph.rippleExpand - 1));
+        ring.position.set(fromPos.x, fromPos.y, fromPos.z + 1);
+        ring.scale.setScalar(scale);
+        const rmat = ring.material as THREE.MeshBasicMaterial;
+        rmat.color.set(color);
+        rmat.opacity = (1 - e) * ph.rippleOpacity; // bright on impact → transparent
+        ring.visible = true;
+      });
+    };
+
+    renderRipple(rippleRefs.current, ph.rippleOn > 0, ph.rippleColor, 0);
+    renderRipple(
+      ripple2Refs.current,
+      ph.rippleOn > 0 && ph.ripple2On > 0,
+      ph.ripple2Color,
+      ph.ripple2Delay,
+    );
   });
 
   return (
@@ -3201,6 +3276,57 @@ function DebugVisualization({
           clippingPlanes={globalClippingPlanes}
         />
       </mesh>
+
+      {/* LANDING RIPPLE ("dartboard") — a POOL of flat ring annuli that expand + fade on the
+          dot when the sphere touches down. `rippleRings` config decides how many are visible
+          (density); the rest stay hidden. Each is a unit annulus; scaled/faded + staggered in
+          the playhead useFrame so they read as a concentric shockwave. */}
+      {Array.from({ length: MAX_RIPPLE_RINGS }).map((_, i) => (
+        <mesh
+          key={`ripple-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            rippleRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 4]}
+          name={`playhead-landing-ripple-${i}`}
+        >
+          <ringGeometry args={[0.78, 1, 48]} />
+          <meshBasicMaterial
+            color={ph.rippleColor}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* TRAILING SECOND RIPPLE — same shape, fires ripple2Delay behind the first in
+          ripple2Color (default black) so each landing is an orange flash chased by a dark
+          ring. Its own mesh pool, driven alongside the first in the playhead useFrame. */}
+      {Array.from({ length: MAX_RIPPLE_RINGS }).map((_, i) => (
+        <mesh
+          key={`ripple2-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            ripple2Refs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 3.9]}
+          name={`playhead-landing-ripple2-${i}`}
+        >
+          <ringGeometry args={[0.78, 1, 48]} />
+          <meshBasicMaterial
+            color={ph.ripple2Color}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
 
       {/* ============================================================
           ACTIVE NOTE RING (ROUNDED RECTANGLE) - Yellow ring for open strings & fret 12
