@@ -688,3 +688,94 @@ export function drillCompletionToSignal(
       return null;
   }
 }
+
+// =====================================================
+// SCALE BLUEPRINTS — admin-authored box shapes + rhythm
+// =====================================================
+// The gym Scales tool's per-scale fingering shapes. Seeded in code with sensible
+// defaults; an admin refines the box windows visually + sets the practice rhythm,
+// and the engine reads the stored shapes. Mirrors the `scale_blueprints` table
+// (snake_case → camelCase in the repository).
+
+/** One box position: a fret WINDOW relative to the root's fret on the lowest string. */
+export interface ScalePositionShape {
+  /** 1-based: position 1 = the root box, ascending up the neck. */
+  positionNumber: number;
+  /** Fret offset of the box's LOW edge, relative to the root fret on the lowest
+   *  string (usually slightly negative — the index finger sits behind the root). */
+  startFretOffset: number;
+  /** How many frets the box spans (the hand-position width). */
+  span: number;
+}
+
+/** The note value each step of the scale run occupies (Tone.js notation).
+ *  '8t' = eighth-note triplet (three per beat). */
+export type ScaleRhythmValue = '4n' | '8n' | '8t' | '16n';
+
+/** The scale types the gym Scales tool authors. */
+export type ScaleTypeId =
+  | 'major'
+  | 'natural_minor'
+  | 'dorian'
+  | 'mixolydian'
+  | 'minor_pentatonic'
+  | 'major_pentatonic';
+
+/** One scale's full admin-authored blueprint (box shapes + practice rhythm). */
+export interface ScaleBlueprintRecord {
+  scaleType: ScaleTypeId;
+  positions: ScalePositionShape[];
+  rhythm: ScaleRhythmValue;
+  updatedAt: string;
+}
+
+/** Admin PATCH payload — replace a scale's positions and/or rhythm. */
+export interface UpdateScaleBlueprintInput {
+  positions?: ScalePositionShape[];
+  rhythm?: ScaleRhythmValue;
+}
+
+// =====================================================
+// GYM EXERCISES — admin-authored exercises for gym equipment (paths, grooves, …)
+// =====================================================
+// One authoring interface produces exercises for ANY gym equipment. The PAYLOAD (the
+// authored content — e.g. the per-key note paths, the meter, name/description) is stored
+// as opaque JSON so the same table serves scale paths today and groove exercises later;
+// the columns are just the queryable metadata. Saving is DRAFT-FRIENDLY — a half-authored
+// exercise (a few keys filled, the rest empty) saves fine, no validation gate.
+
+/** What kind of exercise (which authoring payload shape + which equipment it targets). */
+export type GymExerciseKind = 'scale_path' | 'groove'; // extend as equipment grows
+
+/** A saved gym exercise. `payload` is the authored content (shape depends on `kind`). */
+export interface GymExercise {
+  id: string;
+  kind: GymExerciseKind;
+  name: string;
+  description: string;
+  /** The gym equipment station this targets (e.g. 'scales'). */
+  equipment: string;
+  /** For scale_path: the scale type ('major' …). Null for kinds without one. */
+  scaleType: string | null;
+  /** The authored content — JSON, shape per kind (e.g. the PathsByKey for scale_path). */
+  payload: unknown;
+  updatedAt: string;
+}
+
+/** Admin create payload. Everything but kind/equipment is optional-ish (drafts welcome). */
+export interface CreateGymExerciseInput {
+  kind: GymExerciseKind;
+  name: string;
+  description?: string;
+  equipment: string;
+  scaleType?: string | null;
+  payload: unknown;
+}
+
+/** Admin PATCH payload — any subset (save partial progress freely). */
+export interface UpdateGymExerciseInput {
+  name?: string;
+  description?: string;
+  scaleType?: string | null;
+  payload?: unknown;
+}

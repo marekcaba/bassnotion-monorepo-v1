@@ -1370,8 +1370,8 @@ export class InitialSamplePreloader {
         name: 'Default Metronome',
         category: 'timing',
         samples: [
-          'metronome/Click_low2_fixed.mp3',
-          'metronome/Click_high2_fixed.mp3',
+          'metronome/Click_Low2.mp3',
+          'metronome/Click_High2.mp3',
         ],
       },
     };
@@ -1755,12 +1755,12 @@ export class InitialSamplePreloader {
         },
         // Metronome clicks
         {
-          path: 'metronome/Click_low2_fixed.mp3',
-          cacheKeys: ['metronome-low'],
+          path: 'metronome/Click_Low2.mp3',
+          cacheKeys: ['metronome-low-v2'],
         },
         {
-          path: 'metronome/Click_high2_fixed.mp3',
-          cacheKeys: ['metronome-high'],
+          path: 'metronome/Click_High2.mp3',
+          cacheKeys: ['metronome-high-v2'],
         },
         // Essential drum samples (using admin-uploaded default kit)
         {
@@ -1901,13 +1901,13 @@ export class InitialSamplePreloader {
       const samples = [
         {
           name: 'click_hi',
-          file: 'metronome/Click_high2_fixed.mp3',
-          cacheKey: 'metronome-high',
+          file: 'metronome/Click_High2.mp3',
+          cacheKey: 'metronome-high-v2',
         }, // High pitched
         {
           name: 'click_lo',
-          file: 'metronome/Click_low2_fixed.mp3',
-          cacheKey: 'metronome-low',
+          file: 'metronome/Click_Low2.mp3',
+          cacheKey: 'metronome-low-v2',
         }, // Low pitched
       ];
 

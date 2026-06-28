@@ -15,6 +15,7 @@ import type {
   MonthInReview,
   TopicProgress,
   EnrollableGoal,
+  GymExercise,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -47,6 +48,27 @@ export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
 export async function fetchEnrollableGoals(): Promise<EnrollableGoal[]> {
   await ensureAuthToken();
   return apiClient.get<EnrollableGoal[]>('/api/v1/training-engine/goals');
+}
+
+/**
+ * GET /api/v1/training-engine/gym-exercises — the authored exercise LIBRARY a student
+ * picks from in a gym tool (scales today). Read-only; optionally filter by equipment
+ * (e.g. 'scales') and kind ('scale_path' | 'groove'). Returns ALL keys/variants — the
+ * tool selects key/position/tempo at runtime.
+ */
+export async function fetchGymExercises(filters?: {
+  equipment?: string;
+  kind?: string;
+}): Promise<GymExercise[]> {
+  await ensureAuthToken();
+  const qs = new URLSearchParams();
+  if (filters?.equipment) qs.set('equipment', filters.equipment);
+  if (filters?.kind) qs.set('kind', filters.kind);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  const { exercises } = await apiClient.get<{ exercises: GymExercise[] }>(
+    `/api/v1/training-engine/gym-exercises${suffix}`,
+  );
+  return exercises;
 }
 
 /**

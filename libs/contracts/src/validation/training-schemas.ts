@@ -66,3 +66,67 @@ export const recordRepResultSchema = z.object({
 });
 
 export type RecordRepResultData = z.infer<typeof recordRepResultSchema>;
+
+// =====================================================
+// SCALE BLUEPRINTS — admin authoring validation
+// =====================================================
+
+export const scaleRhythmSchema = z.enum(['4n', '8n', '8t', '16n']);
+
+export const scaleTypeIdSchema = z.enum([
+  'major',
+  'natural_minor',
+  'dorian',
+  'mixolydian',
+  'minor_pentatonic',
+  'major_pentatonic',
+]);
+
+export const scalePositionShapeSchema = z.object({
+  positionNumber: z.number().int().min(1),
+  startFretOffset: z.number().int().min(-6).max(24),
+  span: z.number().int().min(1).max(12),
+});
+
+/** Admin PATCH body — at least one of positions/rhythm; both optional individually. */
+export const updateScaleBlueprintSchema = z
+  .object({
+    positions: z.array(scalePositionShapeSchema).min(1).optional(),
+    rhythm: scaleRhythmSchema.optional(),
+  })
+  .refine((v) => v.positions !== undefined || v.rhythm !== undefined, {
+    message: 'Provide at least one of: positions, rhythm',
+  });
+
+export type UpdateScaleBlueprintData = z.infer<typeof updateScaleBlueprintSchema>;
+
+// =====================================================
+// GYM EXERCISES — authoring validation (draft-friendly)
+// =====================================================
+
+export const gymExerciseKindSchema = z.enum(['scale_path', 'groove']);
+
+// payload is opaque JSON (shape depends on kind) — we don't validate its internals here.
+export const createGymExerciseSchema = z.object({
+  kind: gymExerciseKindSchema,
+  name: z.string().max(200).default(''),
+  description: z.string().max(2000).optional().default(''),
+  equipment: z.string().min(1).max(64),
+  scaleType: z.string().max(64).nullish(),
+  payload: z.unknown(),
+});
+
+// Any subset — saving partial progress is fine, no required fields.
+export const updateGymExerciseSchema = z
+  .object({
+    name: z.string().max(200).optional(),
+    description: z.string().max(2000).optional(),
+    scaleType: z.string().max(64).nullish(),
+    payload: z.unknown().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, {
+    message: 'Provide at least one field to update',
+  });
+
+export type CreateGymExerciseData = z.infer<typeof createGymExerciseSchema>;
+export type UpdateGymExerciseData = z.infer<typeof updateGymExerciseSchema>;

@@ -1,0 +1,516 @@
+'use client';
+
+/**
+ * ScalesTool — the gym "Scales" equipment station: an OPEN practice tool. Familiar
+ * groove-card playback controls (the "grip"), but the main window is the 3D fretboard
+ * showing the chosen scale, lit up in time as you play.
+ *
+ * Architecture (the EquipmentTool pattern, first instance): compose
+ * useGrooveCardPlayback (transport) + GrooveCardShell (frame) + GrooveCardControls
+ * (the grip) directly — NOT the whole GrooveCardBlockView (which drags in drill/caps/
+ * lines&fills). The fretboard goes in the shell's `waveform` slot; a scale picker is
+ * the skill-specific panel.
+ *
+ * The fretboard rides the SAME AtomicPlaybackClock the groove-card transport starts
+ * (proven in the spike) — so pressing play lights the scale in time with the backing.
+ *
+ * Backing: for now the existing demo groove stems give us a real transport + clock.
+ * (Chord/drone/metronome-only backing per scale is a later content decision — see
+ * docs/GYM_EQUIPMENT_DESIGN.md §6.)
+ */
+
+import React from 'react';
+import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
+import { GrooveCardShell } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardShell';
+import {
+  parsePitchClass,
+  spellPitchClass,
+} from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/pitchClass';
+import { ScaleFretboardWindow } from './ScaleFretboardWindow';
+import { ScalesControls } from './ScalesControls';
+import { positionCount } from './scaleBlueprints';
+import { buildNoteUniverse, selectBox } from './noteUniverse';
+import { buildScalePath, scalePathBeats } from './scalePath';
+import {
+  authoredPathToPlayable,
+  authoredPathBeats,
+} from './authoredPathToPlayable';
+import { droneChordSymbol } from './droneChord';
+import { useScaleSequencer } from './useScaleSequencer';
+import {
+  rootFromKey,
+  type ScaleType,
+  type ScaleView,
+  type StringCount,
+} from './scaleGenerator';
+import { useGymExerciseLibrary } from '../../hooks/useGymExerciseLibrary';
+import { useEquipmentListening } from '../listening/useEquipmentListening';
+
+/** Tempo bounds for the scale sequencer (BPM). */
+const MIN_BPM = 40;
+const MAX_BPM = 220;
+
+/** Scale types + labels, in cycle order for the scale stepper. */
+const SCALE_TYPES: { value: ScaleType; label: string }[] = [
+  { value: 'major', label: 'Major' },
+  { value: 'natural_minor', label: 'Minor' },
+  { value: 'dorian', label: 'Dorian' },
+  { value: 'mixolydian', label: 'Mixolyd.' },
+  { value: 'minor_pentatonic', label: 'Min Pent' },
+  { value: 'major_pentatonic', label: 'Maj Pent' },
+];
+
+/** What kind of content the student is browsing — the library bucket (mirrors the admin
+ *  PathKind). 'scale' shows "Auto" (generated) + authored scale runs; 'path' has no box
+ *  position. */
+type ExerciseKind = 'scale' | 'pattern' | 'path';
+
+const KIND_TABS: { value: ExerciseKind; label: string }[] = [
+  { value: 'scale', label: 'Runs' },
+  { value: 'pattern', label: 'Patterns' },
+  { value: 'path', label: 'Paths' },
+];
+
+/** The minimal shape we read out of an exercise's opaque payload (the admin's PathsByKey).
+ *  Kept local so the tool doesn't depend on the admin page's types. */
+interface PathsByKeyLite {
+  name?: string;
+  pathKind?: ExerciseKind;
+  variantGroup?: string;
+  variantLabel?: string;
+  stringCount?: number;
+  byKey?: Record<
+    string,
+    { ascending?: unknown[]; descending?: unknown[] | null } | undefined
+  >;
+  /** Admin-set defaults the gym dials in when this exercise loads (see PathsByKey). */
+  defaultKey?: string;
+  defaultTempo?: number;
+}
+
+export interface ScalesToolProps {
+  /** The backing groove (stems/bpm/key). Drives the transport + the shared clock. */
+  backingConfig: GrooveCardBlockConfig;
+  /** The player's bass config (string count + neck length). */
+  stringCount?: StringCount;
+  maxFrets?: number;
+  /** Resume the prewarmed AudioContext inside the play gesture (Safari). */
+  onBeforePlay?: () => Promise<void> | void;
+}
+
+export function ScalesTool({
+  backingConfig,
+  stringCount = 4,
+  maxFrets = 14,
+  onBeforePlay,
+}: ScalesToolProps) {
+  const [scaleType, setScaleType] = React.useState<ScaleType>('major');
+  const [view, setView] = React.useState<ScaleView>(1); // box position 1, or 'whole'
+  // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
+  const [bpm, setBpm] = React.useState(70);
+  const [masterVolume, setMasterVolume] = React.useState(0.8);
+
+  // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
+  // which fingering VARIANT within the group. groupIdx === -1 = "Auto" (generated box scale).
+  const [kind, setKind] = React.useState<ExerciseKind>('scale');
+  const [groupIdx, setGroupIdx] = React.useState(-1); // -1 = Auto
+  const [variantIdx, setVariantIdx] = React.useState(0); // fingering within the group
+
+  // The KEY wheel is a continuous chromatic dial: a signed step counter that the wheel
+  // advances ±1 per spin (the fretboard root + the played notes both derive from it,
+  // both mod-12). No engine transpose anymore — we GENERATE the notes at the right pitch.
+  const [keyStep, setKeyStep] = React.useState(0);
+
+  // The scale ROOT follows the KEY wheel (the `< E >` control) — no separate root picker.
+  const root = rootFromKey(backingConfig.originalKey, keyStep);
+
+  // The current key NAME, flat-spelled. NOTE: spellPitchClass returns the pretty UNICODE
+  // accidental (G♭, A♭ via U+266D) for the roller display, but the admin's `byKey` is keyed
+  // by ASCII PathKeys (Gb, Ab). `asciiKey` converts ♭/♯ → b/# so the authored lookup hits.
+  const keyBasePc = parsePitchClass(backingConfig.originalKey) ?? 0;
+  const keyName = React.useCallback(
+    (s: number) => spellPitchClass(keyBasePc + s, true),
+    [keyBasePc],
+  );
+  const currentKeyName = keyName(keyStep);
+  const currentKeyAscii = currentKeyName.replace('♭', 'b').replace('♯', '#');
+
+  // ── The exercise LIBRARY: authored scale exercises for the gym Scales tool. Grouped by
+  //    scale type + kind below; "Auto" (generated box scale) is always the first option. ──
+  const { data: library = [] } = useGymExerciseLibrary('scales');
+
+  // Authored exercises for the CURRENT scale type + kind tab, AND fingered for the player's
+  // own neck. An exercise is fingered for ONE string count (a 5-string Major Scale doesn't
+  // fit a 4-string player), so only show those matching the player's `stringCount`.
+  const exercisesForTab = React.useMemo(
+    () =>
+      library
+        .filter((ex) => (ex.scaleType ?? null) === scaleType)
+        .filter((ex) => {
+          const p = ex.payload as PathsByKeyLite | null;
+          return (
+            (p?.pathKind ?? 'path') === kind &&
+            (p?.stringCount ?? 4) === stringCount
+          );
+        }),
+    [library, scaleType, kind, stringCount],
+  );
+
+  // GROUP the tab's exercises by their variantGroup (the exercise identity). Exercises with
+  // no group stand alone (keyed by their own name). Each group → an ordered list of its
+  // fingering variants. The Exercise roller picks a GROUP; the Variant roller picks within it.
+  const exerciseGroups = React.useMemo(() => {
+    const order: string[] = [];
+    const byGroup = new Map<
+      string,
+      { label: string; variants: typeof exercisesForTab }
+    >();
+    for (const ex of exercisesForTab) {
+      const p = ex.payload as PathsByKeyLite | null;
+      const group = p?.variantGroup?.trim() || p?.name?.trim() || 'Exercise';
+      if (!byGroup.has(group)) {
+        byGroup.set(group, { label: group, variants: [] });
+        order.push(group);
+      }
+      byGroup.get(group)!.variants.push(ex);
+    }
+    return order.map((g) => byGroup.get(g)!);
+  }, [exercisesForTab]);
+
+  // The selected group + the selected fingering variant within it (null = Auto / generated).
+  const selectedGroup =
+    groupIdx >= 0 ? (exerciseGroups[groupIdx] ?? null) : null;
+  const selectedExercise = selectedGroup
+    ? (selectedGroup.variants[
+        Math.min(variantIdx, selectedGroup.variants.length - 1)
+      ] ?? null)
+    : null;
+  const usingAuthored = selectedExercise !== null;
+
+  // ── The play SEQUENCE: either the GENERATED box scale (Auto) or the chosen AUTHORED
+  //    exercise. Authored exercises are hand-fingered PER KEY, so we read the events for
+  //    the exact current key (no transpose). If that key wasn't authored, fall back to the
+  //    generated scale so the tool is never silent. Drone follows the key either way. ──
+  const { path, loopBeats, droneSymbol } = React.useMemo(() => {
+    const droneSymbol = droneChordSymbol(root, scaleType);
+
+    if (selectedExercise) {
+      const payload = selectedExercise.payload as PathsByKeyLite | null;
+      const events = payload?.byKey?.[currentKeyAscii]?.ascending ?? [];
+      if (events.length > 0) {
+        const exStringCount = (payload?.stringCount ??
+          stringCount) as StringCount;
+        const p = authoredPathToPlayable(events, {
+          maxFrets,
+          rootPc: root,
+          stringCount: exStringCount,
+        });
+        return { path: p, loopBeats: authoredPathBeats(events), droneSymbol };
+      }
+      // selected exercise has nothing authored for this key → fall through to Auto.
+    }
+
+    // Auto: generate the box (or whole-neck) scale at the chosen key/position.
+    const fretboard = { stringCount, maxFrets };
+    const universe = buildNoteUniverse(fretboard, root, scaleType);
+    const notes =
+      view === 'whole'
+        ? universe
+        : selectBox(universe, fretboard, root, scaleType, view);
+    const p = buildScalePath(notes);
+    return { path: p, loopBeats: scalePathBeats(p), droneSymbol };
+  }, [
+    selectedExercise,
+    currentKeyAscii,
+    root,
+    scaleType,
+    stringCount,
+    maxFrets,
+    view,
+  ]);
+
+  // ── APPLY THE EXERCISE'S ADMIN DEFAULTS ON LOAD — when a new authored exercise is selected,
+  //    dial in its default KEY and default TEMPO (if the admin set them). Keyed on the exercise id
+  //    so it fires once per load, not on every re-render (and never while playing/tuning by hand).
+  //    defaultKey is an ASCII PathKey; convert to a keyStep offset from the backing key's pc.
+  const selectedExerciseId = selectedExercise?.id ?? null;
+  React.useEffect(() => {
+    if (!selectedExercise) return;
+    const payload = selectedExercise.payload as PathsByKeyLite | null;
+    if (!payload) return;
+
+    if (payload.defaultKey) {
+      const targetPc = parsePitchClass(payload.defaultKey);
+      if (targetPc != null) {
+        setKeyStep(((targetPc - keyBasePc) % 12 + 12) % 12);
+      }
+    }
+    if (typeof payload.defaultTempo === 'number') {
+      setBpm(Math.max(MIN_BPM, Math.min(MAX_BPM, payload.defaultTempo)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedExerciseId, keyBasePc]);
+
+  const sequencer = useScaleSequencer({
+    path,
+    loopBeats,
+    bpm,
+    droneSymbol,
+    onBeforePlay,
+  });
+
+  // LISTENING (stubbed): every play is a take the platform hears. No-op until the
+  // bass-coach engine is wired; the seam exists now so the tool is listening-ready.
+  useEquipmentListening({
+    station: 'scales',
+    audioContext: sequencer.audioContext,
+    isPlaying: sequencer.isPlaying,
+    loopStartAudioTime: null,
+  });
+
+  const onPlayPause = React.useCallback(() => {
+    if (sequencer.isPlaying) sequencer.stop();
+    else void sequencer.play();
+  }, [sequencer]);
+
+  // Synthesize the CountdownState the controls expect from the sequencer's count-in.
+  const countdownState = React.useMemo(
+    () => ({
+      isCountingDown: sequencer.countInBeat > 0,
+      currentBeat: sequencer.countInBeat,
+      totalBeats: 4,
+    }),
+    [sequencer.countInBeat],
+  );
+
+  // ── ROLLER specs: each control's prev/current/next labels + up/down handlers.
+  //    UP selects the value shown ABOVE (prev), DOWN the value BELOW (next). ──
+
+  // SCALE TYPE — cycles through the scale types (wraps). Changing scale resets the box
+  // position AND the exercise selection (the old exercise belongs to the old scale).
+  const scaleIdx = SCALE_TYPES.findIndex((s) => s.value === scaleType);
+  const scaleAt = (d: number) =>
+    SCALE_TYPES[(scaleIdx + d + SCALE_TYPES.length) % SCALE_TYPES.length]!;
+  const setScaleBy = (d: number) => {
+    setScaleType(scaleAt(d).value);
+    setView(1);
+    setGroupIdx(-1);
+    setVariantIdx(0);
+  };
+  const scaleRoller = {
+    prev2Label: scaleAt(-2).label,
+    prevLabel: scaleAt(-1).label,
+    currentLabel: scaleAt(0).label,
+    nextLabel: scaleAt(1).label,
+    next2Label: scaleAt(2).label,
+    onUp: () => setScaleBy(-1),
+    onDown: () => setScaleBy(1),
+  };
+
+  // A bounded (non-wrapping) roller spec from a label list + a current slot + a clamped
+  // setter. Blank neighbors past the ends; disabled when ≤1 option (so it can't empty-spin).
+  const boundedRoller = (
+    labels: string[],
+    slot: number,
+    setSlot: (s: number) => void,
+  ) => {
+    const at = (s: number) => (s >= 0 && s < labels.length ? labels[s]! : '');
+    const go = (s: number) => {
+      if (s >= 0 && s < labels.length) setSlot(s);
+    };
+    return {
+      prev2Label: at(slot - 2),
+      prevLabel: at(slot - 1),
+      currentLabel: at(slot) || '—',
+      nextLabel: at(slot + 1),
+      next2Label: at(slot + 2),
+      onUp: () => go(slot - 1),
+      onDown: () => go(slot + 1),
+      disabled: labels.length <= 1,
+    };
+  };
+
+  // EXERCISE roller — picks the GROUP (the exercise identity). "Auto" (generated box scale)
+  // is PREPENDED only for the 'scale' kind. Selecting a group resets the variant to the first.
+  const autoOption = kind === 'scale';
+  const groupLabels = [
+    ...(autoOption ? ['Auto'] : []),
+    ...exerciseGroups.map((g) => g.label),
+  ];
+  const groupSlot = Math.min(
+    Math.max(autoOption ? groupIdx + 1 : groupIdx, 0),
+    Math.max(groupLabels.length - 1, 0),
+  );
+  const exerciseRoller = boundedRoller(groupLabels, groupSlot, (slot) => {
+    setGroupIdx(autoOption ? slot - 1 : slot);
+    setVariantIdx(0);
+  });
+
+  // VARIANT roller — picks the fingering WITHIN the selected group (v1/v2/…). Only shown
+  // when an authored group with ≥1 variant is selected; for Auto it's hidden.
+  const variantLabels = selectedGroup
+    ? selectedGroup.variants.map((ex, i) => {
+        const p = ex.payload as PathsByKeyLite | null;
+        return p?.variantLabel?.trim() || `v${i + 1}`;
+      })
+    : [];
+  const variantSlot = Math.min(
+    Math.max(variantIdx, 0),
+    Math.max(variantLabels.length - 1, 0),
+  );
+  const variantRoller = boundedRoller(
+    variantLabels,
+    variantSlot,
+    setVariantIdx,
+  );
+  // Show the variant roller only when the group has more than one fingering to choose.
+  const showVariant = !!selectedGroup && variantLabels.length > 1;
+
+  // KIND tabs — Runs / Patterns / Paths. Switching kind resets the selection (Auto for
+  // 'scale', first group for the others) + the variant.
+  const kindTabs = {
+    tabs: KIND_TABS,
+    active: kind,
+    onSelect: (k: string) => {
+      setKind(k as ExerciseKind);
+      setGroupIdx(k === 'scale' ? -1 : 0);
+      setVariantIdx(0);
+    },
+  };
+
+  // POSITION — 1..N then 'All' (wraps). Label "Pos N" / "All".
+  const nPositions = positionCount(scaleType);
+  const viewIdx = view === 'whole' ? nPositions : (view as number) - 1; // 0..N
+  const viewSlots = nPositions + 1;
+  const viewToLabel = (idx: number) =>
+    idx === nPositions ? 'All' : `Pos ${idx + 1}`;
+  const viewToValue = (idx: number): ScaleView =>
+    idx === nPositions ? 'whole' : idx + 1;
+  const setViewBy = (d: number) =>
+    setView(viewToValue((viewIdx + d + viewSlots) % viewSlots));
+  const positionRoller = {
+    prev2Label: viewToLabel((viewIdx - 2 + viewSlots * 2) % viewSlots),
+    prevLabel: viewToLabel((viewIdx - 1 + viewSlots) % viewSlots),
+    currentLabel: viewToLabel(viewIdx),
+    nextLabel: viewToLabel((viewIdx + 1) % viewSlots),
+    next2Label: viewToLabel((viewIdx + 2) % viewSlots),
+    onUp: () => setViewBy(-1),
+    onDown: () => setViewBy(1),
+  };
+
+  // KEY — the wheel advances `keyStep` ±1 per spin (UP raises, sits above). It cycles
+  // through all 12 pitch classes once per octave (no A#-twice). Spelled in FLATS
+  // (Db/Eb/Gb/Ab/Bb); the root + the generated notes both follow it. `keyName` is defined
+  // above the play memo (it also indexes the authored byKey).
+  const stepKey = (d: number) => setKeyStep((k) => k + d);
+  const keyRoller = {
+    prev2Label: keyName(keyStep + 2),
+    prevLabel: keyName(keyStep + 1),
+    currentLabel: keyName(keyStep),
+    nextLabel: keyName(keyStep - 1),
+    next2Label: keyName(keyStep - 2),
+    onUp: () => stepKey(1),
+    onDown: () => stepKey(-1),
+  };
+
+  // TEMPO — the sequencer's BPM ±1 (clamped). UP faster (sits above), DOWN slower.
+  const clampBpm = (b: number) => Math.max(MIN_BPM, Math.min(MAX_BPM, b));
+  const tempoRoller = {
+    prev2Label: `${clampBpm(bpm + 2)}`,
+    prevLabel: `${clampBpm(bpm + 1)}`,
+    currentLabel: `${bpm}`,
+    nextLabel: `${clampBpm(bpm - 1)}`,
+    next2Label: `${clampBpm(bpm - 2)}`,
+    onUp: () => setBpm((b) => clampBpm(b + 1)),
+    onDown: () => setBpm((b) => clampBpm(b - 1)),
+  };
+
+  // POSITION applies only to the GENERATED box scale (Auto). An authored exercise carries
+  // its own fingering, and a full-neck PATH has no box position — so hide the roller for
+  // any authored selection (and always for the 'path' kind).
+  const showPosition = !usingAuthored && kind !== 'path';
+
+  // The fretboard lights the AUTHORED path's exact notes (via litNotes) when an authored
+  // exercise is selected; for Auto it falls back to generating the scale/box itself. The
+  // play `path` already carries the resolved (string, fret) of each note.
+  const litNotes = React.useMemo(
+    () =>
+      usingAuthored
+        ? path.map((n) => ({ string: n.string, fret: n.fret }))
+        : undefined,
+    [usingAuthored, path],
+  );
+
+  // The PLAYHEAD sequence — the notes being played, in order, with their beat positions
+  // (from the play `path`, which is the source of truth for BOTH Auto + authored). The
+  // canvas glides the orange sphere along this using the sequencer's real clock.
+  const playheadNotes = React.useMemo(
+    () =>
+      path.map((n) => ({
+        string: n.string,
+        fret: n.fret,
+        startBeat: n.startBeat,
+      })),
+    [path],
+  );
+
+  return (
+    <GrooveCardShell
+      title="Scales"
+      subtitle="Pick a scale, set your tempo, follow the lights."
+      caption="Press play — the scale lights up in time. Loop it, change key, work the box."
+      // Transparent CARD so the page's leather texture shows through behind the
+      // floating fretboard. The controls bar keeps its own bg-black/40 (the solid
+      // "grip"), so it stays visible against the texture. `floating` drops the
+      // border + shadow so there's no outline rectangle over the leather.
+      bg="transparent"
+      floating
+      // The station floats by itself — drop the "GROOVE CARD / Scales —…" title header.
+      hideTitle
+      isPlaying={sequencer.isPlaying}
+      masterVolume={masterVolume}
+      onMasterVolumeChange={setMasterVolume}
+      // The fretboard replaces the waveform as the main window.
+      waveform={
+        <ScaleFretboardWindow
+          root={root}
+          scaleType={scaleType}
+          stringCount={stringCount}
+          maxFrets={maxFrets}
+          isPlaying={sequencer.isPlaying}
+          tempo={bpm}
+          view={view}
+          // Authored exercise → light its exact notes; Auto → generate the scale/box.
+          litNotes={litNotes}
+          // The real playback clock for the gliding playhead (the gym doesn't run the
+          // AtomicPlaybackClock the canvas's own active-note system reads).
+          getPlaybackBeat={sequencer.getPlaybackBeat}
+          // The played note sequence (string/fret + startBeat) the sphere glides along.
+          playheadNotes={playheadNotes}
+          // The loop length in beats — lets the sphere glide ACROSS the loop seam (last note
+          // → first note of the next cycle) instead of snapping.
+          loopBeats={loopBeats}
+        />
+      }
+      // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No
+      // footer panel needed.
+      controls={
+        <ScalesControls
+          isPlaying={sequencer.isPlaying}
+          isReady={sequencer.isReady}
+          countdownState={countdownState}
+          scale={scaleRoller}
+          exercise={exerciseRoller}
+          variant={variantRoller}
+          showVariant={showVariant}
+          kindTabs={kindTabs}
+          position={positionRoller}
+          showPosition={showPosition}
+          keyRoller={keyRoller}
+          tempo={tempoRoller}
+          onPlayPause={onPlayPause}
+        />
+      }
+    />
+  );
+}

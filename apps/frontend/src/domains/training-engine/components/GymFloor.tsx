@@ -11,12 +11,13 @@
  * dark surface (dual soft shadows), a recessed icon disc, a per-station LED
  * color, and a quota track. Each station's color is the /app skill-tag palette.
  *
- * ⚠️ PLACEHOLDER CONTENT. These 8 stations + their progress numbers are STATIC
- * mock data — the equipment widgets don't exist yet. This is the floor's shape;
- * when the stations become real, swap STATIONS for live data (each maps to a
- * topic/equipment route). Nothing here is wired to the engine.
+ * ⚠️ MOSTLY PLACEHOLDER. The 8 stations + their progress numbers are STATIC mock
+ * data; the equipment tools mostly don't exist yet. The FIRST real one is Scales
+ * (route '/gym/scales'); stations with a `route` navigate to their tool and
+ * hover-prefetch it (route chunk + audio engine) so the click feels instant.
  */
 
+import { useRef } from 'react';
 import {
   Network,
   AudioWaveform,
@@ -29,6 +30,9 @@ import {
   Lock,
   type LucideIcon,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { ensureAudioReady } from '@/domains/playback/services/ensureAudioReady';
 
 interface Station {
   key: string;
@@ -42,6 +46,9 @@ interface Station {
   quota: number;
   /** Locked stations route through another room (e.g. College). */
   lockedBy?: string;
+  /** Clean URL the station's tool opens at. Absent = tool not built yet (the card
+   *  renders but does nothing on click — a coming-soon placeholder). */
+  route?: string;
 }
 
 // PLACEHOLDER equipment — the floor's shape, not live data (see file header).
@@ -63,6 +70,7 @@ const STATIONS: Station[] = [
     color: '#5B8DEF',
     logged: 21,
     quota: 25,
+    route: '/gym/scales', // the first built equipment tool
   },
   {
     key: 'rhythm',
@@ -127,9 +135,33 @@ function StationCard({ s }: { s: Station }) {
   const pct = s.quota > 0 ? Math.round((s.logged / s.quota) * 100) : 0;
   const locked = !!s.lockedBy;
 
+  const { navigateWithTransition } = useViewTransitionRouter();
+  const router = useRouter();
+  const interactive = !locked && !!s.route;
+
+  // Open the station's tool. Only stations with a built route are interactive.
+  const handleClick = () => {
+    if (interactive) navigateWithTransition(s.route!);
+  };
+
+  // HOVER-PREFETCH: warm both the route chunk AND the audio engine the moment the
+  // user hovers, so landing on the tool is instant and the FLOOR is never blocked.
+  // ensureAudioReady is idempotent + creates the AudioContext SUSPENDED (no sound,
+  // no gesture violation), so this is safe speculation — fires once per hover.
+  const prefetchedRef = useRef(false);
+  const handlePrefetch = () => {
+    if (!interactive || prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    router.prefetch(s.route!);
+    void ensureAudioReady();
+  };
+
   return (
     <button
       type="button"
+      onClick={handleClick}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
       // The neumorphic body: a soft gradient surface with a dark recess shadow
       // (lower-right) + a light catch-light (upper-left). The group lets the LED
       // glow + lift fire on hover.
@@ -139,6 +171,7 @@ function StationCard({ s }: { s: Station }) {
           'linear-gradient(155deg, #201d25 0%, #17151b 46%, #131117 100%)',
         boxShadow:
           '9px 9px 22px #050406, -7px -7px 18px #221f29, inset 0 1px 0 rgba(255,255,255,0.03)',
+        cursor: interactive ? 'pointer' : 'default',
       }}
     >
       {/* LED-colored radial glow, lit on hover */}
@@ -156,8 +189,7 @@ function StationCard({ s }: { s: Station }) {
           className="grid size-[50px] place-items-center rounded-[15px]"
           style={{
             background: '#151318',
-            boxShadow:
-              'inset 3px 3px 7px #050406, inset -3px -3px 7px #221f29',
+            boxShadow: 'inset 3px 3px 7px #050406, inset -3px -3px 7px #221f29',
             color: locked ? '#635d57' : s.color,
           }}
         >
@@ -237,8 +269,8 @@ export function GymFloor() {
           <em className="not-italic text-[#E8A44A]">Train what you want.</em>
         </h1>
         <p className="mt-3.5 max-w-[540px] text-[15.5px] leading-relaxed text-[#9A938A]">
-          Your daily rep is the coached path — but the whole gym is open. Walk up
-          to any station and put in the work.
+          Your daily rep is the coached path — but the whole gym is open. Walk
+          up to any station and put in the work.
         </p>
       </header>
 

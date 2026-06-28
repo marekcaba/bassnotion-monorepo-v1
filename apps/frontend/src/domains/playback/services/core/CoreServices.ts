@@ -348,18 +348,18 @@ export class CoreServices {
 
         // Inject metronome buffers for countdown
         // Note: Samples are cached as raw ArrayBuffers, need to decode first
-        let accentBuffer = sampleCache.getCachedBuffer('metronome-high');
-        let clickBuffer = sampleCache.getCachedBuffer('metronome-low');
+        let accentBuffer = sampleCache.getCachedBuffer('metronome-high-v2');
+        let clickBuffer = sampleCache.getCachedBuffer('metronome-low-v2');
 
         // Decode from raw if not already decoded
         if (!accentBuffer) {
           const rawAccent =
-            await sampleCache.getCachedRawBuffer('metronome-high');
+            await sampleCache.getCachedRawBuffer('metronome-high-v2');
           if (rawAccent) {
             accentBuffer = await audioContext.decodeAudioData(
               rawAccent.slice(0),
             );
-            await sampleCache.cacheBuffer('metronome-high', accentBuffer, {
+            await sampleCache.cacheBuffer('metronome-high-v2', accentBuffer, {
               isContextCompatible: true,
             });
           }
@@ -367,10 +367,10 @@ export class CoreServices {
 
         if (!clickBuffer) {
           const rawClick =
-            await sampleCache.getCachedRawBuffer('metronome-low');
+            await sampleCache.getCachedRawBuffer('metronome-low-v2');
           if (rawClick) {
             clickBuffer = await audioContext.decodeAudioData(rawClick.slice(0));
-            await sampleCache.cacheBuffer('metronome-low', clickBuffer, {
+            await sampleCache.cacheBuffer('metronome-low-v2', clickBuffer, {
               isContextCompatible: true,
             });
           }
@@ -917,8 +917,8 @@ export class CoreServices {
       voiceCueThree,
       voiceCueFour,
     ] = await Promise.all([
-      decodeIfNeeded('metronome-high'),
-      decodeIfNeeded('metronome-low'),
+      decodeIfNeeded('metronome-high-v2'),
+      decodeIfNeeded('metronome-low-v2'),
       decodeIfNeeded('drum-kick'),
       decodeIfNeeded('drum-snare'),
       decodeIfNeeded('drum-hihat'),

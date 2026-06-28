@@ -60,6 +60,14 @@ interface GrooveCardShellProps {
    *  passes the page's own `#100E0D` so the card blends into the
    *  surrounding "Why It Works" column. */
   bg?: string;
+  /** When true, drop the card's border + shadow so the tool FLOATS on the page
+   *  (used by the gym equipment tools with a transparent `bg`, so the page texture
+   *  shows through cleanly). Defaults false → the normal framed groove card. */
+  floating?: boolean;
+  /** When true, omit the title block (the "GROOVE CARD" eyebrow + title/subtitle).
+   *  The right-side header controls (window toggle, volume) stay. Used by the gym
+   *  equipment tools where the station already has its own heading. Default false. */
+  hideTitle?: boolean;
 }
 
 export function GrooveCardShell({
@@ -80,6 +88,8 @@ export function GrooveCardShell({
   meta,
   headerExtra,
   bg,
+  floating = false,
+  hideTitle = false,
 }: GrooveCardShellProps) {
   // The groove card is driven by keyboard SHORTCUTS (letter keys via
   // useGrooveCardKeyboard), NOT by Tab-focusing its controls. Tabbing onto a
@@ -137,7 +147,13 @@ export function GrooveCardShell({
     <section
       ref={rootRef}
       data-block-type="groove-card"
-      className="relative rounded-xl border border-white/5 text-white shadow-lg overflow-hidden"
+      className={
+        floating
+          ? // No overflow-hidden when floating: equipment tools let the fretboard
+            // canvas BLEED past the card edges to show more frets.
+            'relative rounded-xl text-white'
+          : 'relative rounded-xl border border-white/5 text-white shadow-lg overflow-hidden'
+      }
       // Default card background is the warm near-black the waitlist demo
       // established (#100E0D), so the in-app player and the waitlist surface
       // render the Groove Card identically. A supplied `bg` prop still
@@ -148,21 +164,24 @@ export function GrooveCardShell({
       {/* Header */}
       <header className="flex items-center justify-between gap-8 px-4 pt-4">
         {/* Title block — capped so it never squeezes the chord ribbon to
-            nothing; it truncates instead. */}
-        <div className="min-w-0 max-w-[45%] shrink-0">
-          <span className="text-[10px] tracking-[0.2em] uppercase text-white/40">
-            {isPlaying ? 'Now playing' : 'Groove card'}
-          </span>
-          <h3 className="text-base font-semibold text-white truncate">
-            {title}
-            {subtitle && (
-              <span className="text-white/50 font-normal"> — {subtitle}</span>
+            nothing; it truncates instead. Omitted when hideTitle (equipment tools
+            carry their own heading), leaving the header controls right-aligned. */}
+        {!hideTitle && (
+          <div className="min-w-0 max-w-[45%] shrink-0">
+            <span className="text-[10px] tracking-[0.2em] uppercase text-white/40">
+              {isPlaying ? 'Now playing' : 'Groove card'}
+            </span>
+            <h3 className="text-base font-semibold text-white truncate">
+              {title}
+              {subtitle && (
+                <span className="text-white/50 font-normal"> — {subtitle}</span>
+              )}
+            </h3>
+            {meta && (
+              <p className="mt-0.5 text-xs text-white/40 truncate">{meta}</p>
             )}
-          </h3>
-          {meta && (
-            <p className="mt-0.5 text-xs text-white/40 truncate">{meta}</p>
-          )}
-        </div>
+          </div>
+        )}
         {/* Chord ribbon fills the space between the title and the controls,
             with the now-line centered. Symmetric edge fades dissolve the chords
             on BOTH sides (played chords exiting left, upcoming approaching from
