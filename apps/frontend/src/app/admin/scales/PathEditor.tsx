@@ -107,6 +107,12 @@ export interface PathsByKey {
   byKey: Record<PathKey, KeyPath>;
   /** Author-saved pattern presets (named cell/stride), persisted with the exercise. */
   customPresets?: SavedPreset[];
+  /** The KEY the gym dials in when this exercise loads (one of the authored PathKeys). Lets the
+   *  admin start the student in the most natural key for this fingering. Unset → leave the gym's
+   *  current key (the backing key). */
+  defaultKey?: PathKey;
+  /** The TEMPO (BPM) the gym dials in when this exercise loads. Unset → leave the current tempo. */
+  defaultTempo?: number;
 }
 
 export function emptyPathsByKey(stringCount: 4 | 5 | 6 = 4): PathsByKey {
@@ -457,6 +463,63 @@ export function PathEditor({
               onChange({ ...paths, variantLabel: e.target.value })
             }
             placeholder="e.g. v1 / Open strings / Pinky"
+            className="w-full rounded border border-gray-300 px-2 py-1.5"
+          />
+        </label>
+      </div>
+
+      {/* DEFAULTS the gym dials in when this exercise loads — the natural starting key + tempo
+          for this fingering. Default key picks one of the 12 PathKeys; leave "— none —" to keep
+          the gym's current key. Tempo is a plain BPM (blank = keep current). */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Default key{' '}
+            <span className="font-normal normal-case text-gray-300">
+              (dialed in on load)
+            </span>
+          </span>
+          <select
+            value={paths.defaultKey ?? ''}
+            onChange={(e) =>
+              onChange({
+                ...paths,
+                defaultKey: e.target.value
+                  ? (e.target.value as PathKey)
+                  : undefined,
+              })
+            }
+            className="w-full rounded border border-gray-300 px-2 py-1.5"
+          >
+            <option value="">— none (keep current) —</option>
+            {KEYS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Default tempo{' '}
+            <span className="font-normal normal-case text-gray-300">
+              (BPM, dialed in on load)
+            </span>
+          </span>
+          <input
+            type="number"
+            min={40}
+            max={220}
+            value={paths.defaultTempo ?? ''}
+            onChange={(e) =>
+              onChange({
+                ...paths,
+                defaultTempo: e.target.value
+                  ? Number(e.target.value)
+                  : undefined,
+              })
+            }
+            placeholder="e.g. 90 (blank = keep current)"
             className="w-full rounded border border-gray-300 px-2 py-1.5"
           />
         </label>

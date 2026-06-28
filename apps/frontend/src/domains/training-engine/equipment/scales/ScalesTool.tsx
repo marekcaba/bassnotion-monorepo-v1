@@ -83,6 +83,9 @@ interface PathsByKeyLite {
     string,
     { ascending?: unknown[]; descending?: unknown[] | null } | undefined
   >;
+  /** Admin-set defaults the gym dials in when this exercise loads (see PathsByKey). */
+  defaultKey?: string;
+  defaultTempo?: number;
 }
 
 export interface ScalesToolProps {
@@ -225,6 +228,28 @@ export function ScalesTool({
     maxFrets,
     view,
   ]);
+
+  // ── APPLY THE EXERCISE'S ADMIN DEFAULTS ON LOAD — when a new authored exercise is selected,
+  //    dial in its default KEY and default TEMPO (if the admin set them). Keyed on the exercise id
+  //    so it fires once per load, not on every re-render (and never while playing/tuning by hand).
+  //    defaultKey is an ASCII PathKey; convert to a keyStep offset from the backing key's pc.
+  const selectedExerciseId = selectedExercise?.id ?? null;
+  React.useEffect(() => {
+    if (!selectedExercise) return;
+    const payload = selectedExercise.payload as PathsByKeyLite | null;
+    if (!payload) return;
+
+    if (payload.defaultKey) {
+      const targetPc = parsePitchClass(payload.defaultKey);
+      if (targetPc != null) {
+        setKeyStep(((targetPc - keyBasePc) % 12 + 12) % 12);
+      }
+    }
+    if (typeof payload.defaultTempo === 'number') {
+      setBpm(Math.max(MIN_BPM, Math.min(MAX_BPM, payload.defaultTempo)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedExerciseId, keyBasePc]);
 
   const sequencer = useScaleSequencer({
     path,
