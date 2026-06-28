@@ -651,6 +651,8 @@ export interface Ring3DOverlayCanvasProps {
    *  along it on its OWN clock (the gym doesn't run the AtomicPlaybackClock). */
   getPlaybackBeat?: () => number | null;
   playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>;
+  /** Loop length in beats — for gliding the playhead across the loop seam (last → first). */
+  loopBeats?: number;
   /** Playhead sphere appearance + animation config (size/color/anim/bezier). */
   playheadConfig?: PlayheadConfig;
   /** Number of countdown beats (to exclude from rings) */
@@ -791,6 +793,7 @@ interface DebugVisualizationProps {
   rootPositions?: Array<{ string: number; fret: number }>; // roots → darker green
   getPlaybackBeat?: () => number | null; // gym playhead clock (beats)
   playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>; // glide path
+  loopBeats?: number; // loop length (beats) for seam glide
   playheadConfig?: PlayheadConfig; // sphere appearance + animation
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
@@ -888,6 +891,7 @@ function DebugVisualization({
   rootPositions,
   getPlaybackBeat,
   playheadNotes,
+  loopBeats,
   playheadConfig = DEFAULT_PLAYHEAD_CONFIG,
   countdownBeats = 4,
   activeRingZOffset = -1,
@@ -2857,7 +2861,12 @@ function DebugVisualization({
       else break;
     }
     const cur = playheadNotes[idx]!;
-    const next = playheadNotes[idx + 1] ?? null; // null on the last note → just hold
+    // On the LAST note, the next note WRAPS to the first (the loop seam) so the sphere glides
+    // back to the start instead of snapping. Its slot then runs to the loop end (loopBeats).
+    const onLast = idx === playheadNotes.length - 1;
+    const next = onLast
+      ? (playheadNotes[0] ?? null)
+      : (playheadNotes[idx + 1] ?? null);
     const fromPos = dotPos(cur);
     if (!fromPos) {
       sphere.visible = false;
@@ -2866,8 +2875,13 @@ function DebugVisualization({
     const toPos = next ? dotPos(next) : null;
 
     // Progress through the CURRENT note's slot [0..1], then let the config's anim type +
-    // bezier shape the glide t (current→next) + the vertical hop.
-    const slotEnd = next ? next.startBeat : cur.startBeat + 0.5;
+    // bezier shape the glide t (current→next) + the vertical hop. For the last note the slot
+    // ends at the loop length; otherwise at the next note's startBeat.
+    const slotEnd = onLast
+      ? loopBeats && loopBeats > cur.startBeat
+        ? loopBeats
+        : cur.startBeat + 0.5
+      : (next?.startBeat ?? cur.startBeat + 0.5);
     const slot = Math.max(slotEnd - cur.startBeat, 1e-3);
     const noteProgress = Math.min(Math.max((beat - cur.startBeat) / slot, 0), 1);
     const { t, hop } = playheadGlide(noteProgress, ph);
@@ -2954,10 +2968,12 @@ function DebugVisualization({
         Math.max(Math.round(ph.runwayCount * tempoScale), 1),
         MAX_RUNWAY,
       );
-      // Chain of positions: the active dot, then the next `count` notes' dots.
+      // Chain of positions: the active dot, then the next `count` notes' dots. WRAPS around
+      // the loop (idx+k mod length) so the runway keeps previewing into the next cycle's
+      // start notes instead of emptying out near the end.
       const chain: ({ x: number; y: number; z: number } | null)[] = [fromPos];
       for (let k = 1; k <= count; k++) {
-        const n = playheadNotes[idx + k];
+        const n = playheadNotes[(idx + k) % playheadNotes.length];
         chain.push(n ? dotPos(n) : null);
       }
       // GHOSTS — one per upcoming note (chain index 1..count). Shape: raised SPHERE or a
@@ -3831,6 +3847,7 @@ export function Ring3DOverlayCanvas({
   rootPositions, // gym Scales tool: root notes paint a darker green
   getPlaybackBeat, // gym Scales tool: live playhead clock (beats)
   playheadNotes, // gym Scales tool: the glide path (string/fret + startBeat)
+  loopBeats, // gym Scales tool: loop length (beats) for seam glide
   playheadConfig, // gym Scales tool: sphere appearance + animation config
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
@@ -4784,6 +4801,7 @@ export function Ring3DOverlayCanvas({
                       rootPositions={rootPositions}
                       getPlaybackBeat={getPlaybackBeat}
                       playheadNotes={playheadNotes}
+                      loopBeats={loopBeats}
                       playheadConfig={playheadConfig}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}

@@ -462,6 +462,9 @@ export function ScalesTool({
           getPlaybackBeat={sequencer.getPlaybackBeat}
           // The played note sequence (string/fret + startBeat) the sphere glides along.
           playheadNotes={playheadNotes}
+          // The loop length in beats — lets the sphere glide ACROSS the loop seam (last note
+          // → first note of the next cycle) instead of snapping.
+          loopBeats={loopBeats}
         />
       }
       // All controls live in the grip: Scale | Position | ▶ | Key | Tempo. No

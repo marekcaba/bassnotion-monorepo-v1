@@ -67,6 +67,8 @@ export interface ScaleFretboardWindowProps {
   /** The played note sequence (string/fret + startBeat) the orange playhead sphere glides
    *  along — in PLAY order, from the sequencer's `path`. */
   playheadNotes?: { string: number; fret: number; startBeat: number }[];
+  /** Loop length in beats — for gliding the sphere across the loop seam (last → first). */
+  loopBeats?: number;
 }
 
 export function ScaleFretboardWindow({
@@ -82,6 +84,7 @@ export function ScaleFretboardWindow({
   litNotes,
   getPlaybackBeat,
   playheadNotes,
+  loopBeats,
 }: ScaleFretboardWindowProps) {
   // Build the full note universe for the user's neck, then show either ONE box position
   // (a real fingering across the strings) or the WHOLE scale. Each note → one beat (the
@@ -396,6 +399,7 @@ export function ScaleFretboardWindow({
           // Gliding orange playhead: the sequencer's real clock + the played note sequence.
           getPlaybackBeat={getPlaybackBeat}
           playheadNotes={playheadNotes}
+          loopBeats={loopBeats}
           playheadConfig={playheadCfg}
         />
       </div>
