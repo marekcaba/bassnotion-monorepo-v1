@@ -93,6 +93,12 @@ import type { RingOverlayConfig } from './RingOverlayConfig.js';
 import { OVERLAY_LIGHTING_CONFIG } from './RingOverlayConfig.js';
 import { RingOverlayGroup } from './RingOverlayGroup.js';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import {
+  type PlayheadConfig,
+  DEFAULT_PLAYHEAD_CONFIG,
+  playheadGlide,
+  playheadPulse,
+} from '@/domains/training-engine/equipment/scales/playheadConfig';
 
 /**
  * Custom perspective camera for 3D ring overlay.
@@ -640,6 +646,8 @@ export interface Ring3DOverlayCanvasProps {
    *  along it on its OWN clock (the gym doesn't run the AtomicPlaybackClock). */
   getPlaybackBeat?: () => number | null;
   playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>;
+  /** Playhead sphere appearance + animation config (size/color/anim/bezier). */
+  playheadConfig?: PlayheadConfig;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -778,6 +786,7 @@ interface DebugVisualizationProps {
   rootPositions?: Array<{ string: number; fret: number }>; // roots → darker green
   getPlaybackBeat?: () => number | null; // gym playhead clock (beats)
   playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>; // glide path
+  playheadConfig?: PlayheadConfig; // sphere appearance + animation
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
   activeRingZOffset?: number; // Z offset above the dot (default 1)
@@ -874,6 +883,7 @@ function DebugVisualization({
   rootPositions,
   getPlaybackBeat,
   playheadNotes,
+  playheadConfig = DEFAULT_PLAYHEAD_CONFIG,
   countdownBeats = 4,
   activeRingZOffset = -1,
   activeRingRadius = 13,
@@ -1054,6 +1064,8 @@ function DebugVisualization({
   // dot center and glides center-to-center to the next note ("quick glide + hold"). Guitar
   // Hero-style. Only used in showAllNotes mode (the active ring is held there).
   const playheadSphereRef = useRef<THREE.Mesh>(null);
+  // Normalized playhead config (sphere appearance + animation), default-filled.
+  const ph = playheadConfig ?? DEFAULT_PLAYHEAD_CONFIG;
   // Track pulse animation time
   const pulseTimeRef = useRef(0);
   // Dynamic note label refs - shows note name on current and next notes
@@ -2762,12 +2774,22 @@ function DebugVisualization({
   // ── GYM PLAYHEAD SPHERE — its OWN useFrame, independent of the active-note one above ────
   // The gym doesn't run the AtomicPlaybackClock, so the block above early-returns on a null
   // clock. This drives the orange sphere from the SEQUENCER's beat (getPlaybackBeat) + the
-  // played note sequence (playheadNotes). "Quick glide + hold": sit on the active note for
-  // the first HOLD_FRAC of its slot, then a quick eased slide into the next dot. When not
-  // playing (beat null) it rests on the first note.
+  // played note sequence (playheadNotes), shaped by `ph` (PlayheadConfig): the anim type +
+  // bezier easing decide the in-between (see playheadGlide). When not playing (beat null) it
+  // rests on the first note. Appearance (radius/color/opacity/emissive) is applied live so
+  // the dev panel updates it without remounting.
   useFrame(() => {
     const sphere = playheadSphereRef.current;
     if (!sphere) return;
+
+    // Live appearance from the config (panel-tunable).
+    sphere.scale.setScalar(ph.radius);
+    const mat = sphere.material as THREE.MeshStandardMaterial;
+    mat.color.set(ph.color);
+    mat.emissive.set(ph.color);
+    mat.emissiveIntensity = ph.emissiveIntensity;
+    mat.opacity = ph.opacity;
+
     if (!showAllNotes || !playheadNotes || playheadNotes.length === 0) {
       sphere.visible = false;
       return;
@@ -2785,7 +2807,8 @@ function DebugVisualization({
     if (beat === null || beat < 0) {
       const pos = dotPos(playheadNotes[0]!);
       if (pos) {
-        sphere.position.set(pos.x, pos.y, pos.z + 3);
+        sphere.position.set(pos.x, pos.y, pos.z + ph.zOffset);
+        sphere.scale.setScalar(ph.radius);
         sphere.visible = true;
       } else {
         sphere.visible = false;
@@ -2808,27 +2831,21 @@ function DebugVisualization({
     }
     const toPos = next ? dotPos(next) : null;
 
-    // Progress through the CURRENT note's slot [0..1].
+    // Progress through the CURRENT note's slot [0..1], then let the config's anim type +
+    // bezier shape the glide t (current→next) + the vertical hop.
     const slotEnd = next ? next.startBeat : cur.startBeat + 0.5;
     const slot = Math.max(slotEnd - cur.startBeat, 1e-3);
     const noteProgress = Math.min(Math.max((beat - cur.startBeat) / slot, 0), 1);
-    // Hold for HOLD_FRAC, then glide over the remainder, eased.
-    const HOLD_FRAC = 0.7;
-    const glideRaw =
-      noteProgress <= HOLD_FRAC
-        ? 0
-        : (noteProgress - HOLD_FRAC) / (1 - HOLD_FRAC);
-    const t =
-      glideRaw < 0.5
-        ? 2 * glideRaw * glideRaw
-        : 1 - Math.pow(-2 * glideRaw + 2, 2) / 2;
+    const { t, hop } = playheadGlide(noteProgress, ph);
 
     const target = toPos ?? fromPos;
     sphere.position.set(
       fromPos.x + (target.x - fromPos.x) * t,
-      fromPos.y + (target.y - fromPos.y) * t,
-      fromPos.z + (target.z - fromPos.z) * t + 3,
+      fromPos.y + (target.y - fromPos.y) * t + hop * ph.hopHeight,
+      fromPos.z + (target.z - fromPos.z) * t + ph.zOffset,
     );
+    // On-beat pulse scales the sphere up then settles.
+    sphere.scale.setScalar(ph.radius * playheadPulse(noteProgress, ph));
     sphere.visible = true;
   });
 
@@ -3164,23 +3181,22 @@ function DebugVisualization({
         />
       </mesh>
 
-      {/* PLAYHEAD SPHERE (gym Scales tool) — a small orange sphere that sits at the active
-          note's dot center and glides to the next note. Positioned every frame by useFrame
-          (the showAllNotes glide block). Smaller than a dot (r≈7 vs 13) so it reads as a
-          marker on top of the green dot. */}
+      {/* PLAYHEAD SPHERE (gym Scales tool) — the gliding orange marker. A UNIT sphere; its
+          radius/color/opacity/emissive + position/scale are driven each frame from
+          playheadConfig in the dedicated playhead useFrame. */}
       <mesh
         ref={playheadSphereRef}
         visible={false}
         position={[0, 0, 6]}
         name="playhead-sphere"
       >
-        <sphereGeometry args={[7, 24, 24]} />
+        <sphereGeometry args={[1, 24, 24]} />
         <meshStandardMaterial
-          color={DOT_COLORS.ACTIVE_RING}
-          emissive={DOT_COLORS.ACTIVE_RING}
-          emissiveIntensity={0.85}
+          color={ph.color}
+          emissive={ph.color}
+          emissiveIntensity={ph.emissiveIntensity}
           transparent={true}
-          opacity={0.95}
+          opacity={ph.opacity}
           depthWrite={false}
           clippingPlanes={globalClippingPlanes}
         />
@@ -3505,6 +3521,7 @@ export function Ring3DOverlayCanvas({
   rootPositions, // gym Scales tool: root notes paint a darker green
   getPlaybackBeat, // gym Scales tool: live playhead clock (beats)
   playheadNotes, // gym Scales tool: the glide path (string/fret + startBeat)
+  playheadConfig, // gym Scales tool: sphere appearance + animation config
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -4457,6 +4474,7 @@ export function Ring3DOverlayCanvas({
                       rootPositions={rootPositions}
                       getPlaybackBeat={getPlaybackBeat}
                       playheadNotes={playheadNotes}
+                      playheadConfig={playheadConfig}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}

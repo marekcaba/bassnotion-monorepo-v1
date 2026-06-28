@@ -25,6 +25,11 @@ import {
   CALIBRATION_ENABLED,
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
+import { PlayheadPanel } from './PlayheadPanel';
+import {
+  DEFAULT_PLAYHEAD_CONFIG,
+  type PlayheadConfig,
+} from './playheadConfig';
 
 export interface ScaleFretboardWindowProps {
   root: PitchClass;
@@ -139,6 +144,12 @@ export function ScaleFretboardWindow({
   const baseConfig = React.useMemo(
     () => getFretboardOverlayConfig(stringCount),
     [stringCount],
+  );
+
+  // DEV tuning: the playhead sphere config (size/color/anim/easing). The PlayheadPanel
+  // adjusts it live when NEXT_PUBLIC_PLAYHEAD_PANEL=true; otherwise the baked default.
+  const [playheadCfg, setPlayheadCfg] = React.useState<PlayheadConfig>(
+    DEFAULT_PLAYHEAD_CONFIG,
   );
 
   // DEV calibration: live overrides for the centering/fade params, seeded from the
@@ -299,6 +310,10 @@ export function ScaleFretboardWindow({
           NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
       {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
 
+      {/* DEV playhead tuner — draggable; renders null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
+          Tune sphere size/color/animation/bezier live, then bake into playheadConfig.ts. */}
+      <PlayheadPanel values={playheadCfg} onChange={setPlayheadCfg} />
+
       {/* MOVEMENT — mirrors the tutorial's layering EXACTLY:
           (1) a scroll container holding ONLY a wide spacer → provides native scroll RANGE
               (drag/scroll moves scrollLeft), but renders nothing visible;
@@ -368,6 +383,7 @@ export function ScaleFretboardWindow({
           // Gliding orange playhead: the sequencer's real clock + the played note sequence.
           getPlaybackBeat={getPlaybackBeat}
           playheadNotes={playheadNotes}
+          playheadConfig={playheadCfg}
         />
       </div>
     </div>
