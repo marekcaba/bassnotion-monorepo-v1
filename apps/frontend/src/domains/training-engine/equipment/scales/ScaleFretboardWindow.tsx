@@ -309,6 +309,61 @@ export function ScaleFretboardWindow({
   };
   const endDrag = () => setIsDragging(false);
 
+  // ── AUTO-FOLLOW CAMERA — during playback, continuously + smoothly pan the neck so the
+  //    ACTIVE note stays centered (cinematic slide along the fretboard). Reads the gym's own
+  //    clock (getPlaybackBeat) → the active note's fret → target scrollLeft, and exponentially
+  //    lerps the container's scrollLeft toward it each frame (the easing = the smooth pan).
+  //    Pauses while the user is dragging; stops when not playing. The exercise-load centering
+  //    above handles the rest. ──
+  const isDraggingRef = React.useRef(isDragging);
+  isDraggingRef.current = isDragging;
+  React.useEffect(() => {
+    if (!getPlaybackBeat || !playheadNotes || playheadNotes.length === 0)
+      return;
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const el = scrollContainerRef.current;
+      const beat = getPlaybackBeat();
+      // Not playing, mid-drag, or counting in → don't fight the user / hold position.
+      if (!el || beat === null || beat < 0 || isDraggingRef.current) return;
+      // Active note = last note whose startBeat ≤ beat (the sphere's current note).
+      let idx = 0;
+      for (let i = 0; i < playheadNotes.length; i++) {
+        if (playheadNotes[i]!.startBeat <= beat) idx = i;
+        else break;
+      }
+      // Interpolate the fret toward the NEXT note across the beat so the pan tracks the
+      // gliding sphere continuously (not a per-note step). Wraps at the loop seam.
+      const cur = playheadNotes[idx]!;
+      const next = playheadNotes[(idx + 1) % playheadNotes.length]!;
+      const slotEnd =
+        idx + 1 < playheadNotes.length
+          ? playheadNotes[idx + 1]!.startBeat
+          : cur.startBeat + 0.5;
+      const frac = Math.min(
+        Math.max(
+          (beat - cur.startBeat) / Math.max(slotEnd - cur.startBeat, 1e-3),
+          0,
+        ),
+        1,
+      );
+      const followFret = cur.fret + (next.fret - cur.fret) * frac;
+      // scrollLeft that CENTERS this fret. Use the MEASURED screen-px-per-fret mapping (the
+      // same calibration the scroll range uses) — NOT the content geometry — because the 3D
+      // is rendered at contentScale through a perspective camera, so on-screen px/fret ≠
+      // content px/fret. At scroll 0 the visual center is ~DEFAULT_CENTER_FRET.
+      const target = Math.min(
+        Math.max((followFret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET, 0),
+        maxScroll,
+      );
+      // Exponential ease toward the target → the cinematic continuous slide.
+      el.scrollLeft += (target - el.scrollLeft) * 0.08;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [getPlaybackBeat, playheadNotes, viewportWidth, maxScroll]);
+
   return (
     <div
       style={{
