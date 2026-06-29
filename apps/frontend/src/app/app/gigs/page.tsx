@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { Play } from 'lucide-react';
+import { Play, Check } from 'lucide-react';
 import type { Gig } from '@bassnotion/contracts';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { useAuth } from '@/domains/user/hooks/use-auth';
@@ -78,29 +78,52 @@ function GigRow({ gig }: { gig: Gig }) {
   // to the goalId if a slug is somehow missing (the route only uses gigId to load).
   const goalSeg = gig.goalSlug || gig.goalId;
   const href = `/gigs/${encodeURIComponent(goalSeg)}/${encodeURIComponent(gig.id)}`;
+  const submitted = !!gig.submitted;
 
   return (
     <li>
       <a
         href={href}
-        className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 transition-colors hover:border-zinc-600 hover:bg-zinc-900"
+        className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors ${
+          submitted
+            ? 'border-emerald-800/60 bg-emerald-950/30 hover:border-emerald-600'
+            : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900'
+        }`}
       >
-        <div className="min-w-0">
-          <div className="truncate font-medium text-zinc-100">{gig.title}</div>
-          <div className="mt-0.5 text-xs text-zinc-500">
-            Day {gig.cycleDay}
-            {gig.exerciseName ? ` · ${gig.exerciseName}` : ''}
-            {gig.scaleKey ? ` · ${gig.scaleKey}` : ''}
-            {gig.tempoBpm ? ` · ${gig.tempoBpm} BPM` : ''}
-            {gig.recordLoops
-              ? ` · ${gig.recordLoops} ${gig.recordLoops === 1 ? 'loop' : 'loops'}`
-              : ''}
+        <div className="flex min-w-0 items-center gap-2.5">
+          {/* Submitted gigs get a green checkmark badge. */}
+          {submitted && (
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-black">
+              <Check className="size-4" strokeWidth={3} />
+            </span>
+          )}
+          <div className="min-w-0">
+            <div className="truncate font-medium text-zinc-100">
+              {gig.title}
+            </div>
+            <div className="mt-0.5 text-xs text-zinc-500">
+              {submitted ? 'Submitted · ' : ''}
+              Day {gig.cycleDay}
+              {gig.exerciseName ? ` · ${gig.exerciseName}` : ''}
+              {gig.scaleKey ? ` · ${gig.scaleKey}` : ''}
+              {gig.tempoBpm ? ` · ${gig.tempoBpm} BPM` : ''}
+              {gig.recordLoops
+                ? ` · ${gig.recordLoops} ${gig.recordLoops === 1 ? 'loop' : 'loops'}`
+                : ''}
+            </div>
           </div>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 rounded bg-[#ffc700] px-3 py-1.5 text-sm font-bold text-black">
-          <Play className="size-4" />
-          Perform
-        </span>
+        {submitted ? (
+          <span className="flex shrink-0 items-center gap-1.5 rounded border border-zinc-600 px-3 py-1.5 text-sm font-semibold text-zinc-300">
+            <Play className="size-4" />
+            Re-record
+          </span>
+        ) : (
+          <span className="flex shrink-0 items-center gap-1.5 rounded bg-[#ffc700] px-3 py-1.5 text-sm font-bold text-black">
+            <Play className="size-4" />
+            Perform
+          </span>
+        )}
       </a>
     </li>
   );

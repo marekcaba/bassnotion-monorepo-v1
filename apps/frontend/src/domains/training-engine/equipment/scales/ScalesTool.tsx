@@ -55,6 +55,13 @@ import { submitTake } from '../../api/training-engine.api';
 const MIN_BPM = 40;
 const MAX_BPM = 220;
 
+/** Convert a target key's pitch class (0-11) to a `keyStep` offset from the backing groove's
+ *  original key's pitch class — the signed-then-wrapped distance the key wheel uses. Both the
+ *  assignment-preset effect and the exercise-defaults effect dial a key in via this. */
+function pcToKeyStep(targetPc: number, keyBasePc: number): number {
+  return (((targetPc - keyBasePc) % 12) + 12) % 12;
+}
+
 /** Scale types + labels, in cycle order for the scale stepper. */
 const SCALE_TYPES: { value: ScaleType; label: string }[] = [
   { value: 'major', label: 'Major' },
@@ -105,6 +112,9 @@ export interface ScalesAssignment {
   /** A stable id for the backing groove driving the transport/clock — stored in the take's
    *  reconstruction recipe so the history player can rebuild the exact backing. */
   backingId?: string;
+  /** Called after a take is successfully submitted — the perform page uses it to collapse back
+   *  to the /gigs list (which then shows this gig checkmarked). */
+  onSubmitted?: () => void;
 }
 
 export interface ScalesToolProps {
@@ -219,6 +229,11 @@ export function ScalesTool({
         },
       });
       setSubmitState('done');
+      // Collapse back to the /gigs list (which now shows this gig checkmarked). Brief delay so
+      // the "✓ Submitted" confirmation is visible before the page navigates.
+      if (assignment?.onSubmitted) {
+        setTimeout(() => assignment.onSubmitted?.(), 700);
+      }
     } catch {
       setSubmitState('error');
     }
@@ -231,6 +246,7 @@ export function ScalesTool({
     view,
     stringCount,
     assignment?.backingId,
+    assignment?.onSubmitted,
   ]);
 
   // ── The exercise LIBRARY: authored scale exercises for the gym Scales tool. Grouped by
@@ -301,7 +317,7 @@ export function ScalesTool({
     if (assignment.gig.scaleKey) {
       const targetPc = parsePitchClass(assignment.gig.scaleKey);
       if (targetPc != null) {
-        const step = (((targetPc - keyBasePc) % 12) + 12) % 12;
+        const step = pcToKeyStep(targetPc, keyBasePc);
         setKeyStep((cur) => (cur === step ? cur : step));
       }
     }
@@ -398,7 +414,7 @@ export function ScalesTool({
     if (payload.defaultKey) {
       const targetPc = parsePitchClass(payload.defaultKey);
       if (targetPc != null) {
-        setKeyStep(((targetPc - keyBasePc) % 12 + 12) % 12);
+        setKeyStep(pcToKeyStep(targetPc, keyBasePc));
       }
     }
     if (typeof payload.defaultTempo === 'number') {

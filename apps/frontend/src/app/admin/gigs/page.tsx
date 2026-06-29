@@ -32,21 +32,9 @@ import {
 } from '@/domains/training-engine/api/training-engine.api';
 
 /** The 12 keys, ASCII-spelled to MATCH the gym tool's byKey lookup (which normalizes glyphs to
- *  these). A free-text field would let a typo silently mismatch — hence a fixed picker. */
-const KEYS = [
-  'C',
-  'Db',
-  'D',
-  'Eb',
-  'E',
-  'F',
-  'Gb',
-  'G',
-  'Ab',
-  'A',
-  'Bb',
-  'B',
-] as const;
+ *  these). A free-text field would let a typo silently mismatch — hence a fixed picker. Shared
+ *  with the scales path editor (the canonical PathKey list). */
+import { SCALE_KEYS_ASCII as KEYS } from '@/app/admin/scales/pathKeys';
 
 export default function AdminGigsPage() {
   const [goals, setGoals] = React.useState<AdminGoalSummary[]>([]);

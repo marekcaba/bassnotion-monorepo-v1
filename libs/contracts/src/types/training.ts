@@ -824,6 +824,9 @@ export interface Gig {
   /** Soft-disable without deleting. */
   isActive: boolean;
   createdAt: string;
+  /** Whether the CURRENT student has already submitted a take for this gig — set only on the
+   *  student gigs read (so the /gigs list can show a checkmark). Undefined on admin reads. */
+  submitted?: boolean;
 }
 
 /** A SUBMITTED, graded take with its tiny audio clip. Append-only history bound directly to

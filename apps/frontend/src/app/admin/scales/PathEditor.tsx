@@ -31,23 +31,13 @@ import {
   PATTERN_PRESETS,
   type ScalePatternRule,
 } from '@/domains/training-engine/equipment/scales/scalePattern';
+// The canonical 12-key PathKey vocabulary, shared with the gig builder (pathKeys.ts). Aliased to
+// KEYS so the internal uses below stay unchanged.
+import { SCALE_KEYS_ASCII as KEYS, type PathKey } from './pathKeys';
 
-/** 12 keys, flat-spelled to match the tool's wheel (Db/Eb/Gb/Ab/Bb). */
-const KEYS = [
-  'C',
-  'Db',
-  'D',
-  'Eb',
-  'E',
-  'F',
-  'Gb',
-  'G',
-  'Ab',
-  'A',
-  'Bb',
-  'B',
-] as const;
-export type PathKey = (typeof KEYS)[number];
+// Re-exported so PathEditor's existing consumers (`import { PathKey } from './PathEditor'`) keep
+// working after the constant moved to pathKeys.ts.
+export type { PathKey };
 
 /** One key's authored path: the ascending + (optionally separate) descending event lists
  *  (events = notes or rests). */

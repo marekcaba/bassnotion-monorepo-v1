@@ -148,29 +148,6 @@ export class TakeRecordingsRepository {
     return (data ?? []).map((row) => this.mapTakeResultRow(row as TakeResultRow));
   }
 
-  /** One take by id (for the signed-url ownership check), or null. */
-  async getTakeResultById(id: string): Promise<TakeResult | null> {
-    const logger = this.requestContext?.getLogger() || this.staticLogger;
-    const correlationId = this.requestContext?.getCorrelationId();
-
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('take_results')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      logger.error('Failed to fetch take result by id', error as Error, {
-        id,
-        correlationId,
-      });
-      throw error;
-    }
-
-    return data ? this.mapTakeResultRow(data as TakeResultRow) : null;
-  }
-
   /** The user's existing take for a gig, if any (the one a resubmit REPLACES). One-take-per-gig
    *  is enforced by a partial unique index, so this is at most one row. */
   async getTakeForUserGig(
@@ -419,7 +396,35 @@ export class TakeRecordingsRepository {
       throw error;
     }
 
-    return (data ?? []).map((row) => this.mapGigRow(row as GigRow));
+    const gigs = (data ?? []).map((row) => this.mapGigRow(row as GigRow));
+
+    // 3. Which of these gigs the user has already SUBMITTED a take for (one query), so the /gigs
+    //    list can show a checkmark + collapse back after submitting. One take per (user, gig).
+    const gigIds = gigs.map((g) => g.id);
+    const submitted = new Set<string>();
+    if (gigIds.length > 0) {
+      const { data: takeRows, error: takeError } = await client
+        .from('take_results')
+        .select('gig_id')
+        .eq('user_id', userId)
+        .in('gig_id', gigIds);
+
+      if (takeError) {
+        // Non-fatal — the list still works, it just won't show submitted-state.
+        logger.warn('Failed to fetch submitted gig ids', {
+          userId,
+          error: (takeError as Error)?.message,
+          correlationId,
+        });
+      } else {
+        for (const r of takeRows ?? []) {
+          const id = (r as { gig_id: string | null }).gig_id;
+          if (id) submitted.add(id);
+        }
+      }
+    }
+
+    return gigs.map((g) => ({ ...g, submitted: submitted.has(g.id) }));
   }
 
   /** One gig by id (for the enrollment check on submit), or null. */

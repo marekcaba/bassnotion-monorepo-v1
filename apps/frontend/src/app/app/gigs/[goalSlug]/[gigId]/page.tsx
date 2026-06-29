@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { Gig } from '@bassnotion/contracts';
 import { ScalesTool } from '@/domains/training-engine/equipment/scales/ScalesTool';
 import {
@@ -28,6 +28,7 @@ import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 function GigPerformContent() {
   const params = useParams<{ goalSlug: string; gigId: string }>();
+  const router = useRouter();
   const gigId = params?.gigId;
 
   // The user's bass config (string count + neck length) — same source as the gym Scales page.
@@ -105,7 +106,12 @@ function GigPerformContent() {
           backingConfig={WAITLIST_DEMO_CONFIG}
           stringCount={stringCount}
           maxFrets={maxFrets}
-          assignment={{ gig, backingId: WAITLIST_DEMO_BLOCK_ID }}
+          assignment={{
+            gig,
+            backingId: WAITLIST_DEMO_BLOCK_ID,
+            // After submitting, collapse back to the /gigs list (which marks this gig done).
+            onSubmitted: () => router.push('/gigs'),
+          }}
         />
       </div>
     </div>
