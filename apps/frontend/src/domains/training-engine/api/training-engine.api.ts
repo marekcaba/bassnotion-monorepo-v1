@@ -44,10 +44,60 @@ async function ensureAuthToken(): Promise<void> {
   apiClient.setAuthToken(session.access_token);
 }
 
-/** GET /api/v1/training-engine/enrollments — the caller's goal enrollments. */
+/**
+ * A FRESH session access token. getSession() returns the CACHED session, which on a long-idle tab
+ * can be EXPIRED — sending it gives a backend "Auth session missing!" 401 even though
+ * autoRefreshToken is on (the background refresh hasn't run yet). So: if the cached token is expired
+ * or within 60s of it, force a refreshSession() first. Returns null if there's genuinely no session.
+ */
+async function freshAccessToken(): Promise<string | null> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) return null;
+  const session = data.session;
+  if (!session?.access_token) return null;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expiresAt = session.expires_at ?? 0;
+  if (expiresAt - nowSec > 60) return session.access_token; // still comfortably valid
+
+  // Expired / about to expire → refresh. (The E2E mock client has no refreshSession; guard it.)
+  const auth = supabase.auth as {
+    refreshSession?: () => Promise<{
+      data: { session: { access_token?: string } | null };
+    }>;
+  };
+  if (typeof auth.refreshSession === 'function') {
+    const refreshed = await auth.refreshSession();
+    return refreshed.data.session?.access_token ?? session.access_token;
+  }
+  return session.access_token;
+}
+
+/**
+ * RAW authed GET — token attached EXPLICITLY per-request, bypassing the shared apiClient. Use this
+ * for reads that fire concurrently on a page mount (the calendar + take history + others all hit
+ * the backstage at once): apiClient's mutable singleton Authorization header + its GET-dedupe race,
+ * so a concurrent call can clobber the header or reuse a stale/tokenless request → an "Invalid
+ * token" / "No token provided" 401. Attaching a FRESH token to THIS fetch sidesteps both + the
+ * stale-cached-session expiry. */
+async function authedGet<T>(path: string): Promise<T> {
+  const token = await freshAccessToken();
+  if (!token) throw new Error('User not authenticated');
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`GET ${path} failed (${res.status}): ${body}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** GET /api/v1/training-engine/enrollments — the caller's goal enrollments. Raw-fetch authed
+ *  (concurrent backstage mount → singleton-token race; see authedGet). */
 export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
-  await ensureAuthToken();
-  return apiClient.get<GoalEnrollment[]>('/api/v1/training-engine/enrollments');
+  return authedGet<GoalEnrollment[]>('/api/v1/training-engine/enrollments');
 }
 
 /** GET /api/v1/training-engine/goals — enrollable goals for the picker. */
@@ -196,12 +246,12 @@ export async function appendRepResult(
   );
 }
 
-/** GET /api/v1/training-engine/enrollments/:enrollmentId/rep-results */
+/** GET /api/v1/training-engine/enrollments/:enrollmentId/rep-results. Raw-fetch authed (concurrent
+ *  backstage mount → singleton-token race; see authedGet). */
 export async function fetchRepHistory(
   enrollmentId: string,
 ): Promise<RepResult[]> {
-  await ensureAuthToken();
-  return apiClient.get<RepResult[]>(
+  return authedGet<RepResult[]>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,
     )}/rep-results`,

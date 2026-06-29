@@ -1,6 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import type {
   GraduationSummary,
   GraduationDoor,
@@ -11,7 +13,11 @@ import { marketingUrl } from '@/lib/marketing-url';
 import { GymFloor } from '@/domains/training-engine/components/GymFloor';
 import { useTutorialExercises } from '@/domains/widgets/hooks/useTutorialExercises';
 import { PageErrorBoundary } from '@/shared/components/ErrorBoundary';
-import { DrillSessionFrame } from '@/domains/drill/components/DrillSessionFrame';
+import {
+  DrillSessionFrame,
+  preloadPlayerChunk,
+} from '@/domains/drill/components/DrillSessionFrame';
+import { ensureAudioReady } from '@/domains/playback/services/ensureAudioReady';
 import { useGymSession } from '@/domains/training-engine/hooks/useGymSession';
 import { useRepResultSync } from '@/domains/training-engine/hooks/useRepResultSync';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
@@ -93,10 +99,42 @@ function GymLoading() {
 function GymFrontDoorPlaceholder({
   eyebrow,
   coachLine,
+  ready,
 }: {
   eyebrow: string;
   coachLine: string;
+  /** Arriving via the Backstage CTA (?start=1) → the live frame auto-advances to "Are you ready?".
+   *  Render THAT placeholder (not "Six minutes.") so there's no flash before the swap. */
+  ready?: boolean;
 }) {
+  // ── "Are you ready?" placeholder (autoStart path) — matches ReadyScreen so the swap is seamless.
+  if (ready) {
+    return (
+      <div className="flex w-full flex-col items-center text-center">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[3px] text-[#7d786d]">
+          Six minutes · one rep
+        </p>
+        <h1 className="mb-5 font-serif text-[clamp(38px,9vw,56px)] font-normal leading-none text-[#f5f2ea]">
+          Are you ready?
+        </h1>
+        <p className="mb-11 max-w-[26rem] text-[16px] italic leading-relaxed text-[#9a9488]">
+          Get your bass set, take a breath. When you press go, the count-in
+          starts — give it your full focus.
+        </p>
+        <button
+          type="button"
+          disabled
+          aria-label="Preparing today's rep"
+          className="flex w-full max-w-[26rem] cursor-default items-center justify-center gap-3 rounded-[14px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-6 py-6 text-[20px] font-semibold text-[#3a2606] opacity-90"
+        >
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#3a2606]/30 border-t-[#3a2606]" />
+          Let&apos;s go
+        </button>
+      </div>
+    );
+  }
+
+  // ── "Six minutes." front-door placeholder (the normal gym-open path).
   return (
     <div className="flex w-full flex-col items-center text-center">
       <p className="mb-4 font-mono text-[11px] uppercase tracking-[3px] text-[#7d786d]">
@@ -118,6 +156,17 @@ function GymFrontDoorPlaceholder({
       >
         <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#3a2606]/30 border-t-[#3a2606]" />
         Start today&apos;s rep
+      </button>
+      {/* Placeholder for the live front door's "Short on time?" floor link — same markup + spot, so
+          when the live frame swaps in the button is ALREADY there (no late-appearing layout shift).
+          Disabled until the live frame takes over. */}
+      <button
+        type="button"
+        disabled
+        aria-hidden
+        className="mt-3 w-full max-w-[26rem] cursor-default rounded-[14px] border border-white/[0.07] bg-white/[0.02] px-6 py-3.5 text-sm text-[#7d786d] opacity-70"
+      >
+        Short on time? 3-minute version — streak stays safe
       </button>
     </div>
   );
@@ -530,7 +579,7 @@ function GymGraduation({
   );
 }
 
-export default function GymPage() {
+function GymPageInner() {
   // The gym is the monthly-membership product's entitlement. Gate on membership
   // BEFORE the session runs, so a non-member sees the wall and never auto-enrolls
   // (the backend enforces it too — this is the friendly front door).
@@ -544,6 +593,34 @@ export default function GymPage() {
   const { tier, isLoading: entitlementLoading } = useEntitlement();
   const isMember = tier === 'member';
   const gateResolving = !authReady || entitlementLoading;
+
+  // ?start=1 (from the Backstage "Start today's rep" CTA) → skip the "Six minutes." front door and
+  // land straight on the "Are you ready?" prep step. Read REACTIVELY (useSearchParams, not a
+  // one-time window.location read): a client-side nav from /backstage to /gym?start=1 doesn't
+  // remount this page, so a mount-only read would miss the param. usePathname/useSearchParams
+  // update on nav. (Wrapped in Suspense at the default export.)
+  const searchParams = useSearchParams();
+  const autoStartRep = searchParams.get('start') === '1';
+  // ?floor=1 — arriving back from a finished rep (/gym/rep's summary "done"). Open with the rep
+  // overlay already DISMISSED (the bare floor): the front door + "Are you ready?" already happened
+  // this visit, so re-prompting would be wrong. The user explicitly returns "to the bare floor".
+  const returningToFloor = searchParams.get('floor') === '1';
+
+  const router = useRouter();
+  const { navigateWithTransition } = useViewTransitionRouter();
+
+  // The instant a member lands on the gym (the rep is one or two clicks away), warm the heavy things
+  // that otherwise stall the rep: the PLAYER CHUNK (the YouTubeWidgetPage bundle behind "Loading
+  // rep…"), the AUDIO engine, AND the /gym/rep ROUTE chunk (where the rep now actually runs — "Let's
+  // go" navigates there, so prefetch it the same way). All idempotent. This gives maximum lead time
+  // (the whole front-door + "Are you ready?" beat) so /gym/rep opens instantly.
+  React.useEffect(() => {
+    if (isMember) {
+      preloadPlayerChunk();
+      void ensureAudioReady();
+      router.prefetch('/gym/rep');
+    }
+  }, [isMember, router]);
 
   const {
     status,
@@ -578,8 +655,15 @@ export default function GymPage() {
   // FADE IN: mount at opacity 0, then flip visible→true next frame so the CSS
   // transition runs. FADE OUT: flip visible→false, then unmount after the fade.
   const OVERLAY_FADE_MS = 450;
-  const [overlayMounted, setOverlayMounted] = React.useState(true);
-  const [overlayVisible, setOverlayVisible] = React.useState(true);
+  // Returning from a finished rep (?floor=1) → start with the overlay DISMISSED (bare floor). Every
+  // other arrival opens the coached overlay.
+  const [overlayMounted, setOverlayMounted] = React.useState(!returningToFloor);
+  const [overlayVisible, setOverlayVisible] = React.useState(!returningToFloor);
+  // "Let's go" → fade the WHOLE gym (floor + overlay together) out before crossing to /gym/rep, so
+  // the leather underneath doesn't sit solid while the scrim fades. Opacity on the outer wrapper is
+  // normally avoided (it'd break the scrim's backdrop blur) — but we only set it during the leave,
+  // when overlayVisible is already false so there's no blur left to break.
+  const [leaving, setLeaving] = React.useState(false);
 
   const summonOverlay = React.useCallback(() => {
     setOverlayMounted(true);
@@ -591,17 +675,43 @@ export default function GymPage() {
     window.setTimeout(() => setOverlayMounted(false), OVERLAY_FADE_MS);
   }, []);
 
+  // "Let's go" on the gym overlay → fade the overlay out, THEN cross into /gym/rep (where the rep
+  // runs full-surface on the leather). The rep was prefetched on mount, so the route is warm. We
+  // fade the overlay first (matching the user's "the overlay should fade out and the rep should fade
+  // in on the leather as /gym/rep"), then navigate after the fade with a view transition.
+  const goToRep = React.useCallback(() => {
+    // Fade the overlay's blur out AND fade the whole gym wrapper (floor + overlay) to transparent in
+    // the same beat, so the leather doesn't linger solid behind the dissolving scrim. Both run on the
+    // same 450ms ease; navigate once the gym has faded, then the rep fades in on /gym/rep.
+    setOverlayVisible(false);
+    setLeaving(true);
+    window.setTimeout(() => {
+      navigateWithTransition('/gym/rep');
+    }, OVERLAY_FADE_MS);
+  }, [navigateWithTransition]);
+
   // A genuinely NEW rep slug re-summons the coached overlay. Guard against
   // re-summoning the SAME slug — otherwise, if the user taps "Explore the gym"
   // (dismiss) while the rep is still resolving, the slug's arrival would yank the
   // overlay back open. Only a different slug than last time re-summons.
-  const lastSummonedSlugRef = React.useRef<string | null>(null);
+  // Seed the ref with the current slug when returning to the floor (?floor=1), so the already-warm
+  // slug's arrival does NOT count as "new" and re-summon the overlay we deliberately started
+  // dismissed. (The user returns to the BARE floor after a rep — no re-prompt.)
+  const lastSummonedSlugRef = React.useRef<string | null>(
+    returningToFloor ? slug ?? null : null,
+  );
   React.useEffect(() => {
+    if (returningToFloor) {
+      // Keep the ref pinned to the current slug while we're in floor-return mode, so a late-arriving
+      // (but same-day) slug can't pop the overlay open.
+      lastSummonedSlugRef.current = slug ?? lastSummonedSlugRef.current;
+      return;
+    }
     if (slug && slug !== lastSummonedSlugRef.current) {
       lastSummonedSlugRef.current = slug;
       summonOverlay();
     }
-  }, [slug, summonOverlay]);
+  }, [slug, summonOverlay, returningToFloor]);
 
   // Hooks must run unconditionally — useTutorialExercises is enabled only when
   // a slug exists, so it idles until the rep is planned.
@@ -761,8 +871,14 @@ export default function GymPage() {
             it to its own layer / stacking context, which breaks the overlay
             scrim's backdrop-filter blur (the floor headline punches through).
             The entrance is handled by the overlay's own fade (overlayVisible +
-            the gym-rise children INSIDE the scrim, which sit above it). */}
-        <div className="relative min-h-full w-full">
+            the gym-rise children INSIDE the scrim, which sit above it).
+            On "Let's go" (`leaving`) we DO fade this wrapper out — floor + overlay together — so the
+            whole gym dissolves as one before /gym/rep fades in. Safe here only because the scrim's
+            blur is already gone by then (overlayVisible flipped false in the same call). */}
+        <div
+          className="relative min-h-full w-full transition-opacity duration-[450ms] ease-in-out"
+          style={{ opacity: leaving ? 0 : 1 }}
+        >
           {/* ── BASE LAYER: the equipment floor ──
               gym-rise (fade + up) gives the page a consistent ease-in-out
               entrance on EVERY arrival (client nav AND direct load, where the
@@ -781,7 +897,12 @@ export default function GymPage() {
               mounts it transparent then fades it back in. */}
           {overlayMounted && (
             <div
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center px-4 py-10 transition-[opacity,backdrop-filter] duration-[450ms] ease-in-out"
+              // Dead-centered (justify-center) BOTH ways. The jump-on-load that `justify-center`
+              // used to cause is killed by giving the content a FIXED min-height (see below): with a
+              // constant block height there's nothing variable to re-center, so the headline stays
+              // put as the rep resolves placeholder → live frame. overflow-y-auto lets a tall summary
+              // scroll instead of pushing the headline.
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center overflow-y-auto px-4 py-10 transition-[opacity,backdrop-filter] duration-[450ms] ease-in-out"
               style={{
                 background:
                   'radial-gradient(80% 60% at 50% 42%, rgba(12,11,14,1) 0%, rgba(12,11,14,0) 60%, rgba(8,7,10,1) 100%)',
@@ -817,8 +938,10 @@ export default function GymPage() {
                   overlay shell with a disabled Start (a small inline spinner) so
                   the "Six minutes." headline + button are there IMMEDIATELY and
                   the live frame swaps in place — no layout jump, no full-page
-                  spinner. */}
-              <div className="gym-rise gym-d2 w-full max-w-[26rem]">
+                  spinner.
+                  FIXED min-height so the block's size doesn't change between the placeholder, the
+                  live front door, and the "Are you ready?" step → justify-center never re-shifts. */}
+              <div className="gym-rise gym-d2 flex w-full max-w-[26rem] flex-col justify-start" style={{ minHeight: 360 }}>
                 {slug && memoizedTutorial && !isLoading ? (
                   <DrillSessionFrame
                     tutorial={memoizedTutorial}
@@ -827,6 +950,11 @@ export default function GymPage() {
                     isFloor={repMode === 'floor'}
                     inline
                     bare
+                    autoStart={autoStartRep}
+                    // "Let's go" on the gym overlay doesn't run the rep IN the cramped overlay — it
+                    // fades the overlay out and crosses into /gym/rep, where the rep runs full-surface
+                    // on the leather. (The standalone drill tutorial, without this, runs in place.)
+                    onLetsGo={goToRep}
                     frontDoor={{
                       eyebrow,
                       headline: 'Six minutes.',
@@ -844,6 +972,7 @@ export default function GymPage() {
                   <GymFrontDoorPlaceholder
                     eyebrow={eyebrow}
                     coachLine={coachLine}
+                    ready={autoStartRep}
                   />
                 )}
 
@@ -883,5 +1012,15 @@ export default function GymPage() {
         </div>
       </PageErrorBoundary>
     </>
+  );
+}
+
+// useSearchParams (reads ?start=1) must sit under a Suspense boundary (Next 15). The fallback is
+// the gym's own neutral loading spinner, so there's no flicker before the inner mounts.
+export default function GymPage() {
+  return (
+    <Suspense fallback={<GymLoading />}>
+      <GymPageInner />
+    </Suspense>
   );
 }
