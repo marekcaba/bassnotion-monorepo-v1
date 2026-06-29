@@ -233,12 +233,34 @@ export async function fetchGig(id: string): Promise<{
   }>(`/api/v1/training-engine/recordings/gigs/${encodeURIComponent(id)}`);
 }
 
-/** GET the caller's submitted takes (history), each with a short-lived signed audio URL. */
+/**
+ * GET the caller's submitted takes (history), each with a short-lived signed audio URL.
+ *
+ * Uses a RAW fetch with the session token set EXPLICITLY per-request (not the shared apiClient).
+ * The apiClient attaches auth via a mutable singleton header + dedupes GETs by URL — both race on
+ * the backstage mount, where several authed hooks fire at once: a concurrent tokenless GET to the
+ * same path can be reused, or another call can clear the singleton's header between set and fetch,
+ * yielding a 401 ("No token provided") that silently empties the list. Attaching the token to THIS
+ * request (like submitTake does) sidesteps both. */
 export async function fetchMyTakeHistory(): Promise<TakeResultWithSignedUrl[]> {
-  await ensureAuthToken();
-  const { takes } = await apiClient.get<{ takes: TakeResultWithSignedUrl[] }>(
-    '/api/v1/training-engine/recordings/takes',
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('User not authenticated');
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${baseUrl}/api/v1/training-engine/recordings/takes`,
+    { headers: { Authorization: `Bearer ${session.access_token}` } },
   );
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Failed to load takes (${res.status}): ${body}`);
+  }
+  const { takes } = (await res.json()) as { takes: TakeResultWithSignedUrl[] };
   return takes;
 }
 

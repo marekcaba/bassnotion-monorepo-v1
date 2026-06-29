@@ -589,6 +589,7 @@ export type {
   UpdateGigInput,
   SubmitTakeInput,
   PlaybackContext,
+  BackingLayer,
 } from './training.js';
 
 // Value export (pure mapper, not a type) — drill completion → ProgressSignal.

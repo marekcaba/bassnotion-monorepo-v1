@@ -32,16 +32,24 @@ export interface UseTakeHistoryResult {
 }
 
 export function useTakeHistory(): UseTakeHistoryResult {
-  const { isAuthenticated, user } = useAuth();
+  // Gate on isAuthenticatedSync (user + session + INITIALIZED), not isAuthenticated: on a fresh
+  // page load (e.g. landing on /backstage) the store can briefly report a user/session before the
+  // Supabase session is hydrated, so the fetch fires with no token → 401 → empty list. Waiting for
+  // `isInitialized` avoids that tokenless first call.
+  const { isAuthenticatedSync, user } = useAuth();
 
   const query = useQuery<TakeResultWithSignedUrl[]>({
     // queryClient.clear() fires on identity change; the userId segment is
     // belt-and-suspenders so a prefetched entry can't survive an account switch.
     queryKey: gymKeys.takeHistory(user?.id ?? 'anon'),
     queryFn: fetchMyTakeHistory,
-    enabled: isAuthenticated,
+    enabled: isAuthenticatedSync,
     // Signed URLs are short-lived — keep the window modest so playback links stay valid.
     staleTime: 60 * 1000,
+    // Retry a transient auth race (session not yet hydrated → "User not authenticated"): a couple
+    // of quick retries cover the hydration gap without hammering on a genuine auth failure.
+    retry: 2,
+    retryDelay: 400,
   });
 
   const refetch = useCallback(() => {

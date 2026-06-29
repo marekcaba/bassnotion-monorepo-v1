@@ -39,35 +39,44 @@ function GigsContent() {
     };
   }, [isAuthenticated]);
 
+  // Top-anchored, horizontally centered (same as Backstage): the gig list below changes height
+  // (loading → empty → list), so we anchor to the top — vertical centering would shift the
+  // headline as the list fills in.
   return (
-    <div className="mx-auto max-w-4xl p-6 md:p-10">
-      <div className="flex items-center gap-3">
-        <Play className="size-8 text-[#ffc700]" />
-        <h1 className="text-2xl font-bold text-zinc-100">Gigs</h1>
-      </div>
-      <p className="mt-3 text-zinc-400">
-        Your assigned deliverables. Open one, play it through, and submit your
-        take.
-      </p>
+    <div className="flex min-h-[calc(100svh-4rem)] w-full flex-col items-center p-6 pt-[12vh] md:p-10 md:pt-[12vh]">
+      <div className="flex w-full max-w-4xl flex-col items-center space-y-8">
+        <div className="w-full text-left">
+          <div className="flex items-center gap-3.5">
+            <Play className="size-10 shrink-0 text-[#ffc700]" />
+            <h1 className="font-heading text-[clamp(34px,5vw,52px)] uppercase leading-none tracking-[0.01em] text-zinc-100">
+              Gigs
+            </h1>
+          </div>
+          <p className="mt-3 text-zinc-400">
+            Your assigned deliverables. Open one, play it through, and submit
+            your take.
+          </p>
+        </div>
 
-      <div className="mt-6">
-        {error ? (
-          <p className="text-sm text-red-400">
-            Couldn&apos;t load your gigs. Try again in a moment.
-          </p>
-        ) : gigs === null ? (
-          <p className="text-sm text-zinc-500">Loading…</p>
-        ) : gigs.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            No gigs right now. Your coach assigns these on your goal.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {gigs.map((g) => (
-              <GigRow key={g.id} gig={g} />
-            ))}
-          </ul>
-        )}
+        <div className="w-full">
+          {error ? (
+            <p className="text-sm text-red-400">
+              Couldn&apos;t load your gigs. Try again in a moment.
+            </p>
+          ) : gigs === null ? (
+            <p className="text-sm text-zinc-500">Loading…</p>
+          ) : gigs.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              No gigs right now. Your coach assigns these on your goal.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {gigs.map((g) => (
+                <GigRow key={g.id} gig={g} />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

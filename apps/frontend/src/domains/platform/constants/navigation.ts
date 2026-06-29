@@ -49,9 +49,16 @@ export interface NavItem {
  * exactPatterns compare the INTERNAL path (via useInternalPathname()).
  */
 export const MAIN_NAV_ITEMS: NavItem[] = [
-  // Belong — the landing room. /app itself; the free locker / identity / Matrix.
-  // Root item: exact-only highlight so it doesn't light up on every sub-room.
-  { title: 'Backstage', url: '/', icon: Martini, exactPatterns: ['/app'] },
+  // Backstage — the home room (session + progress + recordings). Points DIRECTLY at /backstage,
+  // not '/': clicking the nav should land there without bouncing through the '/'→'/backstage'
+  // middleware redirect (that redirect is only for the bare root entry, and routing a client
+  // view-transition through it triggered an https/SSL protocol error on the redirect prefetch).
+  {
+    title: 'Backstage',
+    url: '/backstage',
+    icon: Martini,
+    activePatterns: ['/app/backstage'],
+  },
   // Train — the daily rep engine (the recurring membership core).
   {
     title: 'Gym',
