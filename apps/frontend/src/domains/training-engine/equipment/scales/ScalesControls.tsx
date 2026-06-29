@@ -63,6 +63,17 @@ export interface ScalesControlsProps {
   keyRoller: RollerSpec;
   tempo: RollerSpec;
   onPlayPause: () => void;
+  /** RECORD MODE: a little switch flips the orange ▶ Play into a red ● Record. In record mode
+   *  the scale bass is muted and every take is captured + graded. Omit to hide the switch. */
+  recordMode?: boolean;
+  onToggleRecordMode?: (next: boolean) => void;
+  /** How many loops a record-mode take captures (1-8) before auto-stopping. */
+  recordLoops?: number;
+  onRecordLoopsChange?: (n: number) => void;
+  /** ASSIGNMENT (gig) mode — the exercise/key/tempo/loops are LOCKED presets. Greys out + no-ops
+   *  every roller, hides the content row (the WHAT is fixed), and pins record mode ON. The student
+   *  only gets ▶/●. */
+  locked?: boolean;
 }
 
 export function ScalesControls({
@@ -79,9 +90,19 @@ export function ScalesControls({
   keyRoller,
   tempo,
   onPlayPause,
+  recordMode = false,
+  onToggleRecordMode,
+  recordLoops = 2,
+  onRecordLoopsChange,
+  locked = false,
 }: ScalesControlsProps) {
   const showBeat =
     countdownState.isCountingDown && countdownState.currentBeat > 0;
+
+  // In locked (assignment) mode every roller is greyed + no-op'd. Apply it once here so each
+  // RollerPicker below inherits it without threading `disabled` through every call site.
+  const lock = (spec: RollerSpec): RollerSpec =>
+    locked ? { ...spec, disabled: true } : spec;
 
   // Roller animation config — baked in ROLLER_ANIM. (Live tuner panel commented out;
   // re-enable RollerCalibrationPanel + setAnim to re-tune.)
@@ -91,47 +112,51 @@ export function ScalesControls({
     <div className="flex flex-col gap-2 rounded-b-xl bg-black/40 px-4 py-2.5">
       {/* <RollerCalibrationPanel config={anim} onChange={setAnim} /> */}
 
-      {/* ROW 1 — CONTENT: Scale type | kind tabs | Exercise */}
-      <div className="flex items-center gap-3 border-b border-white/5 pb-2">
-        <div className="flex flex-1 items-center justify-evenly">
-          <RollerPicker {...scale} anim={anim} ariaLabel="Scale type" />
+      {/* ROW 1 — CONTENT: Scale type | kind tabs | Exercise. HIDDEN in locked (assignment)
+          mode — the WHAT is fixed by the gig; the student doesn't choose content. */}
+      {!locked && (
+        <div className="flex items-center gap-3 border-b border-white/5 pb-2">
+          <div className="flex flex-1 items-center justify-evenly">
+            <RollerPicker {...scale} anim={anim} ariaLabel="Scale type" />
+          </div>
+          {/* Kind filter — Runs / Patterns / Paths */}
+          <div className="flex shrink-0 gap-1">
+            {kindTabs.tabs.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => kindTabs.onSelect(t.value)}
+                className={`rounded px-2 py-1 text-[11px] font-semibold transition-colors ${
+                  kindTabs.active === t.value
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-1 items-center justify-evenly">
+            <RollerPicker {...exercise} anim={anim} ariaLabel="Exercise" />
+            {showVariant && (
+              <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
+            )}
+          </div>
         </div>
-        {/* Kind filter — Runs / Patterns / Paths */}
-        <div className="flex shrink-0 gap-1">
-          {kindTabs.tabs.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => kindTabs.onSelect(t.value)}
-              className={`rounded px-2 py-1 text-[11px] font-semibold transition-colors ${
-                kindTabs.active === t.value
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-1 items-center justify-evenly">
-          <RollerPicker {...exercise} anim={anim} ariaLabel="Exercise" />
-          {showVariant && (
-            <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ROW 2 — PERFORM: Position? | Key | ▶ | Tempo */}
       <div className="flex items-center gap-3">
         {/* LEFT group — Position (hidden for paths) | Key */}
         <div className="flex flex-1 items-center justify-evenly">
           {showPosition && (
-            <RollerPicker {...position} anim={anim} ariaLabel="Position" />
+            <RollerPicker {...lock(position)} anim={anim} ariaLabel="Position" />
           )}
-          <RollerPicker {...keyRoller} anim={anim} ariaLabel="Key" />
+          <RollerPicker {...lock(keyRoller)} anim={anim} ariaLabel="Key" />
         </div>
 
-        {/* CENTER — Play (fixed island, always centered) */}
+        {/* CENTER — Play (orange) or RECORD (red), fixed island, always centered. In record
+            mode the orange ▶ becomes a red ● (and a ■ stop while a take is recording). */}
         <button
           type="button"
           onClick={onPlayPause}
@@ -140,16 +165,30 @@ export function ScalesControls({
           aria-label={
             showBeat
               ? `Countdown beat ${countdownState.currentBeat}`
-              : isPlaying
-                ? 'Pause'
-                : 'Play'
+              : recordMode
+                ? isPlaying
+                  ? 'Stop recording'
+                  : 'Record'
+                : isPlaying
+                  ? 'Pause'
+                  : 'Play'
           }
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-400 focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white transition-colors focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${
+            recordMode
+              ? 'bg-red-600 hover:bg-red-500'
+              : 'bg-orange-500 hover:bg-orange-400'
+          }`}
         >
           {showBeat ? (
             <span className="text-xl font-bold">
               {countdownState.currentBeat}
             </span>
+          ) : recordMode ? (
+            isPlaying ? (
+              <StopIcon />
+            ) : (
+              <RecordIcon />
+            )
           ) : isPlaying ? (
             <PauseIcon />
           ) : (
@@ -157,11 +196,75 @@ export function ScalesControls({
           )}
         </button>
 
-        {/* RIGHT group — Tempo */}
-        <div className="flex flex-1 items-center justify-evenly">
+        {/* RIGHT group — Tempo + the Record-mode switch */}
+        <div className="flex flex-1 items-center justify-evenly gap-2">
           {/* Tempo: press-and-hold the arrows to fly through BPM (stepping one at a time
               is tedious over a big range). */}
-          <RollerPicker {...tempo} anim={anim} ariaLabel="Tempo" holdRepeat />
+          <RollerPicker {...lock(tempo)} anim={anim} ariaLabel="Tempo" holdRepeat />
+          {/* The Rec toggle stays VISIBLE in locked mode so the student can play the gig through
+              first, then ARM it. (Only the loops stepper below is hidden — the gig fixes the
+              count.) */}
+          {onToggleRecordMode && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={recordMode}
+              aria-label="Record mode — grade your playing"
+              disabled={isPlaying}
+              onClick={() => onToggleRecordMode(!recordMode)}
+              className="flex flex-col items-center gap-1 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Record mode: mute the scale, play it yourself, get graded"
+            >
+              <span
+                className={`relative h-5 w-9 rounded-full transition-colors ${
+                  recordMode ? 'bg-red-600' : 'bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                    recordMode ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Rec
+              </span>
+            </button>
+          )}
+          {/* LOOPS picker — how many loops a recorded take captures before auto-stopping.
+              Only shown in record mode AND not locked. Compact ▲/number/▼ stepper, clamped 1-8. */}
+          {!locked && recordMode && onRecordLoopsChange && (
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                aria-label="More loops"
+                disabled={isPlaying || recordLoops >= 8}
+                onClick={() =>
+                  onRecordLoopsChange(Math.min(8, recordLoops + 1))
+                }
+                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
+              >
+                ▲
+              </button>
+              <span className="text-sm font-bold text-white tabular-nums">
+                {recordLoops}×
+              </span>
+              <button
+                type="button"
+                aria-label="Fewer loops"
+                disabled={isPlaying || recordLoops <= 1}
+                onClick={() =>
+                  onRecordLoopsChange(Math.max(1, recordLoops - 1))
+                }
+                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
+              >
+                ▼
+              </button>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Loops
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -191,6 +294,20 @@ function PauseIcon() {
       aria-hidden
     >
       <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+    </svg>
+  );
+}
+function RecordIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <circle cx="12" cy="12" r="7" />
+    </svg>
+  );
+}
+function StopIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </svg>
   );
 }

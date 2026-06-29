@@ -13,6 +13,9 @@ import { AdminGymExercisesController } from './admin-gym-exercises.controller.js
 import { AdminGymExercisesService } from './admin-gym-exercises.service.js';
 import { GymExercisesController } from './gym-exercises.controller.js';
 import { GymExercisesRepository } from './repositories/gym-exercises.repository.js';
+import { TakeRecordingsController } from './take-recordings.controller.js';
+import { AdminGigsController } from './admin-gigs.controller.js';
+import { TakeRecordingsRepository } from './repositories/take-recordings.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 import { ProgressModule } from '../progress/progress.module.js';
@@ -51,6 +54,8 @@ import { MembershipModule } from '../billing/membership.module.js';
     AdminScaleBlueprintsController,
     AdminGymExercisesController,
     GymExercisesController,
+    TakeRecordingsController,
+    AdminGigsController,
   ],
   providers: [
     TrainingEngineService,
@@ -60,6 +65,7 @@ import { MembershipModule } from '../billing/membership.module.js';
     ScaleBlueprintsRepository,
     AdminGymExercisesService,
     GymExercisesRepository,
+    TakeRecordingsRepository,
   ],
   exports: [TrainingEngineService],
 })
