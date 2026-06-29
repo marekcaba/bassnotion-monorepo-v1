@@ -12,4 +12,9 @@ export const gymKeys = {
   enrollments: (userId: string) => ['gym', 'my-enrollments', userId] as const,
   todayRep: (userId: string, enrollmentId: string, mode: 'full' | 'floor') =>
     ['gym', 'today-rep', userId, enrollmentId, mode] as const,
+  // The user's submitted-take history (recordings), newest-first.
+  takeHistory: (userId: string) => ['gym', 'take-history', userId] as const,
+  // The exercise LIBRARY is shared content (same for everyone) — not user-scoped.
+  exerciseLibrary: (equipment: string) =>
+    ['gym', 'exercise-library', equipment] as const,
 };

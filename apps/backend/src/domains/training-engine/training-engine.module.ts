@@ -6,6 +6,16 @@ import { TrainingEngineService } from './training-engine.service.js';
 import { TrainingEngineRepository } from './repositories/training-engine.repository.js';
 import { AdminTrainingGoalsController } from './admin-training-goals.controller.js';
 import { AdminTrainingGoalsService } from './admin-training-goals.service.js';
+import { AdminScaleBlueprintsController } from './admin-scale-blueprints.controller.js';
+import { AdminScaleBlueprintsService } from './admin-scale-blueprints.service.js';
+import { ScaleBlueprintsRepository } from './repositories/scale-blueprints.repository.js';
+import { AdminGymExercisesController } from './admin-gym-exercises.controller.js';
+import { AdminGymExercisesService } from './admin-gym-exercises.service.js';
+import { GymExercisesController } from './gym-exercises.controller.js';
+import { GymExercisesRepository } from './repositories/gym-exercises.repository.js';
+import { TakeRecordingsController } from './take-recordings.controller.js';
+import { AdminGigsController } from './admin-gigs.controller.js';
+import { TakeRecordingsRepository } from './repositories/take-recordings.repository.js';
 import { SupabaseModule } from '../../infrastructure/supabase/supabase.module.js';
 import { AuthModule } from '../user/auth/auth.module.js';
 import { ProgressModule } from '../progress/progress.module.js';
@@ -38,11 +48,24 @@ import { MembershipModule } from '../billing/membership.module.js';
     // period (currentPeriodEnd). See enrollInGoal / getTodayRep.
     MembershipModule,
   ],
-  controllers: [TrainingEngineController, AdminTrainingGoalsController],
+  controllers: [
+    TrainingEngineController,
+    AdminTrainingGoalsController,
+    AdminScaleBlueprintsController,
+    AdminGymExercisesController,
+    GymExercisesController,
+    TakeRecordingsController,
+    AdminGigsController,
+  ],
   providers: [
     TrainingEngineService,
     TrainingEngineRepository,
     AdminTrainingGoalsService,
+    AdminScaleBlueprintsService,
+    ScaleBlueprintsRepository,
+    AdminGymExercisesService,
+    GymExercisesRepository,
+    TakeRecordingsRepository,
   ],
   exports: [TrainingEngineService],
 })

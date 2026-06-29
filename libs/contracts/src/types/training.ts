@@ -688,3 +688,287 @@ export function drillCompletionToSignal(
       return null;
   }
 }
+
+// =====================================================
+// SCALE BLUEPRINTS — admin-authored box shapes + rhythm
+// =====================================================
+// The gym Scales tool's per-scale fingering shapes. Seeded in code with sensible
+// defaults; an admin refines the box windows visually + sets the practice rhythm,
+// and the engine reads the stored shapes. Mirrors the `scale_blueprints` table
+// (snake_case → camelCase in the repository).
+
+/** One box position: a fret WINDOW relative to the root's fret on the lowest string. */
+export interface ScalePositionShape {
+  /** 1-based: position 1 = the root box, ascending up the neck. */
+  positionNumber: number;
+  /** Fret offset of the box's LOW edge, relative to the root fret on the lowest
+   *  string (usually slightly negative — the index finger sits behind the root). */
+  startFretOffset: number;
+  /** How many frets the box spans (the hand-position width). */
+  span: number;
+}
+
+/** The note value each step of the scale run occupies (Tone.js notation).
+ *  '8t' = eighth-note triplet (three per beat). */
+export type ScaleRhythmValue = '4n' | '8n' | '8t' | '16n';
+
+/** The scale types the gym Scales tool authors. */
+export type ScaleTypeId =
+  | 'major'
+  | 'natural_minor'
+  | 'dorian'
+  | 'mixolydian'
+  | 'minor_pentatonic'
+  | 'major_pentatonic';
+
+/** One scale's full admin-authored blueprint (box shapes + practice rhythm). */
+export interface ScaleBlueprintRecord {
+  scaleType: ScaleTypeId;
+  positions: ScalePositionShape[];
+  rhythm: ScaleRhythmValue;
+  updatedAt: string;
+}
+
+/** Admin PATCH payload — replace a scale's positions and/or rhythm. */
+export interface UpdateScaleBlueprintInput {
+  positions?: ScalePositionShape[];
+  rhythm?: ScaleRhythmValue;
+}
+
+// =====================================================
+// GYM EXERCISES — admin-authored exercises for gym equipment (paths, grooves, …)
+// =====================================================
+// One authoring interface produces exercises for ANY gym equipment. The PAYLOAD (the
+// authored content — e.g. the per-key note paths, the meter, name/description) is stored
+// as opaque JSON so the same table serves scale paths today and groove exercises later;
+// the columns are just the queryable metadata. Saving is DRAFT-FRIENDLY — a half-authored
+// exercise (a few keys filled, the rest empty) saves fine, no validation gate.
+
+/** What kind of exercise (which authoring payload shape + which equipment it targets). */
+export type GymExerciseKind = 'scale_path' | 'groove'; // extend as equipment grows
+
+/** A saved gym exercise. `payload` is the authored content (shape depends on `kind`). */
+export interface GymExercise {
+  id: string;
+  kind: GymExerciseKind;
+  name: string;
+  description: string;
+  /** The gym equipment station this targets (e.g. 'scales'). */
+  equipment: string;
+  /** For scale_path: the scale type ('major' …). Null for kinds without one. */
+  scaleType: string | null;
+  /** The authored content — JSON, shape per kind (e.g. the PathsByKey for scale_path). */
+  payload: unknown;
+  updatedAt: string;
+}
+
+/** Admin create payload. Everything but kind/equipment is optional-ish (drafts welcome). */
+export interface CreateGymExerciseInput {
+  kind: GymExerciseKind;
+  name: string;
+  description?: string;
+  equipment: string;
+  scaleType?: string | null;
+  payload: unknown;
+}
+
+/** Admin PATCH payload — any subset (save partial progress freely). */
+export interface UpdateGymExerciseInput {
+  name?: string;
+  description?: string;
+  scaleType?: string | null;
+  payload?: unknown;
+}
+
+// =====================================================
+// GIGS — goal-bound, cycle-day-scheduled deliverables + submitted graded takes
+// =====================================================
+// The open gym (Scales tool) is FREE, ephemeral practice — nothing is stored. GIGS are a
+// deliberate, admin-gated deliverable: the admin authors "submit X @ Y bpm" on a GOAL (a
+// `Gig`); every student enrolled in that goal inherits it, scheduled by a DAY OFFSET into
+// THEIR billing cycle. The student plays it in record mode and SUBMITS one graded take with
+// a tiny Opus clip (a `TakeResult`). A few per cycle, intentional + curated.
+// See migration 20260629000002_reshape_to_gigs.sql.
+
+/** An admin-authored "submit this" deliverable on a GOAL. Every student enrolled in the goal
+ *  inherits it, scheduled by a day-offset into their billing cycle; submitting a take fulfils
+ *  it. The student-facing read is filtered to the goals they're enrolled in. */
+export interface Gig {
+  id: string;
+  /** The GOAL this gig belongs to. Every student enrolled in the goal inherits it. */
+  goalId: string;
+  /** The goal's slug — joined in on reads so the perform route (/gigs/[goalSlug]/[gigId]) and
+   *  the list can label/route by goal WITHOUT a second lookup. Null on bare create returns. */
+  goalSlug?: string | null;
+  /** The admin who created it (null if that admin's profile was deleted). */
+  createdBy: string | null;
+  /** What kind of action this gig is. Only 'recording' is wired now. */
+  gigType: string;
+  title: string;
+  /** Optional longer brief. */
+  instructions: string | null;
+  /** WHEN in the student's 30-day cycle this is due — a day offset (0 = day one). */
+  cycleDay: number;
+  /** The equipment station this targets (e.g. 'scales'). */
+  station: string;
+  /** Snapshot of what to play, so the gig stays self-describing. The exercise + KEY + TEMPO are
+   *  the LOCKED presets the perform route dials in (the student can't change them — it's an
+   *  assignment). All three are required at create time for a recording gig. */
+  exerciseId: string | null;
+  exerciseName: string | null;
+  scaleKey: string | null;
+  tempoBpm: number | null;
+  /** How many full loops the record-mode take captures before it auto-stops (1-8). The admin sets
+   *  the length of the deliverable; the student can't change it. */
+  recordLoops: number;
+  /** Soft-disable without deleting. */
+  isActive: boolean;
+  createdAt: string;
+  /** Whether the CURRENT student has already submitted a take for this gig — set only on the
+   *  student gigs read (so the /gigs list can show a checkmark). Undefined on admin reads. */
+  submitted?: boolean;
+}
+
+/** A SUBMITTED, graded take with its tiny audio clip. Append-only history bound directly to
+ *  the user (equipment is OPEN practice — no goal enrollment, unlike rep_results). */
+export interface TakeResult {
+  id: string;
+  userId: string;
+  /** The gig this take fulfils (nullable — a future self-submit path may omit it). */
+  gigId: string | null;
+  station: string;
+  exerciseName: string | null;
+  scaleKey: string | null;
+  tempoBpm: number | null;
+  /** The grade (0-100 each) + the raw stats behind it, for the history trend. */
+  timingScore: number | null;
+  pitchScore: number | null;
+  jitterMs: number | null;
+  offsetMs: number | null;
+  noteCount: number | null;
+  /** Path into the PRIVATE `user-take-audio` bucket (read only via a backend-minted signed
+   *  URL). Null if a take was graded but no audio kept. */
+  audioPath: string | null;
+  audioBytes: number | null;
+  /** The RECONSTRUCTION recipe — what backing to load to replay this take in context (no backing
+   *  audio is stored; it's rebuilt from this). See PlaybackContext. */
+  playbackContext: PlaybackContext | null;
+  submittedAt: string;
+}
+
+/** One layer of the backing a take was recorded over — a DECLARATIVE description the replayer
+ *  rebuilds without knowing the station. A 'stem' is any looped audio file (a drone pad, a drum
+ *  loop, a chord bed — all the same to the player); a 'click' is the metronome, rebuilt from its
+ *  params. Listing layers (rather than naming a backing "kind") keeps replay robust: a future
+ *  station just emits different layers, no replay-code change. */
+export type BackingLayer =
+  | {
+      kind: 'stem';
+      /** Public/`signed URL of the looped audio file (e.g. a drone or drum-loop .ogg). */
+      url: string;
+      /** Loop the file under the take (default true). */
+      loop?: boolean;
+      /** Relative gain 0..1 (default 1). */
+      gain?: number;
+      /** A human label for the layer (e.g. 'drone', 'drums') — display only. */
+      label?: string;
+    }
+  | {
+      kind: 'click';
+      /** The metronome tempo the take was recorded at. */
+      tempoBpm: number;
+      /** Beats per bar (4/4 → 4). */
+      beatsPerBar?: number;
+      /** Count-in beats before the take (so replay can pre-roll the same way, or skip). */
+      countInBeats?: number;
+      /** Relative gain 0..1 (default ~0.2 — the click sits under the bass). */
+      gain?: number;
+    };
+
+/** What to load to replay a take "in context" — the click/drone/drums the student heard while
+ *  recording, rebuilt deterministically (no backing audio stored). Snapshotted at submit time so
+ *  a take stays replayable even if the exercise/backing later changes. */
+export interface PlaybackContext {
+  /** The gym station (e.g. 'scales'). */
+  station?: string | null;
+  /** The authored exercise to load (null = the generated/Auto scale). */
+  exerciseId?: string | null;
+  /** Key + tempo + loop count the take was played at. */
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number | null;
+  /** Fretboard box position (1..N) or 'whole'. */
+  position?: number | string | null;
+  /** The player's neck at record time (so the fingering matches). */
+  stringCount?: number | null;
+  /** Which backing groove drove the transport/clock (e.g. 'waitlist-demo-groove'). */
+  backingId?: string | null;
+  /** The backing layers that were actually SOUNDING while the take was recorded (click + any
+   *  stems that loaded). The replayer rebuilds these under the bass clip for in-context playback.
+   *  Empty/absent → the take plays dry (bare clip). */
+  backingLayers?: BackingLayer[] | null;
+  /** Seconds of clip BEFORE the take's beat 0 — the count-in pre-roll baked into the recording
+   *  (the mic armed at the count-in START, so the clip begins during the count-in). The replayer
+   *  starts the looped stems at this offset (they began at beat 0 live) and phases the click grid
+   *  so beat 0 lands here — making the rebuilt backing line up with the clip exactly. */
+  preRollSec?: number | null;
+}
+
+/** A TakeResult enriched with a freshly-minted, short-lived signed read URL for its audio
+ *  (null when there's no stored clip). The shape the user history endpoint returns. */
+export type TakeResultWithSignedUrl = TakeResult & {
+  audioUrl: string | null;
+};
+
+/** Admin create payload for a gig (createdBy is stamped server-side from the authenticated
+ *  admin). The gig is bound to a GOAL and scheduled by a cycle-day offset. */
+export interface CreateGigInput {
+  goalId: string;
+  gigType?: string;
+  title: string;
+  instructions?: string | null;
+  cycleDay: number;
+  station?: string;
+  /** For a recording gig the exercise + key + tempo are the LOCKED presets — required (the
+   *  builder enforces it). recordLoops sets the take length (1-8); defaults to 2 if omitted. */
+  exerciseId?: string | null;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number;
+}
+
+/** Partial edit of an existing gig. goalId is intentionally NOT editable (re-targeting a gig
+ *  to another goal = delete + create, since enrollment semantics change). `isActive` toggles
+ *  the soft-disable. Every field optional — only what's present is written. */
+export interface UpdateGigInput {
+  gigType?: string;
+  title?: string;
+  instructions?: string | null;
+  cycleDay?: number;
+  station?: string;
+  exerciseId?: string | null;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number;
+  isActive?: boolean;
+}
+
+/** The non-file metadata fields of a take submission (the audio rides the multipart body,
+ *  audioPath/audioBytes are stamped server-side after the upload). */
+export interface SubmitTakeInput {
+  gigId?: string | null;
+  station?: string;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  timingScore?: number | null;
+  pitchScore?: number | null;
+  jitterMs?: number | null;
+  offsetMs?: number | null;
+  noteCount?: number | null;
+  /** The reconstruction recipe (what backing to load to replay this take in context). Arrives as
+   *  a JSON string on the multipart body; the backend parses it into PlaybackContext. */
+  playbackContext?: PlaybackContext | null;
+}

@@ -15,6 +15,13 @@ import type {
   MonthInReview,
   TopicProgress,
   EnrollableGoal,
+  GymExercise,
+  Gig,
+  CreateGigInput,
+  UpdateGigInput,
+  PlaybackContext,
+  TakeResult,
+  TakeResultWithSignedUrl,
 } from '@bassnotion/contracts';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/infrastructure/supabase/client';
@@ -47,6 +54,27 @@ export async function fetchMyEnrollments(): Promise<GoalEnrollment[]> {
 export async function fetchEnrollableGoals(): Promise<EnrollableGoal[]> {
   await ensureAuthToken();
   return apiClient.get<EnrollableGoal[]>('/api/v1/training-engine/goals');
+}
+
+/**
+ * GET /api/v1/training-engine/gym-exercises — the authored exercise LIBRARY a student
+ * picks from in a gym tool (scales today). Read-only; optionally filter by equipment
+ * (e.g. 'scales') and kind ('scale_path' | 'groove'). Returns ALL keys/variants — the
+ * tool selects key/position/tempo at runtime.
+ */
+export async function fetchGymExercises(filters?: {
+  equipment?: string;
+  kind?: string;
+}): Promise<GymExercise[]> {
+  await ensureAuthToken();
+  const qs = new URLSearchParams();
+  if (filters?.equipment) qs.set('equipment', filters.equipment);
+  if (filters?.kind) qs.set('kind', filters.kind);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  const { exercises } = await apiClient.get<{ exercises: GymExercise[] }>(
+    `/api/v1/training-engine/gym-exercises${suffix}`,
+  );
+  return exercises;
 }
 
 /**
@@ -178,4 +206,161 @@ export async function fetchRepHistory(
       enrollmentId,
     )}/rep-results`,
   );
+}
+
+// ── Gig submissions (the admin-authored, goal-bound deliverables) ────────────
+
+/** GET the caller's gigs — the "submit this" deliverables they inherit via their enrolled
+ *  goals (soonest in the cycle first). */
+export async function fetchMyGigs(): Promise<Gig[]> {
+  await ensureAuthToken();
+  const { gigs } = await apiClient.get<{ gigs: Gig[] }>(
+    '/api/v1/training-engine/recordings/gigs',
+  );
+  return gigs;
+}
+
+/** GET ONE gig by id (the perform route), with the caller's existing take for it (if any).
+ *  404s if the gig doesn't exist OR the caller isn't enrolled in its goal. */
+export async function fetchGig(id: string): Promise<{
+  gig: Gig;
+  existingTake: TakeResultWithSignedUrl | null;
+}> {
+  await ensureAuthToken();
+  return apiClient.get<{
+    gig: Gig;
+    existingTake: TakeResultWithSignedUrl | null;
+  }>(`/api/v1/training-engine/recordings/gigs/${encodeURIComponent(id)}`);
+}
+
+/**
+ * GET the caller's submitted takes (history), each with a short-lived signed audio URL.
+ *
+ * Uses a RAW fetch with the session token set EXPLICITLY per-request (not the shared apiClient).
+ * The apiClient attaches auth via a mutable singleton header + dedupes GETs by URL — both race on
+ * the backstage mount, where several authed hooks fire at once: a concurrent tokenless GET to the
+ * same path can be reused, or another call can clear the singleton's header between set and fetch,
+ * yielding a 401 ("No token provided") that silently empties the list. Attaching the token to THIS
+ * request (like submitTake does) sidesteps both. */
+export async function fetchMyTakeHistory(): Promise<TakeResultWithSignedUrl[]> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('User not authenticated');
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${baseUrl}/api/v1/training-engine/recordings/takes`,
+    { headers: { Authorization: `Bearer ${session.access_token}` } },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Failed to load takes (${res.status}): ${body}`);
+  }
+  const { takes } = (await res.json()) as { takes: TakeResultWithSignedUrl[] };
+  return takes;
+}
+
+/** POST a new gig on a goal (admin builder). Returns the created gig. */
+export async function createGig(input: CreateGigInput): Promise<Gig> {
+  await ensureAuthToken();
+  const { gig } = await apiClient.post<{ gig: Gig }>(
+    '/api/v1/training-engine/admin/gigs',
+    input,
+  );
+  return gig;
+}
+
+/** GET every gig (admin management list), optionally scoped to one goal. */
+export async function fetchAdminGigs(goalId?: string): Promise<Gig[]> {
+  await ensureAuthToken();
+  const suffix = goalId ? `?goalId=${encodeURIComponent(goalId)}` : '';
+  const { gigs } = await apiClient.get<{ gigs: Gig[] }>(
+    `/api/v1/training-engine/admin/gigs${suffix}`,
+  );
+  return gigs;
+}
+
+/** PATCH a gig's parameters (admin). Returns the updated gig. */
+export async function updateGig(
+  id: string,
+  patch: UpdateGigInput,
+): Promise<Gig> {
+  await ensureAuthToken();
+  const { gig } = await apiClient.patch<{ gig: Gig }>(
+    `/api/v1/training-engine/admin/gigs/${encodeURIComponent(id)}`,
+    patch,
+  );
+  return gig;
+}
+
+/** DELETE a gig (admin). Submitted takes survive (gig_id → SET NULL). */
+export async function deleteGig(id: string): Promise<void> {
+  await ensureAuthToken();
+  await apiClient.delete(
+    `/api/v1/training-engine/admin/gigs/${encodeURIComponent(id)}`,
+  );
+}
+
+/** The grade + stats that ride along with a submitted take (the non-file metadata). */
+export interface SubmitTakeMeta {
+  gigId?: string;
+  station: string;
+  exerciseName?: string;
+  scaleKey?: string;
+  tempoBpm?: number;
+  timingScore?: number;
+  pitchScore?: number;
+  jitterMs?: number;
+  offsetMs?: number;
+  noteCount?: number;
+  /** The reconstruction recipe — what backing to load to replay this take in context. Serialized
+   *  to a JSON string in the FormData (the backend parses it). */
+  playbackContext?: PlaybackContext;
+}
+
+/**
+ * POST a submitted take: the compressed audio blob + its grade/stats, multipart.
+ * NOT via apiClient.post (that JSON-stringifies the body) — multipart needs the browser to set
+ * the boundary, so we hand-build the FormData + fetch with the session token.
+ */
+export async function submitTake(
+  audio: Blob,
+  meta: SubmitTakeMeta,
+): Promise<TakeResult> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('User not authenticated');
+  }
+
+  const form = new FormData();
+  form.append('audio', audio, 'take.ogg');
+  for (const [k, v] of Object.entries(meta)) {
+    if (v === undefined || v === null) continue;
+    // Objects (playbackContext) go as JSON; scalars as strings. String(obj) would yield
+    // "[object Object]" — the backend parses playbackContext with JSON.parse.
+    form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+  }
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const res = await fetch(
+    `${baseUrl}/api/v1/training-engine/recordings/submit`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      body: form, // NO Content-Type header — the browser sets the multipart boundary.
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Submit failed (${res.status}): ${body}`);
+  }
+  return (await res.json()) as TakeResult;
 }

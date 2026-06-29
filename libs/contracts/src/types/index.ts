@@ -573,6 +573,23 @@ export type {
   ProgressSignalSource,
   RepResultSink,
   RepResultInput,
+  ScalePositionShape,
+  ScaleRhythmValue,
+  ScaleTypeId,
+  ScaleBlueprintRecord,
+  UpdateScaleBlueprintInput,
+  GymExerciseKind,
+  GymExercise,
+  CreateGymExerciseInput,
+  UpdateGymExerciseInput,
+  Gig,
+  TakeResult,
+  TakeResultWithSignedUrl,
+  CreateGigInput,
+  UpdateGigInput,
+  SubmitTakeInput,
+  PlaybackContext,
+  BackingLayer,
 } from './training.js';
 
 // Value export (pure mapper, not a type) — drill completion → ProgressSignal.

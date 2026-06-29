@@ -107,8 +107,11 @@ export function TutorialFolder({
 
   const handleTutorialClick = useCallback(
     (slug: string) => {
-      // Clean writer URL: the middleware rewrites /tutorials/* → /app/tutorials/*.
-      navigateWithTransition(`/tutorials/${slug}`);
+      // Room-scoped: a tutorial opened from the College room stays under /college/<slug>.
+      // The middleware rewrites /college/<slug> → /app/tutorials/<slug> (same internal
+      // page as /tutorials/<slug>), so the URL bar reads /college/... and audio +
+      // active-state checks (keyed on /app/tutorials) keep working unchanged.
+      navigateWithTransition(`/college/${slug}`);
     },
     [navigateWithTransition],
   );

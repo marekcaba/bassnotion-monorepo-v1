@@ -24,13 +24,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <AdminGuard>
       <div className="min-h-screen bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 justify-between">
-              <div className="flex">
-                <div className="flex flex-shrink-0 items-center">
-                  <h2 className="text-xl font-semibold">Bassicology Admin</h2>
-                </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          {/* Full-width + horizontally scrollable: the menu has many items and was overflowing
+              past the edge (clipped, no scroll). overflow-x-auto + nowrap links lets it scroll. */}
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center gap-6 overflow-x-auto">
+              <div className="flex flex-shrink-0 items-center">
+                <h2 className="whitespace-nowrap text-xl font-semibold">
+                  Bassicology Admin
+                </h2>
+              </div>
+              <div className="hidden flex-nowrap items-center gap-6 sm:flex [&>a]:whitespace-nowrap">
                   <a
                     href="/admin/funnels"
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
@@ -66,6 +69,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
                   >
                     Training Goals
+                  </a>
+                  <a
+                    href="/admin/scales"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Scales
+                  </a>
+                  <a
+                    href="/admin/gigs"
+                    className="inline-flex items-center border-b-2 border-transparent hover:border-gray-300 px-1 pt-1 text-sm font-medium text-gray-900"
+                  >
+                    Gigs
                   </a>
                   <a
                     href="/admin/folders"
@@ -110,7 +125,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     Wurlitzer
                   </a>
                 </div>
-              </div>
             </div>
           </div>
         </nav>

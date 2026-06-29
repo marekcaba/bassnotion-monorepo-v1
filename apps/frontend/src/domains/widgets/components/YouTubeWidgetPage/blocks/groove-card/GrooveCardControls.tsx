@@ -485,7 +485,7 @@ function NoteLabel({ label }: { label: string }) {
   );
 }
 
-interface StepperProps {
+export interface StepperProps {
   label: string;
   suffix?: string;
   onPrev: () => void;
@@ -505,9 +505,13 @@ interface StepperProps {
   /** Dynamic Loop: the upcoming key shown in green after the arrow. Null when
    *  not cycling (then the plain stepper renders). */
   nextKeyLabel?: string | null;
+  /** Width (in ch) of the text-label slot. Default 3 — sized for tempo numbers.
+   *  Wider text labels (e.g. "Major", "Pos 1") pass a larger value so they don't
+   *  wrap or shift neighbours. Only affects labelKind='text'. */
+  labelWidthCh?: number;
 }
 
-function Stepper({
+export function Stepper({
   label,
   suffix,
   onPrev,
@@ -518,6 +522,7 @@ function Stepper({
   disablePrev = false,
   disableNext = false,
   nextKeyLabel = null,
+  labelWidthCh = 3,
 }: StepperProps) {
   return (
     <div className="flex items-center gap-1" aria-label={ariaLabel}>
@@ -548,7 +553,10 @@ function Stepper({
         // don't reflow the suffix or the neighbouring controls. The suffix
         // ("BPM") is a separate fixed element after it.
         <span className="flex items-center justify-center text-base font-semibold text-white">
-          <span className="inline-block w-[3ch] text-right tabular-nums">
+          <span
+            className="inline-block whitespace-nowrap tabular-nums"
+            style={{ width: `${labelWidthCh}ch`, textAlign: labelWidthCh > 3 ? 'center' : 'right' }}
+          >
             {label}
           </span>
           {suffix && <span className="ml-1.5">{suffix.trim()}</span>}

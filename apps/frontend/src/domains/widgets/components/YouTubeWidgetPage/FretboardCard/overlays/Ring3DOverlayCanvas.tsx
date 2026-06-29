@@ -93,6 +93,19 @@ import type { RingOverlayConfig } from './RingOverlayConfig.js';
 import { OVERLAY_LIGHTING_CONFIG } from './RingOverlayConfig.js';
 import { RingOverlayGroup } from './RingOverlayGroup.js';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import {
+  type PlayheadConfig,
+  DEFAULT_PLAYHEAD_CONFIG,
+  playheadGlide,
+  playheadPulse,
+} from '@/domains/training-engine/equipment/scales/playheadConfig';
+
+/** Max concentric rings in the playhead landing-ripple pool (config picks how many show). */
+const MAX_RIPPLE_RINGS = 6;
+/** Max ghost-ball notes in the anticipation runway pool (config picks how many show). */
+const MAX_RUNWAY = 6;
+/** Max static root-marker rings (one per root/octave dot visible on the neck). */
+const MAX_ROOT_RINGS = 8;
 
 /**
  * Custom perspective camera for 3D ring overlay.
@@ -623,6 +636,27 @@ export interface Ring3DOverlayCanvasProps {
   stringCount?: 4 | 5 | 6;
   /** Maximum fret number */
   maxFrets?: number;
+  /** Override the rendered viewport width (px). Default 580 (shows ~fret 12).
+   *  Widen it to show MORE frets — used by the gym equipment fretboard tools. */
+  viewportWidthOverride?: number;
+  /** When true, ALL exercise-note positions render as lit scale dots (the whole
+   *  scale shape visible at once), with the active note still emphasized — instead
+   *  of the tutorial's moving-lookahead window (only the next ~2 notes lit). Used by
+   *  the gym Scales tool. Default false → tutorial behavior unchanged. */
+  showAllNotes?: boolean;
+  /** Root-note positions (1-based string + fret). In showAllNotes mode these paint a
+   *  DARKER green than the rest of the scale so the home note stands out. Scales-tool
+   *  only; the tutorial passes nothing. */
+  rootPositions?: Array<{ string: number; fret: number }>;
+  /** GYM PLAYHEAD: the sequencer's live position in beats (null when not playing) + the
+   *  played note sequence (string/fret + startBeat). The canvas glides an orange sphere
+   *  along it on its OWN clock (the gym doesn't run the AtomicPlaybackClock). */
+  getPlaybackBeat?: () => number | null;
+  playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>;
+  /** Loop length in beats — for gliding the playhead across the loop seam (last → first). */
+  loopBeats?: number;
+  /** Playhead sphere appearance + animation config (size/color/anim/bezier). */
+  playheadConfig?: PlayheadConfig;
   /** Number of countdown beats (to exclude from rings) */
   countdownBeats?: number;
   /** Tempo in BPM */
@@ -757,6 +791,12 @@ interface DebugVisualizationProps {
   exerciseNotes: ExerciseNoteInput[]; // Exercise notes array for timeline building
   tempo: number; // BPM for timing calculations
   isPlaying: boolean; // Playback state for enabling updates
+  showAllNotes?: boolean; // light the WHOLE scale at once (gym Scales tool), not lookahead
+  rootPositions?: Array<{ string: number; fret: number }>; // roots → darker green
+  getPlaybackBeat?: () => number | null; // gym playhead clock (beats)
+  playheadNotes?: Array<{ string: number; fret: number; startBeat: number }>; // glide path
+  loopBeats?: number; // loop length (beats) for seam glide
+  playheadConfig?: PlayheadConfig; // sphere appearance + animation
   countdownBeats?: number; // Countdown beats before exercise starts (default 4)
   // Yellow active ring customization
   activeRingZOffset?: number; // Z offset above the dot (default 1)
@@ -849,6 +889,12 @@ function DebugVisualization({
   exerciseNotes,
   tempo,
   isPlaying,
+  showAllNotes = false,
+  rootPositions,
+  getPlaybackBeat,
+  playheadNotes,
+  loopBeats,
+  playheadConfig = DEFAULT_PLAYHEAD_CONFIG,
   countdownBeats = 4,
   activeRingZOffset = -1,
   activeRingRadius = 13,
@@ -890,6 +936,10 @@ function DebugVisualization({
   const DOT_COLORS = {
     BLUE: activeDotColorHex, // Currently playing note (from prop, default blue)
     GREEN: 0x16a34a, // Preview/next note (green-600, darker)
+    GREEN_DARK: 0x14532d, // Scale ROOT note (green-900) — the home note stands out
+    GREEN_DIM: 0x1d3a2a, // Out-of-window scale note while playing — a SOLID muted green (not
+    // a low-opacity fade); dim enough to recede but the mesh stays opaque (no see-through).
+    GREEN_DIM_ROOT: 0x0f2a1c, // Dim version of the root's dark green (keeps roots distinct).
     GREY: 0x475569, // Regular fret positions (slate-600)
     GREY_LIGHT: 0x64748b, // Marker frets: open, 3, 5, 7, 9, 12, 15, 17, 19, 21 (slate-500)
     ACTIVE_RING: activeRingColorHex, // Ring color (from prop)
@@ -996,6 +1046,17 @@ function DebugVisualization({
     return mapping;
   }, [timeline]);
 
+  // Root-note position keys ("visualStringIndex,fret"), same format as positionToNotes,
+  // so calculateDotState can paint roots a darker green. Built from the 1-based
+  // rootPositions prop via the same string→visual-index conversion used for the timeline.
+  const rootPositionKeys = useMemo(() => {
+    const keys = new Set<string>();
+    (rootPositions ?? []).forEach(({ string, fret }) => {
+      keys.add(`${noteStringToVisualIndex(string, stringCount)},${fret}`);
+    });
+    return keys;
+  }, [rootPositions, stringCount]);
+
   // =============================================================================
   // DOT MESH REFS - Store references to each dot mesh for useFrame updates
   // =============================================================================
@@ -1013,6 +1074,63 @@ function DebugVisualization({
   // Preview ring refs - shows the NEXT note (orange, pulsing)
   const previewRingRef = useRef<THREE.Mesh>(null); // Circular preview ring
   const previewRingRectRef = useRef<THREE.Mesh>(null); // Rounded rectangle preview ring
+  // PLAYHEAD SPHERE (gym Scales tool) — a small orange sphere that sits at the active note's
+  // dot center and glides center-to-center to the next note ("quick glide + hold"). Guitar
+  // Hero-style. Only used in showAllNotes mode (the active ring is held there).
+  const playheadSphereRef = useRef<THREE.Mesh>(null);
+  // LANDING RIPPLE ("dartboard"): concentric rings that expand at the dot when the sphere
+  // touches down — like it bounced off an invisible platform. A FIXED pool of ring meshes
+  // (MAX_RIPPLE_RINGS); `rippleRings` config controls how many are shown (density). The
+  // others stay hidden. rippleStateRef tracks which note last triggered it + elapsed [0..1].
+  const rippleRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // Trailing SECOND ripple (its own pool), fires a beat behind the first in ripple2Color.
+  const ripple2Refs = useRef<(THREE.Mesh | null)[]>([]);
+  // ANTICIPATION RUNWAY: ghost-ball spheres on the next few notes + connecting tracer lines
+  // between them (fixed pools; `runwayCount` config decides how many show). Pass 1.
+  const ghostRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const tracerRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // APPROACH RING — shrinks onto the NEXT dot as its beat arrives (timing cue). Pass 2.
+  const approachRingRef = useRef<THREE.Mesh>(null);
+  // ROOT MARKER RINGS — static rings around the root + octave dots (the dark-green ones).
+  // Two pools: circular torus for regular frets, rounded-rect tube for fret 0/12 (so the ring
+  // matches the rounded-rect DOT shape there instead of an oval slapped over a rectangle).
+  const rootRingRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const rootRingRectRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // ROLLING LIT WINDOW (gym) — while PLAYING, only the current note + the next few light up
+  // (a moving runway); the rest grey out. When NOT playing (pending/stopped) the whole scale
+  // lights (litWindowActive=false). The playhead useFrame fills these each frame; the dot-color
+  // path (calculateDotState) reads them. Position-key Set format matches dotMeshRefs keys.
+  const litWindowKeysRef = useRef<Set<string>>(new Set());
+  const litWindowActiveRef = useRef<boolean>(false);
+  // Per-dot brightness [0..1] (0 = dim green, 1 = full bright), eased toward each dot's window
+  // target every frame so the highlight FADES in/out (ease-in-out) instead of snapping. Keyed by
+  // dot position. Window size / smoothing / colors are panel-tunable (ph.lit*).
+  const dotBrightnessRef = useRef<Map<string, number>>(new Map());
+  // Continuous WAITING-bounce phase [0..1) — advances every frame so the pending bounce and the
+  // count-in bounce are ONE animation. While pending it free-runs at the tempo; when the count-in
+  // starts it eases (hurries/slows) onto the click grid instead of snapping. Survives the play press.
+  const bouncePhaseRef = useRef<number>(0);
+  // Reusable scratch colors for the per-frame dim↔bright lerp (no per-frame allocation).
+  const scratchDimColor = useRef(new THREE.Color());
+  const scratchBrightColor = useRef(new THREE.Color());
+  // Ripple state: which note last fired it, elapsed [0..1], AND the dot position it fired AT
+  // (anchored) so a long ripple keeps animating where it landed even after the playhead moves on
+  // — without the anchor the in-flight ripple snaps to the new note's dot and looks clipped.
+  const rippleStateRef = useRef<{
+    noteIdx: number;
+    t: number;
+    x: number;
+    y: number;
+    z: number;
+  }>({
+    noteIdx: -1,
+    t: 1,
+    x: 0,
+    y: 0,
+    z: 0,
+  });
+  // Normalized playhead config (sphere appearance + animation), default-filled.
+  const ph = playheadConfig ?? DEFAULT_PLAYHEAD_CONFIG;
   // Track pulse animation time
   const pulseTimeRef = useRef(0);
   // Dynamic note label refs - shows note name on current and next notes
@@ -1069,6 +1187,41 @@ function DebugVisualization({
         };
       }
 
+      // SCALE MODE (gym Scales tool): every exercise-note position is a lit scale dot,
+      // so the WHOLE scale shape is visible at once (not just the lookahead window).
+      // Scoped to showAllNotes, which ONLY the Scales tool sets — the tutorial is
+      // untouched.
+      //
+      // A/B HOLD: the BLUE active-note dot + orange highlight ring are commented out
+      // here for now. We'll build a SECONDARY highlight animation and A/B-test both, so
+      // in scale mode no note is marked active (every scale note stays GREEN). To
+      // restore the original blue-dot behaviour, move the active-note block back ABOVE
+      // this early-return.
+      if (showAllNotes) {
+        // Root notes paint a DARKER green so the scale's home note stands out.
+        const isRoot = rootPositionKeys.has(positionKey);
+        // ROLLING LIT WINDOW (low-motion): while PLAYING, the WHOLE scale stays GREEN but the
+        // out-of-window notes use a SOLID muted-green COLOR (not low opacity — that read as
+        // translucent/see-through). Only the small moving window (current + next + next-next) is
+        // FULL bright green. When NOT playing (pending/stopped) the whole scale is full bright.
+        const dimmed =
+          litWindowActiveRef.current &&
+          !litWindowKeysRef.current.has(positionKey);
+        const color = dimmed
+          ? isRoot
+            ? DOT_COLORS.GREEN_DIM_ROOT
+            : DOT_COLORS.GREEN_DIM
+          : isRoot
+            ? DOT_COLORS.GREEN_DARK
+            : DOT_COLORS.GREEN;
+        return {
+          color,
+          opacity: 1.0, // always solid — dimming is by color, never opacity
+          isActive: false,
+          isRoundedRect,
+        };
+      }
+
       // Check if this position is the ACTIVE note - show as BLUE
       const activeNote = notesAtPosition.find(
         (n) => n.noteIndex === activeNoteIndex,
@@ -1100,7 +1253,14 @@ function DebugVisualization({
       // Outside lookahead window - render as appropriate GREY
       return { color: greyColor, opacity: 1.0, isActive: false, isRoundedRect };
     },
-    [positionToNotes, DOT_COLORS, MARKER_FRETS, LOOKAHEAD_CONFIG.opacityLevels],
+    [
+      positionToNotes,
+      rootPositionKeys,
+      DOT_COLORS,
+      MARKER_FRETS,
+      LOOKAHEAD_CONFIG.opacityLevels,
+      showAllNotes,
+    ],
   );
 
   // =============================================================================
@@ -1125,10 +1285,19 @@ function DebugVisualization({
   const FRET_SPACING = 36; // px between fret centers
   const DOT_RADIUS = 13; // px radius of dots
 
-  // String names for bass guitar - storage order matching FretboardGrid.tsx fullStringConfig
-  // Index 0 = B (lowest pitch), Index 1 = E, Index 2 = A, Index 3 = D, Index 4 = G, Index 5 = C
-  // This matches the 2D fretboard's fullStringConfig = ['B', 'E', 'A', 'D', 'G', 'C']
-  const STRING_NAMES = ['B', 'E', 'A', 'D', 'G', 'C'];
+  // String names indexed by VISUAL ROW. stringIndex 0 = the BOTTOM row (the lowest pitch,
+  // closest/biggest), ascending to the TOP. So index 0 is the lowest string:
+  //   4-string: E A D G   5-string: B E A D G   6-string: B E A D G C
+  // (The old fixed ['B','E','A','D','G','C'] was right for 6-string but a 4-string took
+  //  its first 4 → 'B E A D' — wrong. Now sized to the count, bottom-up.)
+  const STRING_NAMES = useMemo(() => {
+    const byCount: Record<number, string[]> = {
+      4: ['E', 'A', 'D', 'G'],
+      5: ['B', 'E', 'A', 'D', 'G'],
+      6: ['B', 'E', 'A', 'D', 'G', 'C'],
+    };
+    return byCount[stringCount] ?? ['B', 'E', 'A', 'D', 'G', 'C'];
+  }, [stringCount]);
 
   // =============================================================================
   // CANVAS-BASED TEXT TEXTURES - For string labels without external font loading
@@ -1162,7 +1331,7 @@ function DebugVisualization({
     });
 
     return textures;
-  }, []);
+  }, [STRING_NAMES]);
 
   // Dark textures (for active/preview notes - black text on green/blue dots)
   const stringLabelTexturesDark = useMemo(() => {
@@ -1190,7 +1359,7 @@ function DebugVisualization({
     });
 
     return textures;
-  }, []);
+  }, [STRING_NAMES]);
 
   // Refs to track string label meshes for dynamic texture updates
   const stringLabelMeshRefs = useRef<Map<string, THREE.Mesh>>(new Map());
@@ -1203,18 +1372,41 @@ function DebugVisualization({
   // - A string (index 2): fret 3 = C, fret 5 = D, fret 7 = E
   // These use a smaller font than the open string labels
   // =============================================================================
-  const FRET_NOTE_LABELS: Array<{
-    stringIndex: number;
-    fret: number;
-    label: string;
-  }> = [
-    { stringIndex: 1, fret: 3, label: 'G' }, // E string, fret 3 = G
-    { stringIndex: 1, fret: 5, label: 'A' }, // E string, fret 5 = A
-    { stringIndex: 1, fret: 7, label: 'B' }, // E string, fret 7 = B
-    { stringIndex: 2, fret: 3, label: 'C' }, // A string, fret 3 = C
-    { stringIndex: 2, fret: 5, label: 'D' }, // A string, fret 5 = D
-    { stringIndex: 2, fret: 7, label: 'E' }, // A string, fret 7 = E
-  ];
+  // Helper note-name dots ALWAYS on the E and A strings, whatever the string count.
+  // The E/A rows shift visually when low strings are added (4-str: E=0,A=1; 5/6-str:
+  // E=1,A=2), so we look up their VISUAL index from STRING_NAMES (which is per-count and
+  // bottom-up) instead of hardcoding — otherwise they'd land on the wrong rows on a 5/6.
+  const FRET_NOTE_LABELS = useMemo(() => {
+    const eIndex = STRING_NAMES.indexOf('E');
+    const aIndex = STRING_NAMES.indexOf('A');
+    const labels: Array<{ stringIndex: number; fret: number; label: string }> =
+      [];
+    // E string: fret 3=G, 5=A, 7=B — and the same one octave up (15, 17, 19).
+    // A string: fret 3=C, 5=D, 7=E — likewise at 15, 17, 19. The neck repeats past fret 12.
+    const E_NOTES: [number, string][] = [
+      [3, 'G'],
+      [5, 'A'],
+      [7, 'B'],
+    ];
+    const A_NOTES: [number, string][] = [
+      [3, 'C'],
+      [5, 'D'],
+      [7, 'E'],
+    ];
+    if (eIndex >= 0) {
+      for (const [fret, label] of E_NOTES) {
+        labels.push({ stringIndex: eIndex, fret, label });
+        labels.push({ stringIndex: eIndex, fret: fret + 12, label }); // 2nd octave
+      }
+    }
+    if (aIndex >= 0) {
+      for (const [fret, label] of A_NOTES) {
+        labels.push({ stringIndex: aIndex, fret, label });
+        labels.push({ stringIndex: aIndex, fret: fret + 12, label }); // 2nd octave
+      }
+    }
+    return labels;
+  }, [STRING_NAMES]);
 
   const fretNoteLabelTextures = useMemo(() => {
     const textures: Map<string, THREE.CanvasTexture> = new Map();
@@ -1761,6 +1953,39 @@ function DebugVisualization({
   const dotRadius = 13; // Match 2D dot radius exactly
   const gridLineThickness = 1; // Thin lines for both strings and frets
 
+  // Shared rounded-rectangle ring PATH (the tube the active-ring-rect — and now the root-marker
+  // rect rings — follow at fret 0/12). Same geometry the active ring uses, hoisted here so the
+  // root rings can adopt the EXACT rounded-rect outline instead of a circular torus. Pure curve;
+  // depends only on the dot size.
+  const roundedRectRingCurve = useMemo(() => {
+    const rectWidth = dotRadius * 2 + 2; // Slightly larger than dot
+    const rectHeight = dotRadius * 2 + 2;
+    const cornerRadius = 6; // Match rounded-md
+    const halfW = rectWidth / 2;
+    const halfH = rectHeight / 2;
+    const cr = Math.min(cornerRadius, halfW, halfH);
+    const pathPoints: THREE.Vector3[] = [];
+    const segments = 8; // segments per corner
+    // Bottom-left → bottom-right → top-right → top-left corners (clockwise).
+    const corners: [number, number, number][] = [
+      [-halfW + cr, -halfH + cr, Math.PI],
+      [halfW - cr, -halfH + cr, Math.PI * 1.5],
+      [halfW - cr, halfH - cr, 0],
+      [-halfW + cr, halfH - cr, Math.PI / 2],
+    ];
+    for (const [ox, oy, base] of corners) {
+      for (let i = 0; i <= segments; i++) {
+        const angle = base + (i / segments) * (Math.PI / 2);
+        pathPoints.push(
+          new THREE.Vector3(ox + cr * Math.cos(angle), oy + cr * Math.sin(angle), 0),
+        );
+      }
+    }
+    const first = pathPoints[0];
+    if (first) pathPoints.push(first.clone());
+    return new THREE.CatmullRomCurve3(pathPoints, true);
+  }, [dotRadius]);
+
   // PERFORMANCE: Memoize all dot positions - they only change when fretboard config changes
   // NOT when scrollLeft changes (scroll only affects opacity, not position)
   const allDots = useMemo(() => {
@@ -1960,8 +2185,18 @@ function DebugVisualization({
       }
     });
 
+    // GYM (showAllNotes): the orange playhead sphere is the active-note indicator now, so the
+    // tutorial's yellow active-note ring is DISMISSED here. (Its mesh stays mounted but hidden;
+    // it gets repurposed as static root/interval markers elsewhere.)
+    if (showAllNotes) {
+      if (activeRingRef.current) activeRingRef.current.visible = false;
+      if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
+      if (activeRingRectRef.current) activeRingRectRef.current.visible = false;
+      if (activeRingRectGlowRef.current)
+        activeRingRectGlowRef.current.visible = false;
+    }
     // Position the yellow ring on the first note - choose shape based on fret type
-    if (activePosition) {
+    if (!showAllNotes && activePosition) {
       // Show circular ring for regular frets, hide for open/fret 12
       if (activeRingRef.current) {
         if (activeIsRoundedRect) {
@@ -2362,6 +2597,7 @@ function DebugVisualization({
       }
     });
 
+
     // Pulse animation is calculated directly from real time and tempo below
 
     // Update active ring position - choose shape based on fret type
@@ -2655,6 +2891,520 @@ function DebugVisualization({
         }
       }
     });
+  });
+
+  // ── GYM PLAYHEAD SPHERE — its OWN useFrame, independent of the active-note one above ────
+  // The gym doesn't run the AtomicPlaybackClock, so the block above early-returns on a null
+  // clock. This drives the orange sphere from the SEQUENCER's beat (getPlaybackBeat) + the
+  // played note sequence (playheadNotes), shaped by `ph` (PlayheadConfig): the anim type +
+  // bezier easing decide the in-between (see playheadGlide). When not playing (beat null) it
+  // rests on the first note. Appearance (radius/color/opacity/emissive) is applied live so
+  // the dev panel updates it without remounting.
+  useFrame((state, delta) => {
+    const sphere = playheadSphereRef.current;
+    if (!sphere) return;
+
+    // Live appearance from the config (panel-tunable).
+    sphere.scale.setScalar(ph.radius);
+    const mat = sphere.material as THREE.MeshStandardMaterial;
+    mat.color.set(ph.color);
+    mat.emissive.set(ph.color);
+    mat.emissiveIntensity = ph.emissiveIntensity;
+    mat.opacity = ph.opacity;
+
+    if (!showAllNotes || !playheadNotes || playheadNotes.length === 0) {
+      sphere.visible = false;
+      rippleRefs.current.forEach((r) => r && (r.visible = false));
+      ripple2Refs.current.forEach((r) => r && (r.visible = false));
+      ghostRefs.current.forEach((g) => g && (g.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+      if (approachRingRef.current) approachRingRef.current.visible = false;
+      litWindowActiveRef.current = false; // no playback → whole scale lights
+      return;
+    }
+
+    // Build the rolling lit-window key for a playhead note (matches dotMeshRefs key format).
+    const winKey = (note: { string: number; fret: number }) =>
+      `${noteStringToVisualIndex(note.string, stringCount)},${note.fret}`;
+
+    // Recolor EVERY dot each frame (the gym has no AtomicPlaybackClock, so the shared one-shot
+    // dot-color pass freezes after first paint — this keeps colors live). Exercise dots EASE
+    // between their DIM and BRIGHT green: a per-dot brightness [0..1] is lerped toward its window
+    // target every frame, so the highlight fades IN/OUT (ease-in-out) instead of snapping. Dimming
+    // stays by COLOR (opacity locked at 1 → solid). Non-exercise dots are plain grey.
+    const recolorGymDots = () => {
+      const active = litWindowActiveRef.current;
+      const winSet = litWindowKeysRef.current;
+      const bright = scratchBrightColor.current;
+      const dim = scratchDimColor.current;
+      dotMeshRefs.current.forEach((mesh, positionKey) => {
+        const m = mesh.material as THREE.MeshBasicMaterial;
+        m.transparent = true;
+        m.opacity = 1.0;
+
+        // Non-exercise position → plain grey (marker frets a touch lighter). No animation.
+        if (!positionToNotes.has(positionKey)) {
+          const fretNum = parseInt(positionKey.split(',')[1] ?? '0', 10);
+          const isMarker = MARKER_FRETS.has(fretNum === 0 ? 'open' : fretNum);
+          m.color.setHex(isMarker ? DOT_COLORS.GREY_LIGHT : DOT_COLORS.GREY);
+          m.needsUpdate = true;
+          return;
+        }
+
+        // Exercise dot → ease brightness toward its target (1 = bright, 0 = dim), then lerp color.
+        // Bright/dim greens + smoothing come from the panel-tunable config (ph).
+        const isRoot = rootPositionKeys.has(positionKey);
+        bright.set(isRoot ? ph.litBrightRootColor : ph.litBrightColor);
+        dim.set(isRoot ? ph.litDimRootColor : ph.litDimColor);
+        // When the window is inactive (stopped) every dot is bright; else only window members.
+        const target = !active || winSet.has(positionKey) ? 1 : 0;
+        const prev = dotBrightnessRef.current.get(positionKey) ?? target;
+        const cur = prev + (target - prev) * ph.litSmoothing;
+        dotBrightnessRef.current.set(positionKey, cur);
+        m.color.copy(dim).lerp(bright, cur);
+        m.needsUpdate = true;
+      });
+    };
+
+    const dotPos = (note: { string: number; fret: number }) => {
+      const key = `${noteStringToVisualIndex(note.string, stringCount)},${note.fret}`;
+      const mesh = dotMeshRefs.current.get(key);
+      return mesh ? mesh.position : null;
+    };
+
+    // Hide the LETTER on the dots the playhead is on / approaching / previewing, so the sphere's
+    // bounce + the approach ring + the faint runway ghosts read clean. This covers BOTH letter
+    // sets: the open-string / fret-12 string names (G/D/A/E/B) AND the fret-marker note names on
+    // the 3rd/5th/7th… frets (fretNoteLabelRefs). Every other label is restored to visible.
+    const labelKey = (note: { string: number; fret: number }) =>
+      `${noteStringToVisualIndex(note.string, stringCount)},${note.fret}`;
+    const hideLabelsFor = (notes: Array<{ string: number; fret: number }>) => {
+      const occupied = new Set(notes.map(labelKey));
+      stringLabelMeshRefs.current.forEach((mesh, posKey) => {
+        if (mesh) mesh.visible = !occupied.has(posKey);
+      });
+      fretNoteLabelRefs.current.forEach((mesh, posKey) => {
+        if (mesh) mesh.visible = !occupied.has(posKey);
+      });
+    };
+
+    const beat = getPlaybackBeat ? getPlaybackBeat() : null;
+
+    // Not playing (beat null) OR counting in (beat < 0) → the sphere waits on the first note.
+    // Hide + reset the ripple so it re-fires from the first note when playback (re)starts.
+    if (beat === null || beat < 0) {
+      rippleRefs.current.forEach((r) => r && (r.visible = false));
+      ripple2Refs.current.forEach((r) => r && (r.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+      rippleStateRef.current = { noteIdx: -1, t: 1, x: 0, y: 0, z: 0 };
+
+      const startPos = dotPos(playheadNotes[0]!);
+
+      if (beat === null) {
+        // STOPPED → light the WHOLE scale (overview before the student starts). No runway/ring.
+        litWindowActiveRef.current = false;
+        ghostRefs.current.forEach((g) => g && (g.visible = false));
+        if (approachRingRef.current) approachRingRef.current.visible = false;
+      } else {
+        // COUNT-IN (beat < 0) → already DIM the scale and pre-light the START window (the first
+        // notes + their rings) so the student sees where to begin before beat 0 hits. ALSO show
+        // the anticipation target on the start note: the black runway ghost + the orange approach
+        // ring sitting on top, so the full "next note" cue is present during the count-in.
+        const win = new Set<string>();
+        for (let k = 0; k <= ph.litWindowAhead; k++) {
+          const n = playheadNotes[k % playheadNotes.length];
+          if (n) win.add(winKey(n));
+        }
+        litWindowKeysRef.current = win;
+        litWindowActiveRef.current = true;
+
+        // First runway ghost (black dot/disc) on the start note — same styling as the nearest
+        // ghost in the playing branch (i=0, full falloff).
+        const isDisc = ph.runwayShape === 'disc';
+        ghostRefs.current.forEach((g, i) => {
+          if (!g) return;
+          if (i !== 0 || ph.runwayOn <= 0 || !startPos) {
+            g.visible = false;
+            return;
+          }
+          const r = ph.radius * ph.runwaySize; // nearest ghost = full size
+          g.position.set(
+            startPos.x,
+            startPos.y,
+            startPos.z + (isDisc ? 0.5 : ph.zOffset),
+          );
+          if (isDisc) g.scale.set(r, r, 0.06);
+          else g.scale.setScalar(r);
+          const gmat = g.material as THREE.MeshStandardMaterial;
+          gmat.color.set(ph.runwayColor);
+          gmat.emissive.set(ph.runwayColor);
+          gmat.opacity = ph.runwayOpacity;
+          g.visible = true;
+        });
+
+        // Orange approach ring on the start note — held at its start size (the "get ready" target)
+        // so it reads as the dot the student is about to play.
+        const ar = approachRingRef.current;
+        if (ar && startPos && ph.approachOn > 0) {
+          ar.position.set(startPos.x, startPos.y, startPos.z + 1.5);
+          ar.scale.setScalar(ph.radius * ph.approachStart);
+          const armat = ar.material as THREE.MeshBasicMaterial;
+          armat.color.set(ph.approachColor);
+          armat.opacity = ph.approachOpacity;
+          ar.visible = true;
+        } else if (ar) {
+          ar.visible = false;
+        }
+      }
+      recolorGymDots();
+      // Idle/count-in: the sphere waits on the first note — hide that one dot's letter.
+      hideLabelsFor([playheadNotes[0]!]);
+      const pos = startPos;
+      if (pos) {
+        // ONE CONTINUOUS BOUNCE through pending → play press → count-in. A persistent phase advances
+        // every frame at the tempo (one touchdown per beat). While PENDING it free-runs. During the
+        // COUNT-IN (beat < 0) it eases onto the click grid: each frame it also nudges toward the
+        // count-in's true beat phase (shortest wrap distance), so whenever the user hits play the
+        // bounce HURRIES or SLOWS to catch the downbeat instead of snapping — pending + count-in
+        // read as a single bounce. It lands on the start dot at beat 0 and the exercise takes over.
+        const beatsPerSec = Math.max(tempo, 1) / 60;
+        let phase = bouncePhaseRef.current + delta * beatsPerSec; // base advance at tempo
+
+        if (beat !== null) {
+          // Count-in: ease toward the real beat phase. Shortest signed distance on the [0,1) ring.
+          const target = beat - Math.floor(beat);
+          let d = target - (phase - Math.floor(phase));
+          if (d > 0.5) d -= 1;
+          else if (d < -0.5) d += 1;
+          phase += d * Math.min(delta * 6, 1); // catch-up: converges within ~a beat, frame-rate safe
+        }
+
+        phase -= Math.floor(phase); // wrap to [0,1)
+        bouncePhaseRef.current = phase;
+        const bob = Math.abs(Math.sin(phase * Math.PI)); // 0 (on dot) → 1 (apex) → 0 (next beat)
+        const lift = ph.zOffset + bob * ph.radius * 0.9; // hover height
+        const squash = 1 - (1 - bob) * 0.18; // a touch flatter at the bottom
+        sphere.position.set(pos.x, pos.y, pos.z + lift);
+        sphere.scale.set(ph.radius, ph.radius * squash, ph.radius);
+        sphere.visible = true;
+      } else {
+        sphere.visible = false;
+      }
+      return;
+    }
+
+    // Active note = the last note whose startBeat ≤ beat (sequence is ascending in beat).
+    let idx = 0;
+    for (let i = 0; i < playheadNotes.length; i++) {
+      if (playheadNotes[i]!.startBeat <= beat) idx = i;
+      else break;
+    }
+    const cur = playheadNotes[idx]!;
+    // On the LAST note, the next note WRAPS to the first (the loop seam) so the sphere glides
+    // back to the start instead of snapping. Its slot then runs to the loop end (loopBeats).
+    const onLast = idx === playheadNotes.length - 1;
+    const next = onLast
+      ? (playheadNotes[0] ?? null)
+      : (playheadNotes[idx + 1] ?? null);
+
+    // ROLLING LIT WINDOW: light only what's AHEAD — the next `litWindowAhead` upcoming notes
+    // (wrapping the loop). The CURRENT note is NOT in the window: it dims back with the rest (the
+    // sphere already marks where you are; the bright dot marks where you're GOING). The dot-color
+    // path reads litWindowKeysRef/Active each frame.
+    const win = new Set<string>();
+    for (let k = 1; k <= ph.litWindowAhead; k++) {
+      const n = playheadNotes[(idx + k) % playheadNotes.length];
+      if (n) win.add(winKey(n));
+    }
+    litWindowKeysRef.current = win;
+    litWindowActiveRef.current = true;
+    recolorGymDots();
+
+    const fromPos = dotPos(cur);
+    if (!fromPos) {
+      sphere.visible = false;
+      return;
+    }
+    const toPos = next ? dotPos(next) : null;
+
+    // Progress through the CURRENT note's slot [0..1], then let the config's anim type +
+    // bezier shape the glide t (current→next) + the vertical hop. For the last note the slot
+    // ends at the loop length; otherwise at the next note's startBeat.
+    const slotEnd = onLast
+      ? loopBeats && loopBeats > cur.startBeat
+        ? loopBeats
+        : cur.startBeat + 0.5
+      : (next?.startBeat ?? cur.startBeat + 0.5);
+    const slot = Math.max(slotEnd - cur.startBeat, 1e-3);
+    const noteProgress = Math.min(Math.max((beat - cur.startBeat) / slot, 0), 1);
+    const { t, hop } = playheadGlide(noteProgress, ph);
+
+    // Hide the LETTER on the dots ahead (NEXT + any runway ghosts) — always, the sphere's heading
+    // there. The CURRENT dot's letter is hidden ONLY while the sphere is still sitting on it; the
+    // moment the glide starts (t past a hair), free it so the letter reappears AS the sphere leaves,
+    // not a beat later when idx finally flips. (Without this, `cur` stayed hidden the whole slot.)
+    const labelWindow = ph.runwayOn > 0 ? Math.max(1, Math.round(ph.runwayCount)) : 1;
+    const hidden: Array<{ string: number; fret: number }> = [];
+    if (t < 0.05) hidden.push(cur); // sphere still on the current dot
+    for (let k = 1; k <= labelWindow; k++) {
+      const n = playheadNotes[(idx + k) % playheadNotes.length];
+      if (n) hidden.push(n);
+    }
+    hideLabelsFor(hidden);
+
+    const target = toPos ?? fromPos;
+    sphere.position.set(
+      fromPos.x + (target.x - fromPos.x) * t,
+      fromPos.y + (target.y - fromPos.y) * t + hop * ph.hopHeight,
+      fromPos.z + (target.z - fromPos.z) * t + ph.zOffset,
+    );
+    // On-beat pulse scales the sphere up then settles.
+    sphere.scale.setScalar(ph.radius * playheadPulse(noteProgress, ph));
+    sphere.visible = true;
+
+    // ── LANDING RIPPLE — fire concentric rings at the dot each time the sphere lands on a
+    //    NEW note (the bounce touchdown). `rippleRings` of them, STAGGERED so the inner ring
+    //    leads and outer ones trail → a dartboard shockwave. A trailing SECOND ripple fires
+    //    `ripple2Delay` behind in ripple2Color. All tunable via ph.ripple*.
+    const ringCount = Math.min(
+      Math.max(Math.round(ph.rippleRings), 1),
+      MAX_RIPPLE_RINGS,
+    );
+    const st = rippleStateRef.current;
+    // New note → retrigger both ripples at this dot, ANCHORING them to this dot's position so the
+    // ripple finishes its full duration right here even after the playhead glides to the next note.
+    if (idx !== st.noteIdx) {
+      st.noteIdx = idx;
+      st.t = 0;
+      st.x = fromPos.x;
+      st.y = fromPos.y;
+      st.z = fromPos.z;
+    }
+    // Advance by REAL time so the ripple lasts rippleDurationMs regardless of frame rate. Run the
+    // clock past 1 by the trailing ripple's DELAY so the delayed (2nd) ripple can also reach its
+    // own end (localT = st.t − delay ≥ 1) and HIDE — otherwise it freezes at its last frame
+    // (st.t capped at 1 → localT maxes at 1−delay, never completing). This is what left a ripple
+    // ring stuck on screen until the next note clipped it.
+    const maxDelay = ph.ripple2On > 0 ? Math.max(ph.ripple2Delay, 0) : 0;
+    const clockEnd = 1 + maxDelay;
+    if (st.t < clockEnd) {
+      const durSec = Math.max(ph.rippleDurationMs, 1) / 1000;
+      st.t = Math.min(st.t + delta / durSec, clockEnd);
+    }
+
+    // Render one ripple pool with a given color + a time delay (0 = first, ripple2Delay =
+    // trailing). Each ring in the pool is staggered so they read as concentric.
+    const renderRipple = (
+      refs: (THREE.Mesh | null)[],
+      on: boolean,
+      color: string,
+      delay: number,
+    ) => {
+      refs.forEach((ring, i) => {
+        if (!ring) return;
+        const localT = st.t - delay; // shift this pool's clock back by the delay
+        if (!on || i >= ringCount || localT <= 0 || localT >= 1) {
+          ring.visible = false;
+          return;
+        }
+        const stagger = (i / ringCount) * 0.45;
+        const e = Math.min(Math.max((localT - stagger) / (1 - stagger), 0), 1);
+        if (e <= 0 || e >= 1) {
+          ring.visible = false;
+          return;
+        }
+        const scale = ph.radius * (1 + e * (ph.rippleExpand - 1));
+        // Anchored at the dot it FIRED on (st.x/y/z), not the current note — so a long ripple
+        // plays out in place instead of being yanked to the next note's dot.
+        ring.position.set(st.x, st.y, st.z + 1);
+        ring.scale.setScalar(scale);
+        const rmat = ring.material as THREE.MeshBasicMaterial;
+        rmat.color.set(color);
+        rmat.opacity = (1 - e) * ph.rippleOpacity; // bright on impact → transparent
+        ring.visible = true;
+      });
+    };
+
+    renderRipple(rippleRefs.current, ph.rippleOn > 0, ph.rippleColor, 0);
+    renderRipple(
+      ripple2Refs.current,
+      ph.rippleOn > 0 && ph.ripple2On > 0,
+      ph.ripple2Color,
+      ph.ripple2Delay,
+    );
+
+    // ── ANTICIPATION RUNWAY (Pass 1) — ghost spheres on the next `count` notes, fading with
+    //    distance, + tracer segments connecting them (the road). Tempo-scaled: shorten at
+    //    fast BPM so the screen doesn't clutter. ──
+    const hideRunway = () => {
+      ghostRefs.current.forEach((g) => g && (g.visible = false));
+      tracerRefs.current.forEach((tr) => tr && (tr.visible = false));
+    };
+    if (ph.runwayOn <= 0) {
+      hideRunway();
+    } else {
+      // Tempo scale: at/above runwayTempoCap, halve the count (floor 1); below, full count.
+      const tempoScale =
+        ph.runwayTempoCap > 0 && tempo >= ph.runwayTempoCap ? 0.5 : 1;
+      const count = Math.min(
+        Math.max(Math.round(ph.runwayCount * tempoScale), 1),
+        MAX_RUNWAY,
+      );
+      // Chain of positions: the active dot, then the next `count` notes' dots. WRAPS around
+      // the loop (idx+k mod length) so the runway keeps previewing into the next cycle's
+      // start notes instead of emptying out near the end.
+      const chain: ({ x: number; y: number; z: number } | null)[] = [fromPos];
+      for (let k = 1; k <= count; k++) {
+        const n = playheadNotes[(idx + k) % playheadNotes.length];
+        chain.push(n ? dotPos(n) : null);
+      }
+      // GHOSTS — one per upcoming note (chain index 1..count). Shape: raised SPHERE or a
+      // flat DISC lying on the fretboard (a near-zero z-scale flattens the sphere to a disc).
+      const isDisc = ph.runwayShape === 'disc';
+      ghostRefs.current.forEach((g, i) => {
+        if (!g) return;
+        const pos = i < count ? chain[i + 1] : null;
+        if (!pos) {
+          g.visible = false;
+          return;
+        }
+        // Fade + shrink with distance (i=0 nearest → brightest/biggest).
+        const falloff = 1 - i / count;
+        const r = ph.radius * ph.runwaySize * (0.6 + 0.4 * falloff);
+        // Disc sits ON the plane (no z-lift, flat); sphere is raised by zOffset.
+        g.position.set(pos.x, pos.y, pos.z + (isDisc ? 0.5 : ph.zOffset));
+        if (isDisc) g.scale.set(r, r, 0.06);
+        else g.scale.setScalar(r);
+        const gmat = g.material as THREE.MeshStandardMaterial;
+        gmat.color.set(ph.runwayColor);
+        gmat.emissive.set(ph.runwayColor);
+        gmat.opacity = ph.runwayOpacity * falloff;
+        g.visible = true;
+      });
+      // TRACERS — a thin box stretched between each consecutive pair in the chain. Own
+      // color/thickness; `tracerCount` caps how many segments draw (≤ the gaps available).
+      const tracerCap = Math.min(
+        Math.max(Math.round(ph.tracerCount), 0),
+        count,
+      );
+      tracerRefs.current.forEach((tr, i) => {
+        if (!tr) return;
+        const a = chain[i];
+        const b = chain[i + 1];
+        if (ph.runwayTracer <= 0 || i >= tracerCap || !a || !b) {
+          tr.visible = false;
+          return;
+        }
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 1e-3) {
+          tr.visible = false;
+          return;
+        }
+        tr.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, a.z + 1);
+        tr.rotation.set(0, 0, Math.atan2(dy, dx));
+        tr.scale.set(len, ph.radius * ph.tracerThickness, 1); // length × thickness
+        const tmat = tr.material as THREE.MeshBasicMaterial;
+        tmat.color.set(ph.tracerColor);
+        const falloff = 1 - i / count;
+        tmat.opacity = ph.runwayTracer * falloff;
+        tr.visible = true;
+      });
+    }
+
+    // ── APPROACH RING (Pass 2) — shrinks onto the NEXT dot as its beat arrives, collapsing
+    //    to the dot on the downbeat ("play now"). Lead = approachLead beats. ──
+    const ar = approachRingRef.current;
+    if (ar) {
+      // Target the SAME wrapped `next` note the sphere + runway use, so the seam is seamless: on
+      // the LAST note `next` wraps to the first dot. Its effective downbeat then sits at the loop
+      // end (loopBeats), not its raw startBeat (~0) — otherwise the ring math sees a huge negative
+      // lead at the seam and never projects the orange ring onto the wrapped first dot.
+      const nextNote = next;
+      const nextPos = nextNote ? dotPos(nextNote) : null;
+      const nextTargetBeat =
+        onLast && loopBeats && loopBeats > cur.startBeat
+          ? loopBeats
+          : (nextNote?.startBeat ?? -1);
+      const lead = Math.max(ph.approachLead, 1e-3);
+      // a ∈ [0..1]: 0 = `lead` beats before the next note's (possibly wrapped) downbeat, 1 = ON it.
+      const a = nextNote ? (beat - (nextTargetBeat - lead)) / lead : -1;
+      if (ph.approachOn <= 0 || !nextPos || a <= 0 || a >= 1) {
+        ar.visible = false;
+      } else {
+        // Shrink from approachStart× down to ~1× (the dot) as a → 1.
+        const scale = ph.radius * (1 + (ph.approachStart - 1) * (1 - a));
+        ar.position.set(nextPos.x, nextPos.y, nextPos.z + 1.5);
+        ar.scale.setScalar(scale);
+        const armat = ar.material as THREE.MeshBasicMaterial;
+        armat.color.set(ph.approachColor);
+        armat.opacity = ph.approachOpacity * a; // fades IN as it closes
+        ar.visible = true;
+      }
+    }
+  });
+
+  // ── ROOT MARKER RINGS — STATIC, EXACTLY like the yellow active ring (same torus, already
+  //    dot-sized; positioned at the dot + activeRingZOffset, no scaling). Only the color
+  //    differs. Independent of playback (always on for the gym), so its OWN useFrame. ──
+  useFrame(() => {
+    // GYM: the tutorial's yellow rings are DISMISSED — force ALL of them hidden every frame
+    // (active circular + rounded-rect + glows, AND the preview rings) so none can linger.
+    if (showAllNotes) {
+      if (activeRingRef.current) activeRingRef.current.visible = false;
+      if (activeRingGlowRef.current) activeRingGlowRef.current.visible = false;
+      if (activeRingRectRef.current) activeRingRectRef.current.visible = false;
+      if (activeRingRectGlowRef.current)
+        activeRingRectGlowRef.current.visible = false;
+      if (previewRingRef.current) previewRingRef.current.visible = false;
+      if (previewRingRectRef.current) previewRingRectRef.current.visible = false;
+    }
+    const rings = rootRingRefs.current;
+    const rectRings = rootRingRectRefs.current;
+    if (!showAllNotes || ph.rootRingOn <= 0 || !rootPositions) {
+      rings.forEach((r) => r && (r.visible = false));
+      rectRings.forEach((r) => r && (r.visible = false));
+      return;
+    }
+    for (let i = 0; i < MAX_ROOT_RINGS; i++) {
+      const torus = rings[i];
+      const rect = rectRings[i];
+      const root = rootPositions[i];
+      // Default both off; the matching shape turns on below.
+      if (torus) torus.visible = false;
+      if (rect) rect.visible = false;
+      if (!root) continue;
+
+      const key = `${noteStringToVisualIndex(root.string, stringCount)},${root.fret}`;
+      const mesh = dotMeshRefs.current.get(key);
+      if (!mesh) continue;
+
+      // At fret 0 (open) or 12 the dot is a rounded RECT, so use the rect ring; else the torus.
+      const useRect = root.fret === 0 || root.fret === 12;
+      const ring = useRect ? rect : torus;
+      if (!ring) continue;
+
+      // Identical placement to the active ring (dot center + the same Z offset, no scale).
+      ring.position.set(
+        mesh.position.x,
+        mesh.position.y,
+        mesh.position.z + activeRingZOffset,
+      );
+      const rmat = ring.material as THREE.MeshStandardMaterial;
+      // DIM with the dots: while PLAYING, a root ring OUTSIDE the bright window darkens to match
+      // its dimmed dot (by COLOR — scale the RGB down, keep it solid). Roots inside the window,
+      // and all roots when stopped, stay at full color.
+      const inWindow =
+        !litWindowActiveRef.current || litWindowKeysRef.current.has(key);
+      rmat.color.set(ph.rootRingColor);
+      rmat.emissive.set(ph.rootRingColor);
+      if (!inWindow) {
+        rmat.color.multiplyScalar(ph.rootRingDimFactor);
+        rmat.emissive.multiplyScalar(ph.rootRingDimFactor);
+      }
+      ring.visible = true;
+    }
   });
 
   return (
@@ -2989,6 +3739,203 @@ function DebugVisualization({
         />
       </mesh>
 
+      {/* PLAYHEAD SPHERE (gym Scales tool) — the gliding orange marker. A UNIT sphere; its
+          radius/color/opacity/emissive + position/scale are driven each frame from
+          playheadConfig in the dedicated playhead useFrame. */}
+      <mesh
+        ref={playheadSphereRef}
+        visible={false}
+        position={[0, 0, 6]}
+        name="playhead-sphere"
+      >
+        <sphereGeometry args={[1, 24, 24]} />
+        <meshStandardMaterial
+          color={ph.color}
+          emissive={ph.color}
+          emissiveIntensity={ph.emissiveIntensity}
+          transparent={true}
+          opacity={ph.opacity}
+          depthWrite={false}
+          clippingPlanes={globalClippingPlanes}
+        />
+      </mesh>
+
+      {/* LANDING RIPPLE ("dartboard") — a POOL of flat ring annuli that expand + fade on the
+          dot when the sphere touches down. `rippleRings` config decides how many are visible
+          (density); the rest stay hidden. Each is a unit annulus; scaled/faded + staggered in
+          the playhead useFrame so they read as a concentric shockwave. */}
+      {Array.from({ length: MAX_RIPPLE_RINGS }).map((_, i) => (
+        <mesh
+          key={`ripple-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            rippleRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 4]}
+          name={`playhead-landing-ripple-${i}`}
+        >
+          <ringGeometry args={[0.78, 1, 48]} />
+          <meshBasicMaterial
+            color={ph.rippleColor}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* TRAILING SECOND RIPPLE — same shape, fires ripple2Delay behind the first in
+          ripple2Color (default black) so each landing is an orange flash chased by a dark
+          ring. Its own mesh pool, driven alongside the first in the playhead useFrame. */}
+      {Array.from({ length: MAX_RIPPLE_RINGS }).map((_, i) => (
+        <mesh
+          key={`ripple2-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            ripple2Refs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 3.9]}
+          name={`playhead-landing-ripple2-${i}`}
+        >
+          <ringGeometry args={[0.78, 1, 48]} />
+          <meshBasicMaterial
+            color={ph.ripple2Color}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* ANTICIPATION RUNWAY (Pass 1) — ghost-ball spheres previewing the next few notes.
+          Unit spheres positioned/scaled/faded each frame in the playhead useFrame (nearest
+          ghost brightest+biggest, fading with distance). */}
+      {Array.from({ length: MAX_RUNWAY }).map((_, i) => (
+        <mesh
+          key={`ghost-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            ghostRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5.5]}
+          name={`playhead-ghost-${i}`}
+        >
+          <sphereGeometry args={[1, 20, 20]} />
+          <meshStandardMaterial
+            color={ph.runwayColor}
+            emissive={ph.runwayColor}
+            emissiveIntensity={0.5}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* RUNWAY TRACER — thin box segments connecting consecutive ghost dots (the "road").
+          A unit box stretched + rotated to span each pair in the playhead useFrame. */}
+      {Array.from({ length: MAX_RUNWAY }).map((_, i) => (
+        <mesh
+          key={`tracer-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            tracerRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5]}
+          name={`playhead-tracer-${i}`}
+        >
+          <boxGeometry args={[1, 1, 0.1]} />
+          <meshBasicMaterial
+            color={ph.runwayColor}
+            transparent={true}
+            opacity={0}
+            depthWrite={false}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* APPROACH RING (Pass 2) — a unit ring that shrinks onto the NEXT dot as its beat
+          arrives, collapsing to the dot on the downbeat = "play now". Positioned/scaled/faded
+          in the playhead useFrame. */}
+      <mesh
+        ref={approachRingRef}
+        visible={false}
+        position={[0, 0, 5.2]}
+        name="playhead-approach-ring"
+      >
+        <ringGeometry args={[0.82, 1, 48]} />
+        <meshBasicMaterial
+          color={ph.approachColor}
+          transparent={true}
+          opacity={0}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          clippingPlanes={globalClippingPlanes}
+        />
+      </mesh>
+
+      {/* ROOT MARKER RINGS — EXACTLY the yellow active-note ring's mesh (same torus geometry +
+          material), just recolored, placed STATICALLY on each root/octave dot. The yellow ring
+          is the template; we don't restyle it, only its color. One per root position. */}
+      {Array.from({ length: MAX_ROOT_RINGS }).map((_, i) => (
+        <mesh
+          key={`root-ring-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            rootRingRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5]}
+          name={`root-marker-ring-${i}`}
+        >
+          <torusGeometry
+            args={[activeRingRadius, activeRingTubeRadius, 16, 32]}
+          />
+          <meshStandardMaterial
+            color={ph.rootRingColor}
+            emissive={ph.rootRingColor}
+            emissiveIntensity={0.6}
+            transparent={true}
+            opacity={0.8}
+            depthWrite={false}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
+      {/* ROOT MARKER RINGS (ROUNDED RECT) — the fret-0/12 variant. Same tube path the yellow
+          active-ring-rect follows, recolored; the frame loop shows this instead of the torus
+          when a root/octave sits on an open string or fret 12 (so the ring matches the dot). */}
+      {Array.from({ length: MAX_ROOT_RINGS }).map((_, i) => (
+        <mesh
+          key={`root-ring-rect-${i}`}
+          ref={(m: THREE.Mesh | null) => {
+            rootRingRectRefs.current[i] = m;
+          }}
+          visible={false}
+          position={[0, 0, 5]}
+          name={`root-marker-ring-rect-${i}`}
+        >
+          <tubeGeometry
+            args={[roundedRectRingCurve, 64, activeRingTubeRadius, 8, true]}
+          />
+          <meshStandardMaterial
+            color={ph.rootRingColor}
+            emissive={ph.rootRingColor}
+            emissiveIntensity={0.6}
+            transparent={true}
+            opacity={0.8}
+            depthWrite={false}
+            clippingPlanes={globalClippingPlanes}
+          />
+        </mesh>
+      ))}
+
       {/* ============================================================
           ACTIVE NOTE RING (ROUNDED RECTANGLE) - Yellow ring for open strings & fret 12
           Uses a tube geometry extruded along a rounded rectangle path
@@ -3302,6 +4249,14 @@ export function Ring3DOverlayCanvas({
   maxFrets = 24,
   countdownBeats = 4,
   tempo = 120,
+  viewportWidthOverride, // optional: widen the rendered viewport to show more frets
+  // (gym equipment tools). Undefined → the default 580.
+  showAllNotes = false, // gym Scales tool: light the WHOLE scale, not a lookahead window
+  rootPositions, // gym Scales tool: root notes paint a darker green
+  getPlaybackBeat, // gym Scales tool: live playhead clock (beats)
+  playheadNotes, // gym Scales tool: the glide path (string/fret + startBeat)
+  loopBeats, // gym Scales tool: loop length (beats) for seam glide
+  playheadConfig, // gym Scales tool: sphere appearance + animation config
   tiltAngle = 60, // CSS tilt angle - used to position 3D camera to match 2D perspective
   debugRotation = { x: 0, y: 0, z: 0 }, // DEBUG panel rotation - applies to both 2D CSS and 3D scene
   overlay3DConfig = {
@@ -3400,12 +4355,20 @@ export function Ring3DOverlayCanvas({
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   };
 
-  // Animation duration in ms - 300ms for snappy response
+  // Animation duration in ms - 300ms for snappy response when the fade APPEARS.
   const FADE_ANIMATION_DURATION = 300;
+  // When the fade DISAPPEARS (scrolling firmly back to the nut), ease it out over a longer,
+  // gentler window so the left edge doesn't pop off — ease-in-out over ~700ms.
+  const FADE_OUT_DURATION = 700;
   // Get fade zone from props, default to 10%
   const leftFadeZoneTarget = overlay3DConfig.leftFadeZone ?? 10;
   const rightFadeZone = overlay3DConfig.rightFadeZone ?? 10;
   const SCROLL_THRESHOLD = 1; // px threshold to trigger fade (any scroll triggers it)
+  // HYSTERESIS (gym): turn the left fade ON once we're meaningfully off the nut, but only OFF
+  // once we're FIRMLY back at the nut. This stops the fade flickering off mid-pan when a key
+  // change passes near (but not to) the nut — the fade stays on if the destination is scrolled.
+  const FADE_ON_AT = 8; // px — scrolled enough → fade on
+  const FADE_OFF_AT = 2; // px — back at the nut → fade off
 
   // Check scroll state and trigger animation
   useEffect(() => {
@@ -3429,10 +4392,15 @@ export function Ring3DOverlayCanvas({
       animationStartRef.current = performance.now();
       animationFromRef.current = currentFadePercentRef.current;
       animationToRef.current = targetPercent;
+      // Fading OUT (toward 0) gets the longer, gentler window; fading in stays snappy.
+      const duration =
+        targetPercent < currentFadePercentRef.current
+          ? FADE_OUT_DURATION
+          : FADE_ANIMATION_DURATION;
 
       const animate = (now: number) => {
         const elapsed = now - animationStartRef.current;
-        const progress = Math.min(elapsed / FADE_ANIMATION_DURATION, 1);
+        const progress = Math.min(elapsed / duration, 1);
         const easedProgress = easeInOutCubic(progress);
 
         const currentValue =
@@ -3455,8 +4423,22 @@ export function Ring3DOverlayCanvas({
 
     const checkScrollAndAnimate = () => {
       const currentScroll = scrollContainer.scrollLeft;
-      const newScrollState: 'start' | 'scrolled' =
-        currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
+      // Gym (showAllNotes) uses HYSTERESIS so a key-change pan that lands scrolled keeps the
+      // fade on the whole time; the tutorial keeps its simple single-threshold behavior.
+      let newScrollState: 'start' | 'scrolled';
+      if (showAllNotes) {
+        newScrollState =
+          lastScrollStateRef.current === 'scrolled'
+            ? currentScroll < FADE_OFF_AT
+              ? 'start'
+              : 'scrolled'
+            : currentScroll >= FADE_ON_AT
+              ? 'scrolled'
+              : 'start';
+      } else {
+        newScrollState =
+          currentScroll > SCROLL_THRESHOLD ? 'scrolled' : 'start';
+      }
 
       // Only trigger animation if scroll state actually changed
       if (newScrollState !== lastScrollStateRef.current) {
@@ -3491,6 +4473,14 @@ export function Ring3DOverlayCanvas({
   // animation state from the previous exercise affecting the new one.
   // =============================================================================
   useEffect(() => {
+    // GYM (showAllNotes): a "key change" is an exerciseNotes change, but the board does NOT
+    // reset scroll to 0 — it pans to the new center. So DON'T force the fade off here; that's
+    // exactly what made it flicker off-then-on. Leave the fade alone — the scroll-gate (with
+    // hysteresis) re-evaluates it from the real scroll position after the pan.
+    if (showAllNotes) {
+      return;
+    }
+
     // Cancel any ongoing fade animation
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -3601,7 +4591,10 @@ export function Ring3DOverlayCanvas({
   // =============================================================================
   // CANVAS DIMENSIONS - Fixed viewport size, content offset by scroll position
   // =============================================================================
-  const VIEWPORT_WIDTH = 580; // Slightly wider than 2D viewport (568) to show fret 12
+  // Default 580 (matches the 2D viewport, shows ~fret 12). An override widens the
+  // rendered viewport so MORE frets are visible — used by the gym equipment tools,
+  // which have room to show the full neck. The tutorial passes nothing → 580.
+  const VIEWPORT_WIDTH = viewportWidthOverride ?? 580;
   const VIEWPORT_HEIGHT = 290; // Fixed - matches 2D fretboard height
 
   // Calculate full content width for positioning calculations
@@ -3846,9 +4839,11 @@ export function Ring3DOverlayCanvas({
   // Default to 0° for vertical edges (calibrated)
   const fadeEdgeAngle = overlay3DConfig.fadeEdgeAngle ?? 0;
 
-  // Use animated leftFadePercent for scroll-based fade-in/fade-out effect
-  // The animation is triggered by scroll position (see useEffect above)
-  // leftFadePercent animates from 0 → leftFadeZoneTarget when scrolled
+  // Use animated leftFadePercent for scroll-based fade-in/fade-out effect.
+  // The animation is triggered by scroll position (see useEffect above): off at the nut
+  // (scrollLeft 0), fades on once scrolled. The gym Scales tool now drives a real scroll
+  // container too (ScaleFretboardWindow), so this scroll-gated behavior applies there as
+  // well — no special-casing needed.
   const effectiveLeftFade = leftFadePercent;
 
   // Calculate gradient angles for perspective effect
@@ -4245,6 +5240,12 @@ export function Ring3DOverlayCanvas({
                       exerciseNotes={exerciseNotes}
                       tempo={tempo}
                       isPlaying={isPlaying}
+                      showAllNotes={showAllNotes}
+                      rootPositions={rootPositions}
+                      getPlaybackBeat={getPlaybackBeat}
+                      playheadNotes={playheadNotes}
+                      loopBeats={loopBeats}
+                      playheadConfig={playheadConfig}
                       countdownBeats={countdownBeats}
                       activeRingZOffset={overlay3DConfig.activeRingZOffset ?? 1}
                       activeRingRadius={overlay3DConfig.activeRingRadius ?? 15}

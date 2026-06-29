@@ -5,6 +5,14 @@
  * Tracks drift, jitter, and synchronization accuracy.
  */
 
+import { getLogger } from '@/utils/logger.js';
+
+// Previously this file referenced a bare `logger` that only resolved via the
+// runtime `window.logger` global — fragile (throws ReferenceError in any context
+// where utils/logger hasn't run its window assignment yet, e.g. a fresh consumer
+// like the gym listening engine). Import it explicitly like every other playback util.
+const logger = getLogger('BeatTimingAnalyzer');
+
 export interface BeatTimingData {
   expectedTime: number; // When the beat should have occurred (ms)
   actualTime: number; // When the beat actually occurred (ms)
@@ -303,9 +311,12 @@ export class BeatTimingAnalyzer {
       report += `\n\nSource Timing Comparisons:\n`;
       for (let i = 0; i < sources.length - 1; i++) {
         for (let j = i + 1; j < sources.length; j++) {
-          const comparison = this.compareSourceTiming(sources[i], sources[j]);
+          const sourceA = sources[i];
+          const sourceB = sources[j];
+          if (sourceA == null || sourceB == null) continue;
+          const comparison = this.compareSourceTiming(sourceA, sourceB);
           if (comparison.timingDifference.length > 0) {
-            report += `\n${sources[i]} vs ${sources[j]}:\n`;
+            report += `\n${sourceA} vs ${sourceB}:\n`;
             report += `- Average Difference: ${comparison.averageDifference.toFixed(2)}ms\n`;
             report += `- Correlation: ${comparison.correlation.toFixed(1)}%\n`;
           }
