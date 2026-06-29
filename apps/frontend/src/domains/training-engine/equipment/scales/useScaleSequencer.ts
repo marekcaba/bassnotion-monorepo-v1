@@ -67,6 +67,9 @@ export interface UseScaleSequencerOptions {
   /** RECORD MODE: when true, the scale-note SAMPLER is muted (drone + click still play), so the
    *  student plays the scale THEMSELVES and the mic doesn't capture our own bass into the grade. */
   silentBass?: boolean;
+  /** Auto-stop after this many full loops (in addition to the count-in). 0/undefined = play
+   *  forever (the default). Used by record mode so a take is exactly N loops then stops. */
+  maxLoops?: number;
 }
 
 export interface UseScaleSequencerReturn {
@@ -93,6 +96,7 @@ export function useScaleSequencer({
   droneSymbol,
   onBeforePlay,
   silentBass = false,
+  maxLoops = 0,
 }: UseScaleSequencerOptions): UseScaleSequencerReturn {
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [countInBeat, setCountInBeat] = React.useState(0);
@@ -120,6 +124,12 @@ export function useScaleSequencer({
   // Single-flight guard: a ref (not state) so a rapid second click / strict-mode double
   // invoke can't spin up a SECOND scheduler + metronome stream (that stacked the audio).
   const isActiveRef = React.useRef(false);
+  // Auto-stop timer (record mode): fires after the count-in + maxLoops loops to end the take.
+  const autoStopRef = React.useRef<number | null>(null);
+  const maxLoopsRef = React.useRef(maxLoops);
+  React.useEffect(() => {
+    maxLoopsRef.current = maxLoops;
+  }, [maxLoops]);
 
   // Keep the latest props in refs so the persistent RAF loop sees live edits (roller moves).
   const pathRef = React.useRef(path);
@@ -385,6 +395,24 @@ export function useScaleSequencer({
     // Kick the rolling scheduler — cancel any prior loop first so only ONE ever runs.
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(tick);
+
+    // AUTO-STOP after N loops (record mode): the take runs the count-in + maxLoops full loops,
+    // then stops itself. A wall-clock timeout fires right as the Nth loop completes (loopStart is
+    // already past the count-in). 0 = play forever.
+    if (autoStopRef.current !== null) {
+      window.clearTimeout(autoStopRef.current);
+      autoStopRef.current = null;
+    }
+    const loops = maxLoopsRef.current;
+    if (loops > 0) {
+      const curLoopBeats = loopBeatsRef.current || 1;
+      const takeEnd = loopStart + loops * curLoopBeats * bd;
+      const stopInMs = (takeEnd - ctx.currentTime) * 1000;
+      autoStopRef.current = window.setTimeout(
+        () => stopRef.current?.(),
+        Math.max(0, stopInMs),
+      );
+    }
   }, [
     onBeforePlay,
     ensureAudio,
@@ -394,6 +422,9 @@ export function useScaleSequencer({
     tick,
   ]);
 
+  // Stable pointer to stop() for the auto-stop timer (stop is defined below; avoids a TDZ/dep cycle).
+  const stopRef = React.useRef<(() => void) | null>(null);
+
   // ── STOP ─────────────────────────────────────────────────────────────────
   const stop = React.useCallback(() => {
     isActiveRef.current = false;
@@ -401,10 +432,16 @@ export function useScaleSequencer({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    if (autoStopRef.current !== null) {
+      window.clearTimeout(autoStopRef.current);
+      autoStopRef.current = null;
+    }
     stopDrone();
     setIsPlaying(false);
     setCountInBeat(0);
   }, []);
+  // Keep the auto-stop timer's pointer fresh so it calls the real stop().
+  stopRef.current = stop;
 
   // Cleanup on unmount. We use Tone's SHARED context, so we must NOT close it (that
   // would kill audio app-wide). Just stop our scheduler + drone and dispose our sampler.

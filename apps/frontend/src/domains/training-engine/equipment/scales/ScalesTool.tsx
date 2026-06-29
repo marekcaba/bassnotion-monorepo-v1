@@ -30,7 +30,7 @@ import { ScaleFretboardWindow } from './ScaleFretboardWindow';
 import { ScalesControls } from './ScalesControls';
 import { positionCount } from './scaleBlueprints';
 import { buildNoteUniverse, selectBox } from './noteUniverse';
-import { buildScalePath, scalePathBeats } from './scalePath';
+import { buildScalePath, scalePathBeats, BEATS_PER_STEP } from './scalePath';
 import {
   authoredPathToPlayable,
   authoredPathBeats,
@@ -116,6 +116,8 @@ export function ScalesTool({
   // bass is MUTED (only count-in + click + backing drone play) so the student plays the scale
   // themselves and the mic captures only THEM — every take is auto-armed, graded, and saved.
   const [recordMode, setRecordMode] = React.useState(false);
+  // How many full loops a record-mode take captures before auto-stopping (1-8).
+  const [recordLoops, setRecordLoops] = React.useState(2);
   // The most recent graded take (record mode) — shown as a small result banner. No persistence
   // yet; the take_results history table is a later phase.
   const [lastTake, setLastTake] = React.useState<EquipmentScoreResult | null>(
@@ -271,6 +273,8 @@ export function ScalesTool({
     onBeforePlay,
     // Record mode mutes the scale-note bass so the student plays it (clean mic capture).
     silentBass: recordMode,
+    // In record mode the take auto-stops after `recordLoops` loops; free play loops forever.
+    maxLoops: recordMode ? recordLoops : 0,
   });
 
   // LISTENING: in RECORD mode every play is a graded take. The seam captures the player's bass,
@@ -283,6 +287,17 @@ export function ScalesTool({
     loopStartAudioTime: sequencer.getLoopStartAudioTime(),
     bpm,
     loopBeats,
+    // The answer key for the PITCH grade: the exercise's expected notes (midi + startBeat).
+    // midi + WHEN (startBeat) + HOW LONG (durBeats, from the chart's rhythm) — the duration sizes
+    // the pitch-analysis window to each note (a quarter gets a long read, a 16th a short one).
+    expectedNotes: path.map((n) => ({
+      midi: n.midi,
+      startBeat: n.startBeat,
+      durBeats: BEATS_PER_STEP[n.duration],
+    })),
+    // How many loops the take ran — sets the TARGET note count (notes × loops). Skipped notes
+    // count as misses so the score is out of what the exercise demanded, not what was played.
+    loops: recordLoops,
     onTakeScored: setLastTake,
   });
 
@@ -536,6 +551,8 @@ export function ScalesTool({
           onPlayPause={onPlayPause}
           recordMode={recordMode}
           onToggleRecordMode={setRecordMode}
+          recordLoops={recordLoops}
+          onRecordLoopsChange={setRecordLoops}
         />
       }
     />
@@ -570,13 +587,48 @@ function TakeResultBanner({ take }: { take: EquipmentScoreResult }) {
         <div style={{ fontSize: 13, color }}>{take.refusedReason}</div>
       ) : (
         <>
-          <div style={{ fontSize: 18, fontWeight: 700, color }}>
-            {take.grade!.label} · {take.grade!.score}
+          {/* TWO HEADLINES side by side — TIMING (in-time %) and PITCH (right-notes %). */}
+          <div
+            style={{ display: 'flex', gap: 24, justifyContent: 'center' }}
+          >
+            <div>
+              <div
+                style={{ fontSize: 26, fontWeight: 800, color: '#e6e8ec' }}
+              >
+                {take.hitGrade!.hitPercent}
+              </div>
+              <div style={{ fontSize: 11, color: '#9aa3ad' }}>
+                timing · {take.hitGrade!.hits}/{take.hitGrade!.total} in time
+              </div>
+            </div>
+            {take.pitchGrade && take.pitchGrade.judged > 0 && (
+              <div>
+                <div
+                  style={{ fontSize: 26, fontWeight: 800, color: '#e6e8ec' }}
+                >
+                  {take.pitchGrade.pitchPercent}
+                </div>
+                <div style={{ fontSize: 11, color: '#9aa3ad' }}>
+                  pitch · {take.pitchGrade.correct}/{take.pitchGrade.judged}{' '}
+                  right
+                  {take.pitchGrade.unverified > 0
+                    ? ` (${take.pitchGrade.unverified} unread)`
+                    : ''}
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ fontSize: 12, color: '#9aa3ad', marginTop: 2 }}>
+          {/* POCKET — the deeper feel grade (the musician's metric). */}
+          <div style={{ fontSize: 12, fontWeight: 600, color, marginTop: 6 }}>
+            {take.grade!.label} · pocket {take.grade!.score}
+          </div>
+          <div style={{ fontSize: 11, color: '#9aa3ad', marginTop: 1 }}>
             jitter {Math.round(take.jitterMs)}ms · offset{' '}
             {take.offsetMs >= 0 ? '+' : ''}
-            {Math.round(take.offsetMs)}ms · {take.noteCount} notes
+            {Math.round(take.offsetMs)}ms
+            {take.pitchGrade && take.pitchGrade.unverified > 0
+              ? ` · ${take.pitchGrade.unverified} pitch unread`
+              : ''}
           </div>
         </>
       )}

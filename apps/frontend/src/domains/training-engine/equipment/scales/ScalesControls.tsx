@@ -67,6 +67,9 @@ export interface ScalesControlsProps {
    *  the scale bass is muted and every take is captured + graded. Omit to hide the switch. */
   recordMode?: boolean;
   onToggleRecordMode?: (next: boolean) => void;
+  /** How many loops a record-mode take captures (1-8) before auto-stopping. */
+  recordLoops?: number;
+  onRecordLoopsChange?: (n: number) => void;
 }
 
 export function ScalesControls({
@@ -85,6 +88,8 @@ export function ScalesControls({
   onPlayPause,
   recordMode = false,
   onToggleRecordMode,
+  recordLoops = 2,
+  onRecordLoopsChange,
 }: ScalesControlsProps) {
   const showBeat =
     countdownState.isCountingDown && countdownState.currentBeat > 0;
@@ -209,6 +214,40 @@ export function ScalesControls({
                 Rec
               </span>
             </button>
+          )}
+          {/* LOOPS picker — how many loops a recorded take captures before auto-stopping.
+              Only shown in record mode. Compact ▲/number/▼ stepper, clamped 1-8. */}
+          {recordMode && onRecordLoopsChange && (
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                aria-label="More loops"
+                disabled={isPlaying || recordLoops >= 8}
+                onClick={() =>
+                  onRecordLoopsChange(Math.min(8, recordLoops + 1))
+                }
+                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
+              >
+                ▲
+              </button>
+              <span className="text-sm font-bold text-white tabular-nums">
+                {recordLoops}×
+              </span>
+              <button
+                type="button"
+                aria-label="Fewer loops"
+                disabled={isPlaying || recordLoops <= 1}
+                onClick={() =>
+                  onRecordLoopsChange(Math.max(1, recordLoops - 1))
+                }
+                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
+              >
+                ▼
+              </button>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                Loops
+              </span>
+            </div>
           )}
         </div>
       </div>

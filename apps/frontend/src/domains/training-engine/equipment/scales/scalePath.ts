@@ -40,7 +40,7 @@ export interface PlayableNote {
 export type ScaleRhythm = '4n' | '8n' | '8t' | '16n';
 
 /** Beats occupied by one step of a given rhythm (quarter-note = 1 beat). */
-const BEATS_PER_STEP: Record<ScaleRhythm, number> = {
+export const BEATS_PER_STEP: Record<ScaleRhythm, number> = {
   '4n': 1,
   '8n': 0.5,
   '8t': 1 / 3, // eighth-note triplet — three notes per beat
