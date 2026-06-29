@@ -30,7 +30,7 @@ function GymRepContent() {
 
   // Resolve today's rep from the warm cache (the gate already planned it). `bricks` come straight
   // from the session (the minted rep's TutorialBlocks) — the same value /gym feeds useRepResultSync.
-  const { slug, enrollment, repMode, bricks } = useGymSession(undefined, {
+  const { status, slug, enrollment, repMode, bricks } = useGymSession(undefined, {
     enabled: isMember && authReady,
   });
 
@@ -45,22 +45,30 @@ function GymRepContent() {
 
   const ready = slug != null && tutorial != null && !isLoading;
 
-  // A member should NOT be on /gym/rep without a resolvable rep. Normally the slug is warm (the gate
-  // planned it) and `ready` is true within a frame. If after a grace window there's still no rep
-  // (direct URL with a cold cache that 401/404'd, lapsed sub), bounce to /gym, which owns the live
-  // membership/placement/picker states this leaf doesn't render.
+  // A member should NOT be on /gym/rep without a resolvable rep. This leaf renders ONLY the running
+  // rep — the gym owns the goal picker / tempo placement / error / membership states. So bounce to
+  // /gym whenever the session lands in one of those states (it'll show the right UI there).
+  //
+  // Crucially this keys off the session STATUS, not a blind timer: 'loading' (genuinely fetching) and
+  // 'ready'-but-tutorial-still-loading are legitimate waits and must NOT be interrupted — a slow but
+  // valid fetch should resolve, not get yanked back. We only redirect on a definitively-wrong state.
+  const needsGym =
+    status === 'choosing' || status === 'placement' || status === 'error';
   React.useEffect(() => {
     if (!authReady) return;
-    if (!isMember) {
+    if (!isMember || needsGym) {
       router.replace('/gym');
-      return;
     }
-    if (ready) return;
-    const t = window.setTimeout(() => {
-      router.replace('/gym');
-    }, 6000);
+  }, [authReady, isMember, needsGym, router]);
+
+  // Last-resort safety net ONLY: if the session is somehow wedged (neither resolving nor reporting a
+  // redirectable state) for a long beat, fall back to /gym. Generous (12s) so it never races a slow
+  // network — the status-based redirect above is the real mechanism; this just prevents a dead spin.
+  React.useEffect(() => {
+    if (!authReady || !isMember || ready || needsGym) return;
+    const t = window.setTimeout(() => router.replace('/gym'), 12000);
     return () => window.clearTimeout(t);
-  }, [authReady, isMember, ready, router]);
+  }, [authReady, isMember, ready, needsGym, router]);
 
   return (
     <div className="relative min-h-[calc(100svh-2rem)] w-full">

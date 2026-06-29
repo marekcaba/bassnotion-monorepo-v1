@@ -599,15 +599,35 @@ function GymPageInner() {
   // one-time window.location read): a client-side nav from /backstage to /gym?start=1 doesn't
   // remount this page, so a mount-only read would miss the param. usePathname/useSearchParams
   // update on nav. (Wrapped in Suspense at the default export.)
+  // ?start=1 (from the Backstage "Start today's rep" CTA) → land straight on "Are you ready?".
+  // ?floor=1 (from /gym/rep's summary "done") → open with the overlay DISMISSED (bare floor).
+  //
+  // These are one-shot SIGNALS, not durable state. Read them reactively (a client nav from /backstage
+  // to /gym?start=1 doesn't remount this page, so a mount-only read would miss the param), LATCH the
+  // value the first time it's seen into a ref so behavior survives the URL change, then STRIP the
+  // param from the URL — so a refresh / back-button into a now-stale /gym?floor=1 doesn't wrongly
+  // re-apply "open dismissed" (or "auto-ready") on a later visit. The latch makes the strip safe:
+  // clearing the URL can't flip the behavior off mid-session because we read from the ref, not the URL.
   const searchParams = useSearchParams();
-  const autoStartRep = searchParams.get('start') === '1';
-  // ?floor=1 — arriving back from a finished rep (/gym/rep's summary "done"). Open with the rep
-  // overlay already DISMISSED (the bare floor): the front door + "Are you ready?" already happened
-  // this visit, so re-prompting would be wrong. The user explicitly returns "to the bare floor".
-  const returningToFloor = searchParams.get('floor') === '1';
-
   const router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
+
+  const autoStartLatchRef = React.useRef(false);
+  const floorLatchRef = React.useRef(false);
+  if (searchParams.get('start') === '1') autoStartLatchRef.current = true;
+  if (searchParams.get('floor') === '1') floorLatchRef.current = true;
+  const autoStartRep = autoStartLatchRef.current;
+  const returningToFloor = floorLatchRef.current;
+
+  // Strip ?start / ?floor from the URL once latched, so the address bar reads a clean /gym and the
+  // signal can't fire again on reload/back. Use the Next router (not raw history.replaceState, which
+  // desyncs App Router's internal URL and can resurrect the params on the next client nav). The latch
+  // refs above already hold the behavior, so the resulting empty-searchParams re-render is harmless.
+  React.useEffect(() => {
+    if (searchParams.get('start') === '1' || searchParams.get('floor') === '1') {
+      router.replace('/gym', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // The instant a member lands on the gym (the rep is one or two clicks away), warm the heavy things
   // that otherwise stall the rep: the PLAYER CHUNK (the YouTubeWidgetPage bundle behind "Loading
