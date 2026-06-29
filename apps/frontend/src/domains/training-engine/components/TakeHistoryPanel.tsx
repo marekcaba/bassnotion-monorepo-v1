@@ -13,6 +13,7 @@
 import type { TakeResultWithSignedUrl } from '@bassnotion/contracts';
 
 import { useTakeHistory } from '../hooks/useTakeHistory';
+import { useTakeReplayer } from './useTakeReplayer';
 
 /** A 0-100 grade → its badge color. Green ≥80, amber ≥50, red below. */
 function gradeColor(score: number): { fg: string; bg: string; border: string } {
@@ -87,15 +88,7 @@ function TakeCard({ take }: { take: TakeResultWithSignedUrl }) {
 
       <div className="mt-3">
         {take.audioUrl ? (
-          <audio
-            controls
-            preload="none"
-            src={take.audioUrl}
-            aria-label={`Playback of ${title}, submitted ${formatTakeDate(
-              take.submittedAt,
-            )}`}
-            className="h-9 w-full"
-          />
+          <TakePlayer take={take} title={title} />
         ) : (
           <p className="font-mono text-[10px] uppercase tracking-[1px] text-[#5A5660]">
             (audio unavailable)
@@ -103,6 +96,79 @@ function TakeCard({ take }: { take: TakeResultWithSignedUrl }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** The take's player. When the take has a backing recipe (backingLayers), play it IN CONTEXT —
+ *  the bass clip + the click/drone/drums it was recorded over (useTakeReplayer). Otherwise fall
+ *  back to a bare <audio> for the clip alone. */
+function TakePlayer({
+  take,
+  title,
+}: {
+  take: TakeResultWithSignedUrl;
+  title: string;
+}) {
+  const backing = take.playbackContext?.backingLayers ?? null;
+  const preRollSec = take.playbackContext?.preRollSec ?? null;
+  const inContext = !!backing && backing.length > 0;
+  const { status, play, stop } = useTakeReplayer(
+    take.audioUrl,
+    backing,
+    preRollSec,
+  );
+
+  if (!inContext) {
+    // No backing recipe — bare clip playback (older takes, or a take recorded dry).
+    return (
+      <audio
+        controls
+        preload="none"
+        src={take.audioUrl ?? undefined}
+        aria-label={`Playback of ${title}`}
+        className="h-9 w-full"
+      />
+    );
+  }
+
+  const playing = status === 'playing';
+  const loading = status === 'loading';
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => (playing ? stop() : void play())}
+        disabled={loading}
+        aria-label={playing ? 'Stop' : 'Play in context'}
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#E8A44A] text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {playing ? <StopGlyph /> : <PlayGlyph />}
+      </button>
+      <div className="min-w-0">
+        <div className="font-mono text-[10px] uppercase tracking-[1px] text-[#8A8690]">
+          {loading ? 'Loading…' : playing ? 'Playing in context' : 'Play in context'}
+        </div>
+        <div className="text-[10px] text-[#5A5660]">
+          your take + the backing it was recorded over
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlayGlyph() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+function StopGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+    </svg>
   );
 }
 

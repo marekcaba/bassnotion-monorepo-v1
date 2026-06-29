@@ -78,6 +78,13 @@ export interface EquipmentScoreResult {
    *  uploads. Held in memory only; never persisted unless the student submits the take. */
   audioBlob: Blob | null;
   audioMimeType: string | null;
+  /** Seconds from the recorded FILE's sample 0 to the take's GRID beat 0. The in-context replayer
+   *  trims the clip here so the clip's grid lands on the replay's grid (the count-in downbeat) — the
+   *  SAME anchor the grader scores against, so replay reproduces the take in sync with the backing,
+   *  exactly as graded. = loopStartAudioTime − startedAtCtxTime. null when not measurable.
+   *  (NB: we do NOT chase the first bass onset onto the click — the student may not play on beat 1;
+   *  what matters is grid-vs-grid, which the grader's averageDrift validates.) */
+  preRollSec: number | null;
 }
 
 export interface UseEquipmentListeningOptions {
@@ -380,6 +387,19 @@ export function useEquipmentListening(opts: UseEquipmentListeningOptions): {
         });
       }
 
+      // Where the take's GRID beat 0 sits inside the recorded FILE (seconds from sample 0). The
+      // replayer trims the clip here so the clip's grid lines up with the replay's grid (the
+      // count-in downbeat). This is the SAME anchor the GRADER scores against, so the replay
+      // reproduces the take exactly as it was graded — IN SYNC with the backing.
+      //
+      // We deliberately DON'T chase "the first bass onset onto the click": the student may not play
+      // on beat 1 at all (a rest, a missed note, a pickup). What matters is the GRID alignment, and
+      // the grader proves it (averageDrift ≈ 0 for an in-time take). No first-onset correction.
+      const preRollSec = Math.max(
+        0,
+        grid.loopStartAudioTime - capture.startedAtCtxTime,
+      );
+
       const scored: EquipmentScoreResult = {
         station,
         recordedAt: Date.now(),
@@ -393,6 +413,7 @@ export function useEquipmentListening(opts: UseEquipmentListeningOptions): {
         noteCount,
         audioBlob,
         audioMimeType,
+        preRollSec,
       };
       logger.info('[listening] take scored', {
         station,

@@ -123,10 +123,22 @@ export function middleware(req: NextRequest) {
       return NextResponse.rewrite(url);
     }
 
-    // Root → /app ; allow-listed clean path → /app/<same>.
-    if (pathname === '/' || matchesPrefix(pathname, APP_ROUTES)) {
+    // Root → /backstage (the app's home room). The bare '/app' home is an empty placeholder
+    // (constellation commented out), so we land on Backstage instead — which is also the menu
+    // item that's already highlighted. A redirect (not a rewrite) so the URL bar reads /backstage.
+    //
+    // Build the target from req.url (the ACTUAL incoming request URL) — NOT req.nextUrl.clone(),
+    // whose protocol can resolve to https on a dev/proxy request, producing an https://localhost
+    // Location → ERR_SSL_PROTOCOL_ERROR on the http-only dev server. `new URL(path, req.url)`
+    // inherits the real request origin (http on localhost, https in prod).
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/backstage', req.url));
+    }
+
+    // Allow-listed clean path → /app/<same>.
+    if (matchesPrefix(pathname, APP_ROUTES)) {
       const url = req.nextUrl.clone();
-      url.pathname = pathname === '/' ? '/app' : `/app${pathname}`;
+      url.pathname = `/app${pathname}`;
       return NextResponse.rewrite(url);
     }
 

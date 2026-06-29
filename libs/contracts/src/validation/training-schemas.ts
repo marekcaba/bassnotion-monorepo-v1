@@ -155,6 +155,25 @@ export const createGigSchema = z.object({
  *  PlaybackContext). Arrives as a JSON STRING on the multipart body; the controller parses it
  *  before validation. Permissive (any field may be absent), bounded so a bad client can't store
  *  junk. */
+/** One backing layer (stem file or click). Bounded so a bad client can't store junk; URLs are
+ *  capped + must be http(s). */
+const backingLayerSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('stem'),
+    url: z.string().url().max(2048),
+    loop: z.boolean().optional(),
+    gain: z.number().min(0).max(4).optional(),
+    label: z.string().max(64).optional(),
+  }),
+  z.object({
+    kind: z.literal('click'),
+    tempoBpm: z.number().int().min(20).max(400),
+    beatsPerBar: z.number().int().min(1).max(16).optional(),
+    countInBeats: z.number().int().min(0).max(16).optional(),
+    gain: z.number().min(0).max(4).optional(),
+  }),
+]);
+
 export const playbackContextSchema = z.object({
   station: z.string().max(64).nullish(),
   exerciseId: z.string().uuid().nullish(),
@@ -164,6 +183,10 @@ export const playbackContextSchema = z.object({
   position: z.union([z.number().int(), z.string().max(16)]).nullish(),
   stringCount: z.number().int().min(4).max(7).nullish(),
   backingId: z.string().max(128).nullish(),
+  // Cap the layer count so a malformed/abusive client can't bloat the row.
+  backingLayers: z.array(backingLayerSchema).max(16).nullish(),
+  // Count-in pre-roll baked into the clip (seconds). Bounded — a take can't sanely pre-roll >30s.
+  preRollSec: z.number().min(0).max(30).nullish(),
 });
 
 /** The non-file metadata of a take submission. The scores arrive as strings off the

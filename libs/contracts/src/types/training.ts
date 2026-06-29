@@ -856,6 +856,35 @@ export interface TakeResult {
   submittedAt: string;
 }
 
+/** One layer of the backing a take was recorded over — a DECLARATIVE description the replayer
+ *  rebuilds without knowing the station. A 'stem' is any looped audio file (a drone pad, a drum
+ *  loop, a chord bed — all the same to the player); a 'click' is the metronome, rebuilt from its
+ *  params. Listing layers (rather than naming a backing "kind") keeps replay robust: a future
+ *  station just emits different layers, no replay-code change. */
+export type BackingLayer =
+  | {
+      kind: 'stem';
+      /** Public/`signed URL of the looped audio file (e.g. a drone or drum-loop .ogg). */
+      url: string;
+      /** Loop the file under the take (default true). */
+      loop?: boolean;
+      /** Relative gain 0..1 (default 1). */
+      gain?: number;
+      /** A human label for the layer (e.g. 'drone', 'drums') — display only. */
+      label?: string;
+    }
+  | {
+      kind: 'click';
+      /** The metronome tempo the take was recorded at. */
+      tempoBpm: number;
+      /** Beats per bar (4/4 → 4). */
+      beatsPerBar?: number;
+      /** Count-in beats before the take (so replay can pre-roll the same way, or skip). */
+      countInBeats?: number;
+      /** Relative gain 0..1 (default ~0.2 — the click sits under the bass). */
+      gain?: number;
+    };
+
 /** What to load to replay a take "in context" — the click/drone/drums the student heard while
  *  recording, rebuilt deterministically (no backing audio stored). Snapshotted at submit time so
  *  a take stays replayable even if the exercise/backing later changes. */
@@ -874,6 +903,15 @@ export interface PlaybackContext {
   stringCount?: number | null;
   /** Which backing groove drove the transport/clock (e.g. 'waitlist-demo-groove'). */
   backingId?: string | null;
+  /** The backing layers that were actually SOUNDING while the take was recorded (click + any
+   *  stems that loaded). The replayer rebuilds these under the bass clip for in-context playback.
+   *  Empty/absent → the take plays dry (bare clip). */
+  backingLayers?: BackingLayer[] | null;
+  /** Seconds of clip BEFORE the take's beat 0 — the count-in pre-roll baked into the recording
+   *  (the mic armed at the count-in START, so the clip begins during the count-in). The replayer
+   *  starts the looped stems at this offset (they began at beat 0 live) and phases the click grid
+   *  so beat 0 lands here — making the rebuilt backing line up with the clip exactly. */
+  preRollSec?: number | null;
 }
 
 /** A TakeResult enriched with a freshly-minted, short-lived signed read URL for its audio

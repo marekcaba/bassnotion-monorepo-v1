@@ -36,6 +36,7 @@ import {
   authoredPathBeats,
 } from './authoredPathToPlayable';
 import { droneChordSymbol } from './droneChord';
+import { droneStemUrl } from './droneStem';
 import { useScaleSequencer } from './useScaleSequencer';
 import {
   rootFromKey,
@@ -217,6 +218,9 @@ export function ScalesTool({
         // RECONSTRUCTION RECIPE — what to load to replay this take in context (no backing audio
         // stored). The gig is the source of truth for the locked exercise/key/tempo/loops; view
         // (box position) + stringCount come from the live tool; backingId identifies the groove.
+        // backingLayers = what was actually SOUNDING under the take: the metronome click (always)
+        // + the drone stem (the replayer 404-skips it if the file isn't there, exactly like the
+        // live sequencer does). A future station emits different layers — the replayer is generic.
         playbackContext: {
           station: 'scales',
           exerciseId: activeGig.exerciseId ?? null,
@@ -226,6 +230,26 @@ export function ScalesTool({
           position: view,
           stringCount,
           backingId: assignment?.backingId ?? null,
+          // The take's beat 0 sits `preRollSec` into the clip (the mic armed at the count-in
+          // start). The replayer phases the click grid + starts the drone there.
+          preRollSec: lastTake.preRollSec ?? null,
+          backingLayers: [
+            // Metronome click, rebuilt by params (4/4, one bar count-in — matches the sequencer).
+            // The replayer uses the platform's real click SAMPLES (Click_Low2/High2.mp3).
+            {
+              kind: 'click',
+              tempoBpm: bpm,
+              beatsPerBar: 4,
+              countInBeats: 4,
+            },
+            // The scale's drone pad (its .ogg). Replay tries this URL; missing → dry, like record.
+            {
+              kind: 'stem',
+              url: droneStemUrl(droneChordSymbol(root, scaleType)),
+              loop: true,
+              label: 'drone',
+            },
+          ],
         },
       });
       setSubmitState('done');
@@ -245,6 +269,8 @@ export function ScalesTool({
     recordLoops,
     view,
     stringCount,
+    root,
+    scaleType,
     assignment?.backingId,
     assignment?.onSubmitted,
   ]);
