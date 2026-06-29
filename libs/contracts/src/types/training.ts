@@ -779,3 +779,155 @@ export interface UpdateGymExerciseInput {
   scaleType?: string | null;
   payload?: unknown;
 }
+
+// =====================================================
+// GIGS — goal-bound, cycle-day-scheduled deliverables + submitted graded takes
+// =====================================================
+// The open gym (Scales tool) is FREE, ephemeral practice — nothing is stored. GIGS are a
+// deliberate, admin-gated deliverable: the admin authors "submit X @ Y bpm" on a GOAL (a
+// `Gig`); every student enrolled in that goal inherits it, scheduled by a DAY OFFSET into
+// THEIR billing cycle. The student plays it in record mode and SUBMITS one graded take with
+// a tiny Opus clip (a `TakeResult`). A few per cycle, intentional + curated.
+// See migration 20260629000002_reshape_to_gigs.sql.
+
+/** An admin-authored "submit this" deliverable on a GOAL. Every student enrolled in the goal
+ *  inherits it, scheduled by a day-offset into their billing cycle; submitting a take fulfils
+ *  it. The student-facing read is filtered to the goals they're enrolled in. */
+export interface Gig {
+  id: string;
+  /** The GOAL this gig belongs to. Every student enrolled in the goal inherits it. */
+  goalId: string;
+  /** The goal's slug — joined in on reads so the perform route (/gigs/[goalSlug]/[gigId]) and
+   *  the list can label/route by goal WITHOUT a second lookup. Null on bare create returns. */
+  goalSlug?: string | null;
+  /** The admin who created it (null if that admin's profile was deleted). */
+  createdBy: string | null;
+  /** What kind of action this gig is. Only 'recording' is wired now. */
+  gigType: string;
+  title: string;
+  /** Optional longer brief. */
+  instructions: string | null;
+  /** WHEN in the student's 30-day cycle this is due — a day offset (0 = day one). */
+  cycleDay: number;
+  /** The equipment station this targets (e.g. 'scales'). */
+  station: string;
+  /** Snapshot of what to play, so the gig stays self-describing. The exercise + KEY + TEMPO are
+   *  the LOCKED presets the perform route dials in (the student can't change them — it's an
+   *  assignment). All three are required at create time for a recording gig. */
+  exerciseId: string | null;
+  exerciseName: string | null;
+  scaleKey: string | null;
+  tempoBpm: number | null;
+  /** How many full loops the record-mode take captures before it auto-stops (1-8). The admin sets
+   *  the length of the deliverable; the student can't change it. */
+  recordLoops: number;
+  /** Soft-disable without deleting. */
+  isActive: boolean;
+  createdAt: string;
+}
+
+/** A SUBMITTED, graded take with its tiny audio clip. Append-only history bound directly to
+ *  the user (equipment is OPEN practice — no goal enrollment, unlike rep_results). */
+export interface TakeResult {
+  id: string;
+  userId: string;
+  /** The gig this take fulfils (nullable — a future self-submit path may omit it). */
+  gigId: string | null;
+  station: string;
+  exerciseName: string | null;
+  scaleKey: string | null;
+  tempoBpm: number | null;
+  /** The grade (0-100 each) + the raw stats behind it, for the history trend. */
+  timingScore: number | null;
+  pitchScore: number | null;
+  jitterMs: number | null;
+  offsetMs: number | null;
+  noteCount: number | null;
+  /** Path into the PRIVATE `user-take-audio` bucket (read only via a backend-minted signed
+   *  URL). Null if a take was graded but no audio kept. */
+  audioPath: string | null;
+  audioBytes: number | null;
+  /** The RECONSTRUCTION recipe — what backing to load to replay this take in context (no backing
+   *  audio is stored; it's rebuilt from this). See PlaybackContext. */
+  playbackContext: PlaybackContext | null;
+  submittedAt: string;
+}
+
+/** What to load to replay a take "in context" — the click/drone/drums the student heard while
+ *  recording, rebuilt deterministically (no backing audio stored). Snapshotted at submit time so
+ *  a take stays replayable even if the exercise/backing later changes. */
+export interface PlaybackContext {
+  /** The gym station (e.g. 'scales'). */
+  station?: string | null;
+  /** The authored exercise to load (null = the generated/Auto scale). */
+  exerciseId?: string | null;
+  /** Key + tempo + loop count the take was played at. */
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number | null;
+  /** Fretboard box position (1..N) or 'whole'. */
+  position?: number | string | null;
+  /** The player's neck at record time (so the fingering matches). */
+  stringCount?: number | null;
+  /** Which backing groove drove the transport/clock (e.g. 'waitlist-demo-groove'). */
+  backingId?: string | null;
+}
+
+/** A TakeResult enriched with a freshly-minted, short-lived signed read URL for its audio
+ *  (null when there's no stored clip). The shape the user history endpoint returns. */
+export type TakeResultWithSignedUrl = TakeResult & {
+  audioUrl: string | null;
+};
+
+/** Admin create payload for a gig (createdBy is stamped server-side from the authenticated
+ *  admin). The gig is bound to a GOAL and scheduled by a cycle-day offset. */
+export interface CreateGigInput {
+  goalId: string;
+  gigType?: string;
+  title: string;
+  instructions?: string | null;
+  cycleDay: number;
+  station?: string;
+  /** For a recording gig the exercise + key + tempo are the LOCKED presets — required (the
+   *  builder enforces it). recordLoops sets the take length (1-8); defaults to 2 if omitted. */
+  exerciseId?: string | null;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number;
+}
+
+/** Partial edit of an existing gig. goalId is intentionally NOT editable (re-targeting a gig
+ *  to another goal = delete + create, since enrollment semantics change). `isActive` toggles
+ *  the soft-disable. Every field optional — only what's present is written. */
+export interface UpdateGigInput {
+  gigType?: string;
+  title?: string;
+  instructions?: string | null;
+  cycleDay?: number;
+  station?: string;
+  exerciseId?: string | null;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  recordLoops?: number;
+  isActive?: boolean;
+}
+
+/** The non-file metadata fields of a take submission (the audio rides the multipart body,
+ *  audioPath/audioBytes are stamped server-side after the upload). */
+export interface SubmitTakeInput {
+  gigId?: string | null;
+  station?: string;
+  exerciseName?: string | null;
+  scaleKey?: string | null;
+  tempoBpm?: number | null;
+  timingScore?: number | null;
+  pitchScore?: number | null;
+  jitterMs?: number | null;
+  offsetMs?: number | null;
+  noteCount?: number | null;
+  /** The reconstruction recipe (what backing to load to replay this take in context). Arrives as
+   *  a JSON string on the multipart body; the backend parses it into PlaybackContext. */
+  playbackContext?: PlaybackContext | null;
+}

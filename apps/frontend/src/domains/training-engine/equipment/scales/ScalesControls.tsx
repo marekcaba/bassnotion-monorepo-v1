@@ -70,6 +70,10 @@ export interface ScalesControlsProps {
   /** How many loops a record-mode take captures (1-8) before auto-stopping. */
   recordLoops?: number;
   onRecordLoopsChange?: (n: number) => void;
+  /** ASSIGNMENT (gig) mode — the exercise/key/tempo/loops are LOCKED presets. Greys out + no-ops
+   *  every roller, hides the content row (the WHAT is fixed), and pins record mode ON. The student
+   *  only gets ▶/●. */
+  locked?: boolean;
 }
 
 export function ScalesControls({
@@ -90,9 +94,15 @@ export function ScalesControls({
   onToggleRecordMode,
   recordLoops = 2,
   onRecordLoopsChange,
+  locked = false,
 }: ScalesControlsProps) {
   const showBeat =
     countdownState.isCountingDown && countdownState.currentBeat > 0;
+
+  // In locked (assignment) mode every roller is greyed + no-op'd. Apply it once here so each
+  // RollerPicker below inherits it without threading `disabled` through every call site.
+  const lock = (spec: RollerSpec): RollerSpec =>
+    locked ? { ...spec, disabled: true } : spec;
 
   // Roller animation config — baked in ROLLER_ANIM. (Live tuner panel commented out;
   // re-enable RollerCalibrationPanel + setAnim to re-tune.)
@@ -102,44 +112,47 @@ export function ScalesControls({
     <div className="flex flex-col gap-2 rounded-b-xl bg-black/40 px-4 py-2.5">
       {/* <RollerCalibrationPanel config={anim} onChange={setAnim} /> */}
 
-      {/* ROW 1 — CONTENT: Scale type | kind tabs | Exercise */}
-      <div className="flex items-center gap-3 border-b border-white/5 pb-2">
-        <div className="flex flex-1 items-center justify-evenly">
-          <RollerPicker {...scale} anim={anim} ariaLabel="Scale type" />
+      {/* ROW 1 — CONTENT: Scale type | kind tabs | Exercise. HIDDEN in locked (assignment)
+          mode — the WHAT is fixed by the gig; the student doesn't choose content. */}
+      {!locked && (
+        <div className="flex items-center gap-3 border-b border-white/5 pb-2">
+          <div className="flex flex-1 items-center justify-evenly">
+            <RollerPicker {...scale} anim={anim} ariaLabel="Scale type" />
+          </div>
+          {/* Kind filter — Runs / Patterns / Paths */}
+          <div className="flex shrink-0 gap-1">
+            {kindTabs.tabs.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => kindTabs.onSelect(t.value)}
+                className={`rounded px-2 py-1 text-[11px] font-semibold transition-colors ${
+                  kindTabs.active === t.value
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-1 items-center justify-evenly">
+            <RollerPicker {...exercise} anim={anim} ariaLabel="Exercise" />
+            {showVariant && (
+              <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
+            )}
+          </div>
         </div>
-        {/* Kind filter — Runs / Patterns / Paths */}
-        <div className="flex shrink-0 gap-1">
-          {kindTabs.tabs.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => kindTabs.onSelect(t.value)}
-              className={`rounded px-2 py-1 text-[11px] font-semibold transition-colors ${
-                kindTabs.active === t.value
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-1 items-center justify-evenly">
-          <RollerPicker {...exercise} anim={anim} ariaLabel="Exercise" />
-          {showVariant && (
-            <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ROW 2 — PERFORM: Position? | Key | ▶ | Tempo */}
       <div className="flex items-center gap-3">
         {/* LEFT group — Position (hidden for paths) | Key */}
         <div className="flex flex-1 items-center justify-evenly">
           {showPosition && (
-            <RollerPicker {...position} anim={anim} ariaLabel="Position" />
+            <RollerPicker {...lock(position)} anim={anim} ariaLabel="Position" />
           )}
-          <RollerPicker {...keyRoller} anim={anim} ariaLabel="Key" />
+          <RollerPicker {...lock(keyRoller)} anim={anim} ariaLabel="Key" />
         </div>
 
         {/* CENTER — Play (orange) or RECORD (red), fixed island, always centered. In record
@@ -187,7 +200,10 @@ export function ScalesControls({
         <div className="flex flex-1 items-center justify-evenly gap-2">
           {/* Tempo: press-and-hold the arrows to fly through BPM (stepping one at a time
               is tedious over a big range). */}
-          <RollerPicker {...tempo} anim={anim} ariaLabel="Tempo" holdRepeat />
+          <RollerPicker {...lock(tempo)} anim={anim} ariaLabel="Tempo" holdRepeat />
+          {/* The Rec toggle stays VISIBLE in locked mode so the student can play the gig through
+              first, then ARM it. (Only the loops stepper below is hidden — the gig fixes the
+              count.) */}
           {onToggleRecordMode && (
             <button
               type="button"
@@ -216,8 +232,8 @@ export function ScalesControls({
             </button>
           )}
           {/* LOOPS picker — how many loops a recorded take captures before auto-stopping.
-              Only shown in record mode. Compact ▲/number/▼ stepper, clamped 1-8. */}
-          {recordMode && onRecordLoopsChange && (
+              Only shown in record mode AND not locked. Compact ▲/number/▼ stepper, clamped 1-8. */}
+          {!locked && recordMode && onRecordLoopsChange && (
             <div className="flex flex-col items-center">
               <button
                 type="button"

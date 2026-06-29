@@ -48,6 +48,8 @@ import {
   useEquipmentListening,
   type EquipmentScoreResult,
 } from '../listening/useEquipmentListening';
+import type { Gig } from '@bassnotion/contracts';
+import { submitTake } from '../../api/training-engine.api';
 
 /** Tempo bounds for the scale sequencer (BPM). */
 const MIN_BPM = 40;
@@ -91,6 +93,20 @@ interface PathsByKeyLite {
   defaultTempo?: number;
 }
 
+/**
+ * ASSIGNMENT mode — when present, the tool is a LOCKED gig deliverable, not open practice. The
+ * exercise + key + tempo + loop count are dialed in from the gig and the student can't change them
+ * (it's an assignment); record mode is forced on; the result banner offers Submit + Retake (the
+ * replace-on-resubmit flow). Absent → the normal open practice tool.
+ */
+export interface ScalesAssignment {
+  /** The gig being performed (drives the Submit target + the banner title). */
+  gig: Gig;
+  /** A stable id for the backing groove driving the transport/clock — stored in the take's
+   *  reconstruction recipe so the history player can rebuild the exact backing. */
+  backingId?: string;
+}
+
 export interface ScalesToolProps {
   /** The backing groove (stems/bpm/key). Drives the transport + the shared clock. */
   backingConfig: GrooveCardBlockConfig;
@@ -99,6 +115,8 @@ export interface ScalesToolProps {
   maxFrets?: number;
   /** Resume the prewarmed AudioContext inside the play gesture (Safari). */
   onBeforePlay?: () => Promise<void> | void;
+  /** When set, the tool runs as a LOCKED gig deliverable (see ScalesAssignment). */
+  assignment?: ScalesAssignment;
 }
 
 export function ScalesTool({
@@ -106,7 +124,11 @@ export function ScalesTool({
   stringCount = 4,
   maxFrets = 14,
   onBeforePlay,
+  assignment,
 }: ScalesToolProps) {
+  // In assignment mode the controls are LOCKED to the gig's presets (the student can't change
+  // exercise/key/tempo/loops/record-mode — it's a deliverable).
+  const locked = !!assignment;
   const [scaleType, setScaleType] = React.useState<ScaleType>('major');
   const [view, setView] = React.useState<ScaleView>(1); // box position 1, or 'whole'
   // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
@@ -115,14 +137,30 @@ export function ScalesTool({
   // RECORD MODE: the ▶ play button becomes a ● record button. In record mode the scale-note
   // bass is MUTED (only count-in + click + backing drone play) so the student plays the scale
   // themselves and the mic captures only THEM — every take is auto-armed, graded, and saved.
+  // Record mode starts OFF — even in assignment mode. The student should be able to play the gig
+  // through normally first (hear it, follow the lights), THEN arm Rec and hit record. Locked mode
+  // keeps the Rec toggle visible (so they can arm it); only the loop count + content are fixed.
   const [recordMode, setRecordMode] = React.useState(false);
-  // How many full loops a record-mode take captures before auto-stopping (1-8).
-  const [recordLoops, setRecordLoops] = React.useState(2);
-  // The most recent graded take (record mode) — shown as a small result banner. No persistence
-  // yet; the take_results history table is a later phase.
+  // How many full loops a record-mode take captures before auto-stopping (1-8). Assignment mode
+  // takes this from the gig (the admin-set deliverable length); open play defaults to 2.
+  const [recordLoops, setRecordLoops] = React.useState(
+    assignment?.gig.recordLoops ?? 2,
+  );
+  // The most recent graded take (record mode) — shown as a small result banner. Audio + grade are
+  // held in memory; they're only PERSISTED if the student SUBMITS the take against an assignment.
   const [lastTake, setLastTake] = React.useState<EquipmentScoreResult | null>(
     null,
   );
+  // The gig the student must deliver (if any) — inherited via their enrolled goal. When present
+  // + the student has a graded take with audio, a "Submit this take" affordance appears. Open
+  // gym play stores nothing.
+  // In assignment mode the gig is GIVEN (the perform route passed it). In open practice we DON'T
+  // surface a submit affordance — submission only happens on the dedicated /gigs perform page.
+  const activeGig = assignment?.gig ?? null;
+  const [submitState, setSubmitState] = React.useState<
+    'idle' | 'submitting' | 'done' | 'error'
+  >('idle');
+
 
   // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
   // which fingering VARIANT within the group. groupIdx === -1 = "Auto" (generated box scale).
@@ -148,6 +186,52 @@ export function ScalesTool({
   );
   const currentKeyName = keyName(keyStep);
   const currentKeyAscii = currentKeyName.replace('♭', 'b').replace('♯', '#');
+
+  // Submit the current graded take's audio + stats against the active gig. (Defined here,
+  // after currentKeyAscii, so it can capture the live key.)
+  const onSubmitTake = React.useCallback(async () => {
+    if (!lastTake?.audioBlob || !activeGig) return;
+    setSubmitState('submitting');
+    try {
+      await submitTake(lastTake.audioBlob, {
+        gigId: activeGig.id,
+        station: 'scales',
+        exerciseName: activeGig.exerciseName ?? undefined,
+        scaleKey: currentKeyAscii,
+        tempoBpm: bpm,
+        timingScore: lastTake.hitGrade?.hitPercent,
+        pitchScore: lastTake.pitchGrade?.pitchPercent,
+        jitterMs: lastTake.jitterMs,
+        offsetMs: lastTake.offsetMs,
+        noteCount: lastTake.noteCount,
+        // RECONSTRUCTION RECIPE — what to load to replay this take in context (no backing audio
+        // stored). The gig is the source of truth for the locked exercise/key/tempo/loops; view
+        // (box position) + stringCount come from the live tool; backingId identifies the groove.
+        playbackContext: {
+          station: 'scales',
+          exerciseId: activeGig.exerciseId ?? null,
+          scaleKey: currentKeyAscii,
+          tempoBpm: bpm,
+          recordLoops,
+          position: view,
+          stringCount,
+          backingId: assignment?.backingId ?? null,
+        },
+      });
+      setSubmitState('done');
+    } catch {
+      setSubmitState('error');
+    }
+  }, [
+    lastTake,
+    activeGig,
+    currentKeyAscii,
+    bpm,
+    recordLoops,
+    view,
+    stringCount,
+    assignment?.backingId,
+  ]);
 
   // ── The exercise LIBRARY: authored scale exercises for the gym Scales tool. Grouped by
   //    scale type + kind below; "Auto" (generated box scale) is always the first option. ──
@@ -190,6 +274,58 @@ export function ScalesTool({
     }
     return order.map((g) => byGroup.get(g)!);
   }, [exercisesForTab]);
+
+  // ── ASSIGNMENT: dial the LOCKED gig presets into the tool's state. Two-phase, by state
+  //    convergence: (1) once the library has the gig's exercise, set the scale type + KIND tab
+  //    + KEY (these change which exerciseGroups exist); (2) once exerciseGroups recompute and
+  //    contain the target, select its group + variant. The effect re-runs as state converges, so
+  //    both phases land. Keyed so it only drives toward the target, never fights manual input
+  //    (there is none — the controls are locked). Tempo is set here too (clamped). ──
+  const assignedExerciseId = assignment?.gig.exerciseId ?? null;
+  React.useEffect(() => {
+    if (!assignment || !assignedExerciseId) return;
+
+    const target = library.find((ex) => ex.id === assignedExerciseId);
+    if (!target) return; // library not loaded yet (or exercise removed) — try again on next data.
+
+    const payload = target.payload as PathsByKeyLite | null;
+    const targetScale = (target.scaleType ?? 'major') as ScaleType;
+    const targetKind = (payload?.pathKind ?? 'path') as ExerciseKind;
+
+    // Phase 1: scale type + kind + key + tempo + loops.
+    if (scaleType !== targetScale) setScaleType(targetScale);
+    if (kind !== targetKind) setKind(targetKind);
+
+    // KEY — the gig's scaleKey is an ASCII PathKey; convert to a keyStep offset from the backing
+    // key's pc (same math the open tool uses for an exercise's defaultKey).
+    if (assignment.gig.scaleKey) {
+      const targetPc = parsePitchClass(assignment.gig.scaleKey);
+      if (targetPc != null) {
+        const step = (((targetPc - keyBasePc) % 12) + 12) % 12;
+        setKeyStep((cur) => (cur === step ? cur : step));
+      }
+    }
+    if (typeof assignment.gig.tempoBpm === 'number') {
+      const t = Math.max(MIN_BPM, Math.min(MAX_BPM, assignment.gig.tempoBpm));
+      setBpm((cur) => (cur === t ? cur : t));
+    }
+
+    // Phase 2: find the exercise's group + variant within the (now matching) groups. Only runs
+    // once scaleType/kind have settled so exerciseGroups holds the target.
+    if (scaleType === targetScale && kind === targetKind) {
+      for (let gi = 0; gi < exerciseGroups.length; gi++) {
+        const vi = exerciseGroups[gi]!.variants.findIndex(
+          (ex) => ex.id === assignedExerciseId,
+        );
+        if (vi >= 0) {
+          if (groupIdx !== gi) setGroupIdx(gi);
+          if (variantIdx !== vi) setVariantIdx(vi);
+          break;
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment, assignedExerciseId, library, exerciseGroups, scaleType, kind, keyBasePc]);
 
   // The selected group + the selected fingering variant within it (null = Auto / generated).
   const selectedGroup =
@@ -247,8 +383,14 @@ export function ScalesTool({
   //    dial in its default KEY and default TEMPO (if the admin set them). Keyed on the exercise id
   //    so it fires once per load, not on every re-render (and never while playing/tuning by hand).
   //    defaultKey is an ASCII PathKey; convert to a keyStep offset from the backing key's pc.
+  //
+  //    SKIPPED in assignment (locked) mode: the GIG's key/tempo are authoritative there, not the
+  //    exercise's own defaults. Without this guard, selecting the gig's exercise would re-trigger
+  //    this effect and OVERWRITE the gig presets with the exercise defaults (the load-with-wrong-
+  //    key/tempo bug). The assignment effect above owns key/tempo when locked.
   const selectedExerciseId = selectedExercise?.id ?? null;
   React.useEffect(() => {
+    if (locked) return;
     if (!selectedExercise) return;
     const payload = selectedExercise.payload as PathsByKeyLite | null;
     if (!payload) return;
@@ -263,7 +405,7 @@ export function ScalesTool({
       setBpm(Math.max(MIN_BPM, Math.min(MAX_BPM, payload.defaultTempo)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedExerciseId, keyBasePc]);
+  }, [selectedExerciseId, keyBasePc, locked]);
 
   const sequencer = useScaleSequencer({
     path,
@@ -528,7 +670,22 @@ export function ScalesTool({
           {/* RECORD-mode result: the graded take (or the refusal reason). Minimal banner; the
               full history list is a later phase. */}
           {recordMode && lastTake && !sequencer.isPlaying && (
-            <TakeResultBanner take={lastTake} />
+            <TakeResultBanner
+              take={lastTake}
+              gig={activeGig}
+              submitState={submitState}
+              onSubmit={onSubmitTake}
+              // Retake (assignment mode only) — discard this take's grade so the student can play
+              // again. The next ● record makes a fresh take; Submit then replaces server-side.
+              onRetake={
+                locked
+                  ? () => {
+                      setLastTake(null);
+                      setSubmitState('idle');
+                    }
+                  : undefined
+              }
+            />
           )}
         </div>
       }
@@ -553,6 +710,7 @@ export function ScalesTool({
           onToggleRecordMode={setRecordMode}
           recordLoops={recordLoops}
           onRecordLoopsChange={setRecordLoops}
+          locked={locked}
         />
       }
     />
@@ -560,10 +718,28 @@ export function ScalesTool({
 }
 
 /** Minimal record-mode result banner: the timing grade + 2 stats, or the refusal reason when the
- *  trust gates couldn't grade the take. Pinned top-center over the fretboard. */
-function TakeResultBanner({ take }: { take: EquipmentScoreResult }) {
+ *  trust gates couldn't grade the take. Pinned top-center over the fretboard. When the student has
+ *  an active GIG and a gradeable take, a "Submit this take" button appears — that is the ONLY path
+ *  that persists audio (open gym play stores nothing). */
+function TakeResultBanner({
+  take,
+  gig,
+  submitState,
+  onSubmit,
+  onRetake,
+}: {
+  take: EquipmentScoreResult;
+  gig: Gig | null;
+  submitState: 'idle' | 'submitting' | 'done' | 'error';
+  onSubmit: () => void;
+  /** Assignment mode only — discard this take and play again. Absent in open practice. */
+  onRetake?: () => void;
+}) {
   const refused = take.grade == null;
   const color = refused ? '#e0b24a' : take.grade!.color;
+  // Submit is offered only when: there's a gig, the take graded (not refused), and we have
+  // its audio to upload.
+  const canSubmit = !!gig && !refused && !!take.audioBlob;
   return (
     <div
       style={{
@@ -631,6 +807,73 @@ function TakeResultBanner({ take }: { take: EquipmentScoreResult }) {
               : ''}
           </div>
         </>
+      )}
+      {(canSubmit || onRetake) && (
+        <div style={{ marginTop: 10, pointerEvents: 'auto' }}>
+          {canSubmit && (
+            <div style={{ fontSize: 11, color: '#9aa3ad', marginBottom: 4 }}>
+              Gig: {gig!.title}
+            </div>
+          )}
+          {submitState === 'done' ? (
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#6ad08c' }}>
+              ✓ Submitted
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                justifyContent: 'center',
+              }}
+            >
+              {/* RETAKE — discard + play again (assignment mode). */}
+              {onRetake && (
+                <button
+                  type="button"
+                  disabled={submitState === 'submitting'}
+                  onClick={onRetake}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    border: '1px solid #4b5563',
+                    background: 'transparent',
+                    color: '#e6e8ec',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor:
+                      submitState === 'submitting' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Retake
+                </button>
+              )}
+              {canSubmit && (
+                <button
+                  type="button"
+                  disabled={submitState === 'submitting'}
+                  onClick={onSubmit}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: submitState === 'error' ? '#e0604a' : '#16a34a',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: submitState === 'submitting' ? 'wait' : 'pointer',
+                  }}
+                >
+                  {submitState === 'submitting'
+                    ? 'Submitting…'
+                    : submitState === 'error'
+                      ? 'Failed — retry'
+                      : 'Submit this take'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

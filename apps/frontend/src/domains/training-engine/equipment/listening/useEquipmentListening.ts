@@ -74,6 +74,10 @@ export interface EquipmentScoreResult {
   offsetMs: number;
   syncScore: number;
   noteCount: number;
+  /** The compressed audio of THIS take (MediaRecorder Opus/WebM, ~250-500KB) — what a SUBMIT
+   *  uploads. Held in memory only; never persisted unless the student submits the take. */
+  audioBlob: Blob | null;
+  audioMimeType: string | null;
 }
 
 export interface UseEquipmentListeningOptions {
@@ -147,7 +151,8 @@ export function useEquipmentListening(opts: UseEquipmentListeningOptions): {
         logger.info('[listening] no audio captured / no grid — skipped');
         return;
       }
-      const { signal, sampleRate } = result;
+      const { signal, sampleRate, blob: audioBlob, mimeType: audioMimeType } =
+        result;
 
       const beatSeconds = 60 / Math.max(grid.bpm, 1);
       const loopDurationSeconds = grid.loopBeats * beatSeconds;
@@ -386,6 +391,8 @@ export function useEquipmentListening(opts: UseEquipmentListeningOptions): {
         offsetMs,
         syncScore: score.stats.syncScore,
         noteCount,
+        audioBlob,
+        audioMimeType,
       };
       logger.info('[listening] take scored', {
         station,

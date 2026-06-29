@@ -54,9 +54,15 @@ export interface BassCapture {
    *  player can't HEAR (they monitor zero-latency through the interface). This is
    *  what made every detected onset land LATE vs the (latency-free) reference. */
   inputLatencySec: number;
-  /** Stop recording and return the captured mono samples + the engine sample rate.
-   *  Resolves with null if nothing was captured. */
-  stop: () => Promise<{ signal: Float32Array; sampleRate: number } | null>;
+  /** Stop recording and return the captured mono samples + the engine sample rate + the raw
+   *  COMPRESSED blob (MediaRecorder's Opus/WebM — what we'd UPLOAD for a submitted take, already
+   *  tiny). Resolves with null if nothing was captured. */
+  stop: () => Promise<{
+    signal: Float32Array;
+    sampleRate: number;
+    blob: Blob;
+    mimeType: string;
+  } | null>;
   /** Tear down WITHOUT returning audio (release mic + nodes). Idempotent. */
   dispose: () => void;
 }
@@ -96,7 +102,24 @@ export async function startBassCapture(
   }
 
   const source = ctx.createMediaStreamSource(stream);
-  const recorder = new MediaRecorder(stream);
+
+  // ── FORCE MONO for the RECORDED blob ──────────────────────────────────────────
+  // `channelCount: 1` on getUserMedia is only a HINT — many interfaces ignore it and still
+  // deliver 2 channels (e.g. a DI plugged into input 2 → signal on the RIGHT channel only). If
+  // we record the raw stream, the saved .ogg is stereo-with-one-side-silent and plays
+  // right-only. So we route the mic through a downmix graph and record THAT instead:
+  //   source → mergeToMono (gain, channelCount 1, 'speakers' interpretation = average L+R)
+  //          → MediaStreamAudioDestinationNode (a mono stream we hand to MediaRecorder).
+  // The downstream onset `signal` still comes from toMono(decoded blob), so it's mono too.
+  const monoSink = ctx.createMediaStreamDestination();
+  const mergeToMono = ctx.createGain();
+  // channelCount 1 + 'speakers' up/down-mix => the node averages all input channels into one.
+  mergeToMono.channelCount = 1;
+  mergeToMono.channelCountMode = 'explicit';
+  mergeToMono.channelInterpretation = 'speakers';
+  source.connect(mergeToMono);
+  mergeToMono.connect(monoSink);
+  const recorder = new MediaRecorder(monoSink.stream);
 
   // INPUT-LATENCY compensation — the fix for "my transients show up late even
   // though I played spot-on". The recorded file carries the input round-trip
@@ -125,6 +148,9 @@ export async function startBassCapture(
   const releaseNodes = () => {
     try {
       source.disconnect();
+      mergeToMono.disconnect();
+      // The MediaStreamAudioDestination's own stream tracks are synthetic — stop them too.
+      monoSink.stream.getTracks().forEach((t) => t.stop());
     } catch {
       /* already disconnected */
     }
@@ -165,7 +191,7 @@ export async function startBassCapture(
     baseLatencyMs: Math.round((ctx.baseLatency ?? 0) * 1000),
   });
 
-  const stop = (): Promise<{ signal: Float32Array; sampleRate: number } | null> =>
+  const stop: BassCapture['stop'] = () =>
     new Promise((resolve) => {
       if (disposed || recorder.state === 'inactive') {
         dispose();
@@ -178,7 +204,8 @@ export async function startBassCapture(
             resolve(null);
             return;
           }
-          const blob = new Blob(chunks, { type: recorder.mimeType });
+          const mimeType = recorder.mimeType;
+          const blob = new Blob(chunks, { type: mimeType });
           const arrayBuf = await blob.arrayBuffer();
           // Decode on the SAME ctx (matches its sample rate). If the ctx died
           // between stop() and decode, fall back gracefully.
@@ -190,6 +217,9 @@ export async function startBassCapture(
           resolve({
             signal: toMono(audioBuf),
             sampleRate: audioBuf.sampleRate,
+            // The compressed blob — what a submitted take uploads (Opus, ~250-500KB).
+            blob,
+            mimeType,
           });
         } catch (err) {
           logger.error('Failed to decode captured take', err);
