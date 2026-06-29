@@ -11,8 +11,8 @@ import { Play, Loader2, X } from 'lucide-react';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
-import { DRILL_SESSION_SLUG } from '@/domains/drill/constants';
 import { useStreak } from '@/domains/drill/hooks/useStreak';
+import { useTodayRepSummary } from '@/domains/training-engine/hooks/useTodayRepSummary';
 import {
   Avatar,
   AvatarImage,
@@ -699,76 +699,72 @@ function CenterNode({
 
 // ─── Session Card ────────────────────────────────────────────────────
 /**
- * Navigates to the drill session page (a tutorial-like sequence of timeboxed
- * groove bricks). Replaces the old static no-op "Start Session" button.
+ * Routes to the GYM, where today's REP lives (the coached daily session is gym
+ * language now — "rep", not "drill"). The gym resolves + presents the active
+ * rep; this card is just the front-door CTA.
  */
-function SessionStartButton() {
+function SessionStartButton({ label }: { label: string }) {
   const { navigateWithTransition } = useViewTransitionRouter();
   return (
     <button
       type="button"
-      onClick={() =>
-        // Clean writer URL: middleware rewrites /tutorials/* → /app/tutorials/*.
-        navigateWithTransition(`/tutorials/${DRILL_SESSION_SLUG}`)
-      }
+      // Clean URL: middleware rewrites /gym → /app/gym. Reps live in the gym, so the CTA takes the
+      // player there — only THEN is today's rep planned/minted (this card is read-only). ?start=1
+      // tells the gym to SKIP its "Six minutes." front door and land straight on "Are you ready?"
+      // (the player already committed here; don't make them confirm twice).
+      onClick={() => navigateWithTransition('/gym?start=1')}
       className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-gradient-to-br from-[#E8A44A] to-[#D4903A] px-4 py-3 text-sm font-semibold text-[#0C0B0F] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(232,164,74,0.3)]"
     >
       <Play className="size-4" fill="currentColor" />
-      Start the drill
+      {label}
     </button>
   );
 }
 
 export function SessionCard() {
+  const { ready, hasActiveGoal, goalTitle, focus, minutes } =
+    useTodayRepSummary();
+
   return (
     <div className="relative overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141318] p-[22px]">
       {/* Top accent line */}
       <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E8A44A] to-transparent opacity-40" />
 
       <div className="mb-3.5 font-mono text-[10px] uppercase tracking-[2px] text-[#5A5660]">
-        Today&apos;s Session
+        Today&apos;s Rep
       </div>
 
-      <div className="mb-3.5 flex items-start justify-between">
+      {/* Real rep summary (read-only — names the rep without planning/minting it). With no active
+          goal yet, prompt the player to set one up in the gym. */}
+      <div className="mb-[18px] flex items-start justify-between">
         <div>
-          <div className="font-serif text-[22px] text-[#E8E4DD]">The Grid</div>
-          <div className="max-w-[240px] text-xs leading-[1.45] text-[#8A8690]">
-            Where you place a note matters more than what note you play.
+          <div className="font-serif text-[22px] text-[#E8E4DD]">
+            {!ready ? '…' : hasActiveGoal ? goalTitle : 'Set up your goal'}
+          </div>
+          <div className="mt-1 max-w-[240px] text-xs leading-[1.45] text-[#8A8690]">
+            {!ready
+              ? ''
+              : hasActiveGoal
+                ? (focus ?? 'Your six-minute rep is waiting in the gym.')
+                : 'Pick a goal in the gym and the coach builds your daily rep.'}
           </div>
         </div>
-        <div className="whitespace-nowrap text-right">
-          <div className="font-mono text-[22px] font-light text-[#E8E4DD]">
-            20
+        {ready && hasActiveGoal && (
+          <div className="whitespace-nowrap text-right">
+            <div className="font-mono text-[22px] font-light text-[#E8E4DD]">
+              {minutes}
+            </div>
+            <div className="font-mono text-[11px] text-[#5A5660]">min</div>
           </div>
-          <div className="font-mono text-[11px] text-[#5A5660]">min</div>
-        </div>
+        )}
       </div>
 
-      {/* Tags */}
-      <div className="mb-[18px] flex flex-wrap gap-1.5">
-        {(['time', 'sound', 'hands'] as SkillId[]).map((id) => {
-          const nodeLevel = MOCK_NODES.find((n) => n.id === id)?.level ?? 1;
-          const c = colorForLevel(nodeLevel);
-          return (
-            <span
-              key={id}
-              className="rounded-full px-2.5 py-[3px] font-mono text-[10px] uppercase tracking-[0.5px]"
-              style={{
-                color: c.base,
-                borderWidth: 1,
-                borderColor: c.glow,
-                background: `${c.base}08`,
-              }}
-            >
-              {id}
-            </span>
-          );
-        })}
-      </div>
-
-      {/* Start button — navigates to the drill SESSION page (a sequence of
-          timeboxed groove bricks, like a tutorial). Not a modal. */}
-      <SessionStartButton />
+      {/* CTA → the gym (where the rep is actually planned + run). */}
+      <SessionStartButton
+        label={
+          !ready || hasActiveGoal ? "Start today's rep" : 'Set up your goal'
+        }
+      />
     </div>
   );
 }

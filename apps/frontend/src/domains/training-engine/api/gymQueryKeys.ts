@@ -14,6 +14,9 @@ export const gymKeys = {
     ['gym', 'today-rep', userId, enrollmentId, mode] as const,
   // The user's submitted-take history (recordings), newest-first.
   takeHistory: (userId: string) => ['gym', 'take-history', userId] as const,
+  // Rep history for ONE enrollment (per-day banked reps → the cycle calendar).
+  repHistory: (userId: string, enrollmentId: string) =>
+    ['gym', 'rep-history', userId, enrollmentId] as const,
   // The exercise LIBRARY is shared content (same for everyone) — not user-scoped.
   exerciseLibrary: (equipment: string) =>
     ['gym', 'exercise-library', equipment] as const,
