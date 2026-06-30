@@ -712,14 +712,16 @@ export interface ScalePositionShape {
  *  '8t' = eighth-note triplet (three per beat). */
 export type ScaleRhythmValue = '4n' | '8n' | '8t' | '16n';
 
-/** The scale types the gym Scales tool authors. */
+/** The scale types the gym Scales tool authors (the PARENT scales chord types derive from). */
 export type ScaleTypeId =
   | 'major'
   | 'natural_minor'
   | 'dorian'
   | 'mixolydian'
   | 'minor_pentatonic'
-  | 'major_pentatonic';
+  | 'major_pentatonic'
+  | 'lydian_b7' // 13♯11's parent (Lydian dominant)
+  | 'altered'; // 7alt's parent (super-Locrian)
 
 /** One scale's full admin-authored blueprint (box shapes + practice rhythm). */
 export interface ScaleBlueprintRecord {
