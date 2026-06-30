@@ -20,7 +20,14 @@
  */
 
 import React from 'react';
-import { Circle, ChevronLeft, ChevronRight, Waves } from 'lucide-react';
+import {
+  Circle,
+  ChevronLeft,
+  ChevronRight,
+  Metronome,
+  AudioLines,
+  Guitar,
+} from 'lucide-react';
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 import { GrooveCardShell } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardShell';
 import {
@@ -35,8 +42,15 @@ import { buildScalePath, scalePathBeats, BEATS_PER_STEP } from './scalePath';
 import {
   authoredPathToPlayable,
   authoredPathBeats,
+  buildUpDownEvents,
 } from './authoredPathToPlayable';
-import { droneChordSymbol } from './droneChord';
+import {
+  CHORD_TYPES,
+  chordDroneSymbol,
+  parentScaleFor,
+  chordTypeForScale,
+  type ChordType,
+} from './chordType';
 import { droneStemUrl } from './droneStem';
 import { useScaleSequencer } from './useScaleSequencer';
 // Dynamic Loop — the SAME control every groove card uses (Repeat-icon dial + ping-pong/
@@ -47,6 +61,7 @@ import {
   useDynamicLoop,
   type DynamicLoopConfig,
 } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/useDynamicLoop';
+import { useTimeTranspose } from './useTimeTranspose';
 import {
   rootFromKey,
   type ScaleType,
@@ -72,15 +87,6 @@ function pcToKeyStep(targetPc: number, keyBasePc: number): number {
   return (((targetPc - keyBasePc) % 12) + 12) % 12;
 }
 
-/** Scale types + labels, in cycle order for the scale stepper. */
-const SCALE_TYPES: { value: ScaleType; label: string }[] = [
-  { value: 'major', label: 'Major' },
-  { value: 'natural_minor', label: 'Minor' },
-  { value: 'dorian', label: 'Dorian' },
-  { value: 'mixolydian', label: 'Mixolyd.' },
-  { value: 'minor_pentatonic', label: 'Min Pent' },
-  { value: 'major_pentatonic', label: 'Maj Pent' },
-];
 
 /** What kind of content the student is browsing — the library bucket (mirrors the admin
  *  PathKind). 'scale' shows "Auto" (generated) + authored scale runs; 'path' has no box
@@ -98,6 +104,9 @@ const KIND_TABS: { value: ExerciseKind; label: string }[] = [
 interface PathsByKeyLite {
   name?: string;
   pathKind?: ExerciseKind;
+  /** The CHORD TYPE this exercise belongs under (maj7, m9, 13♯11, …). New content stores it;
+   *  legacy content (authored before chord types) omits it → we derive from scaleType. */
+  chordType?: ChordType;
   variantGroup?: string;
   variantLabel?: string;
   stringCount?: number;
@@ -149,11 +158,21 @@ export function ScalesTool({
   // In assignment mode the controls are LOCKED to the gig's presets (the student can't change
   // exercise/key/tempo/loops/record-mode — it's a deliverable).
   const locked = !!assignment;
-  const [scaleType, setScaleType] = React.useState<ScaleType>('major');
+  // The tool is organised around CHORD SOUNDS: the student picks a chord type (Maj7, Dom7,
+  // Min9, 13♯11, …) + key — the tonal centre they play over. The practiced fretboard NOTES
+  // are that chord's PARENT SCALE, and the drone IS the chord. scaleType is DERIVED from the
+  // chord type (note generation + box selection + exercise filtering still key off it).
+  const [chordType, setChordType] = React.useState<ChordType>('maj7');
+  const scaleType: ScaleType = parentScaleFor(chordType);
   const [view, setView] = React.useState<ScaleView>(1); // box position 1, or 'whole'
   // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
   const [bpm, setBpm] = React.useState(70);
-  const [masterVolume, setMasterVolume] = React.useState(0.8);
+  // PER-TRACK volumes (0..1), each wired to its own gain in the sequencer: the metronome
+  // click, the bass sampler (the scale notes), and the band/drone track. The volume popover
+  // shows all three; there is no single "master" for the scales tool (the shell's master
+  // slider is suppressed via hideMasterSlider — it controlled nothing here).
+  const [metronomeVolume, setMetronomeVolume] = React.useState(0.8);
+  const [bassVolume, setBassVolume] = React.useState(0.85);
   // The volume popover's open state is OWNED here so it stays mutually exclusive with the Rec
   // loop stepper (they share the same spot under the icon cluster): while the volume sliders
   // are open, the Rec loop counter is hidden, and vice versa.
@@ -209,10 +228,15 @@ export function ScalesTool({
     });
   const [dynamicLoopEngaged, setDynamicLoopEngaged] = React.useState(false);
 
-  // DRONE — the sustained chord under the scale. On by default; the user can mute it or set
-  // its level. Toggling/leveling mid-play fades (no click); the scale + click keep going.
-  const [droneEnabled, setDroneEnabled] = React.useState(true);
+  // DRONE — the sustained chord. Its AUDIBILITY is the Band volume slider (no engage toggle);
+  // the drone is always "on" so the slider alone controls it.
   const [droneVolume, setDroneVolume] = React.useState(0.8);
+
+  // FREESTYLE (time-free) mode — toggled by the Drone icon. ON: the drone holds and you jam
+  // over it; metronome + bass + exercise are silent (the sequencer starts ONLY the drone).
+  // The time-based Dynamic Loop transposes the chord on a wall-clock timer. OFF: back to
+  // normal exercise mode (select an exercise, press Play → count-in → it starts).
+  const [freestyle, setFreestyle] = React.useState(false);
 
   // The scale ROOT follows the KEY wheel (the `< E >` control) — no separate root picker.
   const root = rootFromKey(backingConfig.originalKey, keyStep);
@@ -275,7 +299,7 @@ export function ScalesTool({
             // The scale's drone pad (its .ogg). Replay tries this URL; missing → dry, like record.
             {
               kind: 'stem',
-              url: droneStemUrl(droneChordSymbol(root, scaleType)),
+              url: droneStemUrl(chordDroneSymbol(root, chordType)),
               loop: true,
               label: 'drone',
             },
@@ -309,13 +333,24 @@ export function ScalesTool({
   //    scale type + kind below; "Auto" (generated box scale) is always the first option. ──
   const { data: library = [] } = useGymExerciseLibrary('scales');
 
-  // Authored exercises for the CURRENT scale type + kind tab, AND fingered for the player's
+  // An exercise's CHORD TYPE — from its payload if authored with one, else derived from the
+  // legacy scaleType (back-compat). This is what the tool groups exercises by now.
+  const chordTypeOf = React.useCallback(
+    (ex: { payload?: unknown; scaleType?: string | null }): ChordType => {
+      const p = ex.payload as PathsByKeyLite | null;
+      if (p?.chordType) return p.chordType;
+      return chordTypeForScale((ex.scaleType ?? 'major') as ScaleType);
+    },
+    [],
+  );
+
+  // Authored exercises for the CURRENT chord type + kind tab, AND fingered for the player's
   // own neck. An exercise is fingered for ONE string count (a 5-string Major Scale doesn't
   // fit a 4-string player), so only show those matching the player's `stringCount`.
   const exercisesForTab = React.useMemo(
     () =>
       library
-        .filter((ex) => (ex.scaleType ?? null) === scaleType)
+        .filter((ex) => chordTypeOf(ex) === chordType)
         .filter((ex) => {
           const p = ex.payload as PathsByKeyLite | null;
           return (
@@ -323,7 +358,7 @@ export function ScalesTool({
             (p?.stringCount ?? 4) === stringCount
           );
         }),
-    [library, scaleType, kind, stringCount],
+    [library, chordType, kind, stringCount, chordTypeOf],
   );
 
   // GROUP the tab's exercises by their variantGroup (the exercise identity). Exercises with
@@ -361,11 +396,11 @@ export function ScalesTool({
     if (!target) return; // library not loaded yet (or exercise removed) — try again on next data.
 
     const payload = target.payload as PathsByKeyLite | null;
-    const targetScale = (target.scaleType ?? 'major') as ScaleType;
+    const targetChord = chordTypeOf(target);
     const targetKind = (payload?.pathKind ?? 'path') as ExerciseKind;
 
-    // Phase 1: scale type + kind + key + tempo + loops.
-    if (scaleType !== targetScale) setScaleType(targetScale);
+    // Phase 1: chord type + kind + key + tempo + loops.
+    if (chordType !== targetChord) setChordType(targetChord);
     if (kind !== targetKind) setKind(targetKind);
 
     // KEY — the gig's scaleKey is an ASCII PathKey; convert to a keyStep offset from the backing
@@ -383,8 +418,8 @@ export function ScalesTool({
     }
 
     // Phase 2: find the exercise's group + variant within the (now matching) groups. Only runs
-    // once scaleType/kind have settled so exerciseGroups holds the target.
-    if (scaleType === targetScale && kind === targetKind) {
+    // once chordType/kind have settled so exerciseGroups holds the target.
+    if (chordType === targetChord && kind === targetKind) {
       for (let gi = 0; gi < exerciseGroups.length; gi++) {
         const vi = exerciseGroups[gi]!.variants.findIndex(
           (ex) => ex.id === assignedExerciseId,
@@ -397,7 +432,7 @@ export function ScalesTool({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assignment, assignedExerciseId, library, exerciseGroups, scaleType, kind, keyBasePc]);
+  }, [assignment, assignedExerciseId, library, exerciseGroups, chordType, kind, keyBasePc]);
 
   // The selected group + the selected fingering variant within it (null = Auto / generated).
   const selectedGroup =
@@ -414,14 +449,30 @@ export function ScalesTool({
   //    the exact current key (no transpose). If that key wasn't authored, fall back to the
   //    generated scale so the tool is never silent. Drone follows the key either way. ──
   const { path, loopBeats, droneSymbol } = React.useMemo(() => {
-    const droneSymbol = droneChordSymbol(root, scaleType);
+    const droneSymbol = chordDroneSymbol(root, chordType);
+
+    // FREESTYLE: no exercise at all — empty path means no lit notes, no playhead sphere, and
+    // no camera follow. Only the drone (droneSymbol) sounds.
+    if (freestyle) {
+      return { path: buildScalePath([]), loopBeats: 0, droneSymbol };
+    }
 
     if (selectedExercise) {
       const payload = selectedExercise.payload as PathsByKeyLite | null;
-      const events = payload?.byKey?.[currentKeyAscii]?.ascending ?? [];
-      if (events.length > 0) {
+      const keyEntry = payload?.byKey?.[currentKeyAscii];
+      const ascending = keyEntry?.ascending ?? [];
+      if (ascending.length > 0) {
         const exStringCount = (payload?.stringCount ??
           stringCount) as StringCount;
+        // PATHS run all the way UP to the top note and back DOWN, so a loop is a full
+        // up-and-down (not a snap from the last note to the first). Descent = the authored
+        // `descending` array if present, else the reversed ascending (top note once). Runs +
+        // patterns keep their authored events as-is (patterns already descend; box runs loop
+        // as authored).
+        const events =
+          (payload?.pathKind ?? 'path') === 'path'
+            ? buildUpDownEvents(ascending, keyEntry?.descending)
+            : ascending;
         const p = authoredPathToPlayable(events, {
           maxFrets,
           rootPc: root,
@@ -442,10 +493,12 @@ export function ScalesTool({
     const p = buildScalePath(notes);
     return { path: p, loopBeats: scalePathBeats(p), droneSymbol };
   }, [
+    freestyle,
     selectedExercise,
     currentKeyAscii,
     root,
     scaleType,
+    chordType,
     stringCount,
     maxFrets,
     view,
@@ -484,8 +537,15 @@ export function ScalesTool({
     loopBeats,
     bpm,
     droneSymbol,
-    droneEnabled,
+    // The drone is always "enabled" — the Band slider (down to 0) controls audibility.
+    droneEnabled: true,
     droneVolume,
+    bassVolume,
+    metronomeVolume,
+    // FREESTYLE: time-free drone with a ~1s crossfade on the time-based transposes — a quick glide
+    // that doesn't wash out the key change. Exercise mode keeps the snappy bar-aligned 0.7s change.
+    freestyle,
+    droneCrossfadeSec: freestyle ? 1 : 0.7,
     onBeforePlay,
     // Record mode mutes the scale-note bass so the student plays it (clean mic capture).
     silentBass: recordMode,
@@ -526,7 +586,10 @@ export function ScalesTool({
   // travel-mode wrap math assumes this; the scale generates notes at any pitch so there's no
   // engine cap to honor). Gated off in record mode (auto-cycling would move the grader's
   // answer key) and locked/gig mode (the gig fixes the key).
-  const dlEngaged = dynamicLoopEngaged && !recordMode && !locked;
+  // LOOP-based dynamic loop runs only in EXERCISE mode (it counts loop seams). Disabled in
+  // freestyle (no loops there) + record/locked.
+  const dlEngaged =
+    dynamicLoopEngaged && !recordMode && !locked && !freestyle;
   const getCurrentAudioTime = React.useCallback(
     () => sequencer.audioContext?.currentTime ?? null,
     [sequencer.audioContext],
@@ -542,14 +605,53 @@ export function ScalesTool({
     getNextSeamTime: sequencer.getNextSeamTime,
     getCurrentTime: getCurrentAudioTime,
   });
-  // While the cycle is actively running, LOCK the manual key roller (the engine owns the key)
-  // — mirrors the groove card, where the stepper is disabled mid-cycle. Disengage to retune.
-  const keyLockedByDynamicLoop = dynamicLoop.isActive;
+
+  // TIME-based transposer runs only in FREESTYLE: every `everyN` SECONDS it advances the key
+  // along the SAME dial schedule (ping-pong / travel), and the drone's long crossfade drifts.
+  const timeTransposeActive =
+    freestyle && dynamicLoopEngaged && sequencer.isPlaying;
+  useTimeTranspose({
+    active: timeTransposeActive,
+    config: dynamicLoopConfig,
+    homeSemitones: keyStep,
+    maxSemitones: 6,
+    setKey: setKeyStep,
+  });
+
+  // While EITHER cycler actively owns the key, LOCK the manual key roller (disengage to retune).
+  const keyLockedByDynamicLoop = dynamicLoop.isActive || timeTransposeActive;
+
+  // FREESTYLE toggle (the Drone icon): it ONLY arms/disarms the mode — it does NOT start audio.
+  // Starting/stopping the actual drone is the PLAY button's job (good UX: the icon says "what
+  // mode", Play says "is it playing", consistent with every other groove card). Turning the mode
+  // OFF while it's playing must stop the drone, since there's no freestyle context to keep it in.
+  const toggleFreestyle = React.useCallback(() => {
+    // Side effects run in the callback BODY, never inside a setState updater (StrictMode
+    // double-invokes updaters → would double-fire sequencer.stop() → a post-fade spike).
+    const next = !freestyle;
+    if (next) {
+      // The dial's "Every N" is now SECONDS — reset a loops-scale value (e.g. 4) to a sane
+      // seconds default (60) so the displayed value matches what the timer actually uses.
+      setDynamicLoopConfig((c) => (c.everyN < 15 ? { ...c, everyN: 60 } : c));
+    } else {
+      // Leaving freestyle: stop any playing drone and restore a loops-scale "Every N".
+      if (sequencer.isPlaying) sequencer.stop();
+      setDynamicLoopConfig((c) => (c.everyN > 16 ? { ...c, everyN: 4 } : c));
+    }
+    setFreestyle(next);
+  }, [sequencer, freestyle]);
 
   const onPlayPause = React.useCallback(() => {
+    // FREESTYLE: Play starts/stops the held drone (no count-in, no exercise). The Drone icon
+    // only arms the mode; the drone never sounds until Play.
+    if (freestyle) {
+      if (sequencer.isPlaying) sequencer.stop();
+      else void sequencer.startFreestyle();
+      return;
+    }
     if (sequencer.isPlaying) sequencer.stop();
     else void sequencer.play();
-  }, [sequencer]);
+  }, [sequencer, freestyle]);
 
   // Synthesize the CountdownState the controls expect from the sequencer's count-in.
   const countdownState = React.useMemo(
@@ -564,25 +666,26 @@ export function ScalesTool({
   // ── ROLLER specs: each control's prev/current/next labels + up/down handlers.
   //    UP selects the value shown ABOVE (prev), DOWN the value BELOW (next). ──
 
-  // SCALE TYPE — cycles through the scale types (wraps). Changing scale resets the box
-  // position AND the exercise selection (the old exercise belongs to the old scale).
-  const scaleIdx = SCALE_TYPES.findIndex((s) => s.value === scaleType);
-  const scaleAt = (d: number) =>
-    SCALE_TYPES[(scaleIdx + d + SCALE_TYPES.length) % SCALE_TYPES.length]!;
-  const setScaleBy = (d: number) => {
-    setScaleType(scaleAt(d).value);
+  // CHORD TYPE — the top picker cycles the chord SOUNDS (Maj7, Dom7, Min9, 13♯11, …; wraps).
+  // The practiced notes (parent scale) + the drone both follow it. Changing chord resets the
+  // box position AND the exercise selection (the old exercise belongs to the old chord).
+  const chordIdx = CHORD_TYPES.findIndex((c) => c.value === chordType);
+  const chordAt = (d: number) =>
+    CHORD_TYPES[(chordIdx + d + CHORD_TYPES.length) % CHORD_TYPES.length]!;
+  const setChordBy = (d: number) => {
+    setChordType(chordAt(d).value);
     setView(1);
     setGroupIdx(-1);
     setVariantIdx(0);
   };
   const scaleRoller = {
-    prev2Label: scaleAt(-2).label,
-    prevLabel: scaleAt(-1).label,
-    currentLabel: scaleAt(0).label,
-    nextLabel: scaleAt(1).label,
-    next2Label: scaleAt(2).label,
-    onUp: () => setScaleBy(-1),
-    onDown: () => setScaleBy(1),
+    prev2Label: chordAt(-2).label,
+    prevLabel: chordAt(-1).label,
+    currentLabel: chordAt(0).label,
+    nextLabel: chordAt(1).label,
+    next2Label: chordAt(2).label,
+    onUp: () => setChordBy(-1),
+    onDown: () => setChordBy(1),
   };
 
   // A bounded (non-wrapping) roller spec from a label list + a current slot + a clamped
@@ -714,13 +817,20 @@ export function ScalesTool({
   // The fretboard lights the AUTHORED path's exact notes (via litNotes) when an authored
   // exercise is selected; for Auto it falls back to generating the scale/box itself. The
   // play `path` already carries the resolved (string, fret) of each note.
-  const litNotes = React.useMemo(
-    () =>
-      usingAuthored
-        ? path.map((n) => ({ string: n.string, fret: n.fret }))
-        : undefined,
-    [usingAuthored, path],
-  );
+  //
+  // FREESTYLE: there's no exercise — instead light up the ENTIRE scale across the whole neck
+  // (in the current, possibly dynamic-loop-transposed key) so the student sees the full layout
+  // to improvise over. buildNoteUniverse emits every (string, fret) of the scale for the bass.
+  const litNotes = React.useMemo(() => {
+    if (freestyle) {
+      return buildNoteUniverse({ stringCount, maxFrets }, root, scaleType).map(
+        (n) => ({ string: n.string, fret: n.fret }),
+      );
+    }
+    return usingAuthored
+      ? path.map((n) => ({ string: n.string, fret: n.fret }))
+      : undefined;
+  }, [freestyle, usingAuthored, path, stringCount, maxFrets, root, scaleType]);
 
   // The PLAYHEAD sequence — the notes being played, in order, with their beat positions
   // (from the play `path`, which is the source of truth for BOTH Auto + authored). The
@@ -752,30 +862,61 @@ export function ScalesTool({
       // row (bottom-right, just above the playback controls).
       controlsInCaptionRow
       isPlaying={sequencer.isPlaying}
-      masterVolume={masterVolume}
-      onMasterVolumeChange={setMasterVolume}
+      // No master slider for the scales tool — the popover is THREE per-track sliders
+      // (metronome / bass / band) behind the one volume icon.
+      hideMasterSlider
       // Own the volume popover's open state so it can't show at the same time as the Rec loop
       // stepper (both sit under the icon cluster). Opening volume hides the loop stepper below.
       volumeOpen={volumeOpen}
       onVolumeOpenChange={setVolumeOpen}
-      // DRONE LEVEL rides in the volume popover (all "levels" behind the one volume icon).
-      // The drone ICON itself (in headerExtra) is just engage/disengage. Greyed when the
-      // drone is disengaged.
+      // The THREE track-volume sliders, each with one icon on the left: Metronome (click),
+      // Bass (the scale notes), Band (the drone/instrument track). Each is wired to its own
+      // gain in the sequencer so it moves only that source.
       volumePopoverExtra={
-        <div className="flex items-center gap-2">
-          <Waves className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={droneVolume}
-            disabled={!droneEnabled}
-            onChange={(e) => setDroneVolume(Number(e.target.value))}
-            aria-label="Drone level"
-            title={droneEnabled ? 'Drone level' : 'Engage the drone to set its level'}
-            className="h-1 w-32 cursor-pointer accent-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
-          />
+        <div className="flex flex-col gap-2.5">
+          {/* METRONOME click level */}
+          <div className="flex items-center gap-2" title="Metronome (click) level">
+            <Metronome className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={metronomeVolume}
+              onChange={(e) => setMetronomeVolume(Number(e.target.value))}
+              aria-label="Metronome level"
+              className="h-1 w-32 cursor-pointer accent-emerald-400"
+            />
+          </div>
+          {/* BASS sampler (the scale notes) level */}
+          <div className="flex items-center gap-2" title="Bass (scale notes) level">
+            <Guitar className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={bassVolume}
+              onChange={(e) => setBassVolume(Number(e.target.value))}
+              aria-label="Bass level"
+              className="h-1 w-32 cursor-pointer accent-orange-400"
+            />
+          </div>
+          {/* BAND / drone track level — the drone's audibility (no engage toggle; the Drone
+              icon is the Freestyle-mode switch). */}
+          <div className="flex items-center gap-2" title="Band (drone) level">
+            <AudioLines className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={droneVolume}
+              onChange={(e) => setDroneVolume(Number(e.target.value))}
+              aria-label="Band level"
+              className="h-1 w-32 cursor-pointer accent-indigo-400"
+            />
+          </div>
         </div>
       }
       // HEADER ICON CLUSTER (in the caption row), left→right: Drone · Dynamic Loop · Rec ·
@@ -783,44 +924,59 @@ export function ScalesTool({
       // the pad; Dynamic Loop = the groove-card dial; Rec = arm recording.
       headerExtra={
         <>
-          {/* DRONE — engage/disengage the sustained chord under the scale (its LEVEL is in
-              the volume popover). Shown in all modes (a student can silence the drone even on
-              a locked gig). Indigo when engaged, matching the drone-level slider's accent. */}
-          <button
-            type="button"
-            aria-label={droneEnabled ? 'Disengage drone' : 'Engage drone'}
-            aria-pressed={droneEnabled}
-            title="Drone — the held chord that voices the scale's tonality"
-            onClick={() => setDroneEnabled((v) => !v)}
-            className={`p-2.5 rounded-full transition-colors ${
-              droneEnabled
-                ? 'bg-indigo-500 text-white hover:bg-indigo-400'
-                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
-            }`}
-          >
-            <Waves className="w-5 h-5" aria-hidden />
-          </button>
+          {/* DRONE icon = FREESTYLE mode toggle. It ARMS the mode only — it does NOT start audio;
+              press Play to start the held drone (metronome + bass + exercise stay silent; the
+              time-based Dynamic Loop transposes it). OFF: back to exercise mode. Lit indigo while
+              armed. Hidden in locked (gig) mode — a gig is a graded exercise, not freestyle. */}
+          {!locked && (
+            <button
+              type="button"
+              aria-label={freestyle ? 'Exit freestyle (drone)' : 'Freestyle — freeze a chord and jam'}
+              aria-pressed={freestyle}
+              title={
+                freestyle
+                  ? 'Freestyle ON — press Play to start the drone. Click to exit the mode.'
+                  : 'Freestyle — freeze a chord and play over it (press Play to start; no exercise, no click)'
+              }
+              onClick={toggleFreestyle}
+              className={`p-2.5 rounded-full transition-colors ${
+                freestyle
+                  ? 'bg-indigo-500 text-white hover:bg-indigo-400'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
+              }`}
+            >
+              <AudioLines className="w-5 h-5" aria-hidden />
+            </button>
+          )}
           {/* DYNAMIC LOOP — the groove-card dial. Hidden in locked (gig) mode (key is fixed)
               and disabled in record mode (auto-cycling would move the grader's answer key). */}
           {!locked && (
             <GrooveCardDynamicLoopDial
               config={dynamicLoopConfig}
               onConfigChange={setDynamicLoopConfig}
-              engaged={dlEngaged}
+              // In freestyle the cycle is the TIME transposer (engaged reflects the dial's own
+              // flag); in exercise mode it's the loop-based cycle (dlEngaged). Units switch too.
+              engaged={freestyle ? dynamicLoopEngaged : dlEngaged}
               onEngagedChange={setDynamicLoopEngaged}
               maxSemitones={6}
-              disabled={!sequencer.isReady || recordMode}
+              // In freestyle there's no exercise path, so sequencer.isReady is false — but the
+              // dial is the whole point of the mode, so it must stay enabled. Only gate it on
+              // path-readiness + record mode in EXERCISE mode.
+              disabled={!freestyle && (!sequencer.isReady || recordMode)}
+              everyUnit={freestyle ? 'seconds' : 'loops'}
             />
           )}
           {/* REC ARM — single-press icon. Press once to arm (red, ▶ becomes ●), again to
               disarm. Disabled mid-take. When armed, the loop-count stepper (‹ N× ›) drops
               in by the icon — hidden in locked (gig) mode (the gig fixes the count) AND while
-              the volume popover is open (the two share the same spot — one or the other). */}
+              the volume popover is open (the two share the same spot — one or the other).
+              Recording is an EXERCISE-mode deliverable, so it's DISABLED (greyed, not removed)
+              in freestyle — the icon stays put so the cluster doesn't reflow. */}
           <RecArmButton
             armed={recordMode}
-            disabled={sequencer.isPlaying}
+            disabled={sequencer.isPlaying || freestyle}
             onToggle={() => setRecordMode((v) => !v)}
-            showLoops={!locked && !volumeOpen}
+            showLoops={!locked && !volumeOpen && !freestyle}
             recordLoops={recordLoops}
             isPlaying={sequencer.isPlaying}
             onRecordLoopsChange={setRecordLoops}
@@ -838,7 +994,9 @@ export function ScalesTool({
             scaleType={scaleType}
             stringCount={stringCount}
             maxFrets={maxFrets}
-            isPlaying={sequencer.isPlaying}
+            // Freestyle has no exercise — the fretboard isn't "playing" a path (no playhead,
+            // no camera follow). The static scale shape still shows the notes that fit the chord.
+            isPlaying={sequencer.isPlaying && !freestyle}
             tempo={bpm}
             view={view}
             // Authored exercise → light its exact notes; Auto → generate the scale/box.
@@ -879,7 +1037,10 @@ export function ScalesTool({
       controls={
         <ScalesControls
           isPlaying={sequencer.isPlaying}
-          isReady={sequencer.isReady}
+          // In FREESTYLE the Play button starts/stops the held drone, so it's ALWAYS enabled
+          // (no exercise-path readiness needed — there's no exercise). In exercise mode it's the
+          // normal play-readiness gate.
+          isReady={freestyle ? true : sequencer.isReady}
           countdownState={countdownState}
           scale={scaleRoller}
           exercise={exerciseRoller}

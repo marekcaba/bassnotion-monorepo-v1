@@ -28,18 +28,19 @@ export const FRETBOARD_CANVAS_HEIGHT = 305;
  *  custom sceneX was the pre-scroll static-layout tuning and fought the scroll offset. */
 export const FRETBOARD_WINDOW = {
   /** Canvas width in px. The scroll container pans the neck; this sets how many frets are
-   *  visible at once. Re-calibrated to 680 (2026-06-28). The scroll-range + scrollToFret
+   *  visible at once. Re-calibrated to 700 (2026-06-30). The scroll-range + scrollToFret
    *  math in ScaleFretboardWindow read this, so they stay consistent. */
-  viewportWidth: 680,
+  viewportWidth: 700,
 };
 
 export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
-  // Scroll-model scene config. Re-calibrated by eye on the gym board (5-string) 2026-06-28:
-  // sceneX -92, offsetX -14, viewport 680 (above). sceneX is string-count-dependent — keep
-  // the old +17 gap for 4-string (it sits higher).
-  const sceneX = stringCount === 4 ? -75 : -92;
+  // Scroll-model scene config. Re-calibrated by eye on the gym board (5-string) 2026-06-30
+  // via the FretboardCalibrationPanel: sceneX -96, contentScale 1.17, contentScaleX 0.865,
+  // contentScaleY 0.833, rotationX 13°, tiltAxisOffsetX 375, viewport 700 (above). sceneX is
+  // string-count-dependent — keep the old +17 gap for 4-string (it sits higher).
+  const sceneX = stringCount === 4 ? -79 : -96;
   return {
-    rotationX: 0,
+    rotationX: 13,
     rotationY: 0,
     rotationZ: 0,
     offsetX: -14,
@@ -51,16 +52,16 @@ export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
     fovOffset: 0,
     originX: 284, // center of the 568px canvas
     originY: 136,
-    contentScale: 1.3,
-    contentScaleX: 0.959,
-    contentScaleY: 0.949,
+    contentScale: 1.17,
+    contentScaleX: 0.865,
+    contentScaleY: 0.833,
     cameraY: 0,
     perspectiveMultiplier: 0.98,
     topEdgeScale: 1.0,
     bottomEdgeScale: 1.0,
     positioningMode: 'flat' as 'flat' | 'tilted-plane' | 'screen-space',
     tiltAxisOffset: -23,
-    tiltAxisOffsetX: 448,
+    tiltAxisOffsetX: 375,
     leftFadeZone: 10,
     rightFadeZone: 10,
     fadeEdgeAngle: 0,

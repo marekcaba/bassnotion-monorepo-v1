@@ -55,10 +55,14 @@ interface GrooveCardShellProps {
   subtitle: string;
   isPlaying: boolean;
   caption: string;
-  /** Master volume for the whole groove (all stems), 0..1. */
-  masterVolume: number;
+  /** Master volume for the whole groove (all stems), 0..1. Optional: a surface with its own
+   *  per-track sliders (e.g. the gym Scales tool) omits it + sets hideMasterSlider. */
+  masterVolume?: number;
   /** Fired as the master volume slider moves (0..1). */
-  onMasterVolumeChange: (volume: number) => void;
+  onMasterVolumeChange?: (volume: number) => void;
+  /** Hide the master-volume slider in the popover (the surface supplies its own sliders via
+   *  volumePopoverExtra). The volume ICON trigger still shows. Default false. */
+  hideMasterSlider?: boolean;
   /** Slot for the waveform component. */
   waveform: ReactNode;
   /** Slot for the chord chart row, rendered in the header's middle column when
@@ -124,8 +128,9 @@ export function GrooveCardShell({
   subtitle,
   isPlaying,
   caption,
-  masterVolume,
+  masterVolume = 1,
   onMasterVolumeChange,
+  hideMasterSlider = false,
   waveform,
   chordRow,
   chordsVisible = false,
@@ -200,20 +205,25 @@ export function GrooveCardShell({
   // extra level row (the gym drone level).
   const volumeSliders = (
     <>
-      <div className="flex items-center gap-2">
-        <VolumeX className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={masterVolume}
-          onChange={(e) => onMasterVolumeChange(Number(e.target.value))}
-          aria-label="Volume"
-          className="h-1 w-32 cursor-pointer accent-orange-500"
-        />
-        <Volume2 className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
-      </div>
+      {/* Master slider — hidden when the surface supplies its own per-track sliders. */}
+      {!hideMasterSlider && (
+        <div className="flex items-center gap-2">
+          <VolumeX className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={masterVolume}
+            onChange={(e) =>
+              onMasterVolumeChange?.(Number(e.target.value))
+            }
+            aria-label="Volume"
+            className="h-1 w-32 cursor-pointer accent-orange-500"
+          />
+          <Volume2 className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+        </div>
+      )}
       {volumePopoverExtra}
     </>
   );

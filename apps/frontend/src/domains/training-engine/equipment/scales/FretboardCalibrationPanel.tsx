@@ -18,6 +18,13 @@ export interface FretboardCalibrationValues {
   tiltAxisOffsetX: number;
   contentScale: number;
   contentScaleX: number;
+  /** Independent VERTICAL scale of the content (corrects vertical stretch/squash). */
+  contentScaleY: number;
+  /** Scene ROTATION in DEGREES (the canvas converts to radians). X = tilt toward/away,
+   *  Y = turn left/right (yaw), Z = roll in-plane. */
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
   leftFadeZone: number;
   rightFadeZone: number;
   offsetX: number;
@@ -80,6 +87,17 @@ const SLIDERS: {
     max: 1.4,
     step: 0.001,
   },
+  {
+    key: 'contentScaleY',
+    label: 'contentScaleY',
+    min: 0.6,
+    max: 1.4,
+    step: 0.001,
+  },
+  // ── ROTATION (degrees) — X tilt, Y yaw, Z roll ──
+  { key: 'rotationX', label: 'rotationX° (tilt)', min: -180, max: 180, step: 0.5 },
+  { key: 'rotationY', label: 'rotationY° (yaw)', min: -180, max: 180, step: 0.5 },
+  { key: 'rotationZ', label: 'rotationZ° (roll)', min: -180, max: 180, step: 0.5 },
   { key: 'leftFadeZone', label: 'leftFadeZone %', min: 0, max: 30, step: 0.5 },
   {
     key: 'rightFadeZone',
