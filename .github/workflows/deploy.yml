@@ -102,6 +102,37 @@ jobs:
           # can't verify the SHA, so fall back to healthy-only with a warning
           # rather than block the deploy on a config gap.
 
+          # Build the "watched backend path" regex from railway.json itself (the
+          # single source of truth) instead of hardcoding it here — so the gate
+          # can never silently DESYNC from Railway's actual watchPatterns (a
+          # desync would let a backend change be mis-accepted as frontend-only).
+          # Read railway.json at THIS commit via the contents API (the gate job
+          # has no checkout). Each glob → an anchored regex:
+          #   "<dir>/**"   → "^<dir>/"   (prefix match for a directory)
+          #   "<file>"     → "^<file>$"  (exact file; dots escaped)
+          # joined with "|". If the fetch/parse yields nothing, WATCH_REGEX stays
+          # empty and backend_unchanged_since refuses to accept (safe default).
+          WATCH_REGEX=$(curl -fsS --max-time 15 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "https://api.github.com/repos/$GH_REPO/contents/railway.json?ref=$EXPECTED_SHA" \
+            | jq -r '.build.watchPatterns[]?' 2>/dev/null \
+            | while IFS= read -r p; do
+                [ -z "$p" ] && continue
+                if [ "${p%/\*\*}" != "$p" ]; then
+                  base="${p%/\*\*}"
+                  printf '^%s/\n' "$(printf '%s' "$base" | sed 's/\./\\./g')"
+                else
+                  printf '^%s$\n' "$(printf '%s' "$p" | sed 's/\./\\./g')"
+                fi
+              done | paste -sd '|' -)
+          if [ -n "$WATCH_REGEX" ]; then
+            echo "Backend watch regex (from railway.json @ ${EXPECTED_SHA:0:8}): $WATCH_REGEX"
+          else
+            echo "::warning::Could not read watchPatterns from railway.json — the \
+              frontend-only accept path is disabled this run (gate stays strict)."
+          fi
+
           # Is the running commit the SAME as, or a DESCENDANT of, EXPECTED_SHA?
           # Uses the GitHub compare API (no checkout needed). For base...head the
           # returned `status` is HEAD's position relative to BASE:
@@ -133,10 +164,12 @@ jobs:
           # So: if the running commit is an ancestor of ours AND nothing under the
           # backend watch paths changed between them, the backend legitimately did
           # not need to redeploy — the running (older) image IS correct. Accept.
-          # Keep these globs in sync with railway.json `build.watchPatterns`.
+          # WATCH_REGEX is derived from railway.json above (no hardcoded globs).
           backend_unchanged_since() {
             local running="$1"
             [ -z "$running" ] || [ "$running" = "unknown" ] && return 1
+            # No watch regex (railway.json unreadable) → can't prove frontend-only → refuse.
+            [ -z "$WATCH_REGEX" ] && return 1
             # base=running, head=EXPECTED → files[] are what OUR commit added on top
             # of the running image. If none touch a watched backend path, the backend
             # had no reason to rebuild.
@@ -149,7 +182,7 @@ jobs:
             # Empty file list = couldn't determine → be safe, do NOT accept.
             [ -z "$changed" ] && return 1
             # Any watched backend path present → backend SHOULD have rebuilt → reject.
-            echo "$changed" | grep -qE '^(apps/backend/|libs/contracts/|package\.json|pnpm-lock\.yaml|Dockerfile\.final|railway\.json|tsconfig\.base\.json)' && return 1
+            echo "$changed" | grep -qE "$WATCH_REGEX" && return 1
             return 0
           }
 
