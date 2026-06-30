@@ -25,8 +25,9 @@ import {
   FRETBOARD_CANVAS_HEIGHT,
   FRETBOARD_WINDOW,
 } from './fretboardViewConfig';
+import { computeFretboardGeometry } from './fretboardGeometry';
 import {
-  // FretboardCalibrationPanel,  // ← uncomment (+ the mount below) to re-calibrate
+  FretboardCalibrationPanel,
   CALIBRATION_ENABLED,
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
@@ -170,14 +171,16 @@ export function ScaleFretboardWindow({
   // DEV calibration: live overrides for the centering/fade params, seeded from the
   // base config. When CALIBRATION_ENABLED, the panel adjusts these live; otherwise
   // the base config is used as-is.
-  // `setCal` unused while the panel is commented out; restore on re-calibration.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cal, setCal] = React.useState<FretboardCalibrationValues>(() => ({
     sceneX: baseConfig.sceneX,
     offsetX: baseConfig.offsetX,
     tiltAxisOffsetX: baseConfig.tiltAxisOffsetX,
     contentScale: baseConfig.contentScale,
     contentScaleX: baseConfig.contentScaleX,
+    contentScaleY: baseConfig.contentScaleY,
+    rotationX: baseConfig.rotationX,
+    rotationY: baseConfig.rotationY,
+    rotationZ: baseConfig.rotationZ,
     leftFadeZone: baseConfig.leftFadeZone,
     rightFadeZone: baseConfig.rightFadeZone,
     viewportWidth: FRETBOARD_WINDOW.viewportWidth,
@@ -198,6 +201,10 @@ export function ScaleFretboardWindow({
       tiltAxisOffsetX,
       contentScale,
       contentScaleX,
+      contentScaleY,
+      rotationX,
+      rotationY,
+      rotationZ,
       leftFadeZone,
       rightFadeZone,
     } = activeCal;
@@ -208,6 +215,10 @@ export function ScaleFretboardWindow({
       tiltAxisOffsetX,
       contentScale,
       contentScaleX,
+      contentScaleY,
+      rotationX,
+      rotationY,
+      rotationZ,
       leftFadeZone,
       rightFadeZone,
     };
@@ -232,34 +243,18 @@ export function ScaleFretboardWindow({
   // range use the MEASURED screen-px-per-fret mapping (SCREEN_PX_PER_FRET) below, since the
   // 3D renders at contentScale through a perspective camera (on-screen px/fret ≠ content).
 
-  // SCROLL RANGE — scrollLeft (DOM px) does NOT pan content 1:1: the 3D is rendered at
-  // contentScale through a perspective camera, so DOM-px under-covers the scaled content.
-  // MEASURED on the real board: at scroll 660 the neck reached ~fret 17 (from the default
-  // center ~fret 2.5) → ≈45.5 on-screen px per fret. Scroll to put the last fret at the
-  // viewport CENTER would be (lastFret − 2.5)×45.5; we want it at the RIGHT EDGE instead
-  // (so the neck stops with the last fret flush right, no blank space), which is half a
-  // viewport less. The spacer is exactly this wide so the browser clamps scroll there.
-  const SCREEN_PX_PER_FRET = 45.5;
-  const DEFAULT_CENTER_FRET = 2.5;
-  // CENTERING calibration — what scrollLeft puts a given fret at the VISUAL CENTER.
-  // CENTER_FRET_AT_0 = the fret centered at scrollLeft 0; CENTER_PX_PER_FRET = scroll px per
-  // fret of pan (same rate as the scroll range, 45.5). MEASURED 2026-06-28: scrollLeft 56
-  // centered fret-mid 6.0 → anchor = 6.0 − 56/45.5 ≈ 4.77.
-  const CENTER_FRET_AT_0 = 4.77;
-  const CENTER_PX_PER_FRET = 45.5;
-  // +200px of slack past the right-edge stop (eye-tuned 2026-06-28) so the last fret isn't
-  // jammed flush against the edge.
-  const SCROLL_SLACK = 200;
-  const maxScroll = Math.max(
-    0,
-    (maxFrets - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET -
-      viewportWidth / 2 +
-      SCROLL_SLACK,
-  );
-  // Spacer is EXACTLY this scroll range wide (= maxScroll + viewportWidth), so the browser
-  // natively clamps scrollLeft to [0, maxScroll] — you can reach the last fret but not scroll
-  // into empty void past it.
-  const fullContentWidth = maxScroll + viewportWidth;
+  // SCROLL/CENTERING geometry — the MEASURED scrollLeft↔fret mapping (≈45.5 px/fret at the
+  // baseline contentScale 1.17 + viewportWidth 700) now lives in the pure, tested
+  // computeFretboardGeometry. scaleFactor defaults to 1 here (no size tier yet) → byte-identical
+  // to the old inline math; the responsive tiers will pass a real factor that scales the px-rates
+  // in lockstep with contentScale so the scroll + sphere stay locked to the dots.
+  const geometry = computeFretboardGeometry({ maxFrets, viewportWidth });
+  const {
+    maxScroll,
+    fullContentWidth,
+    scrollForFret: scrollForFretGeom,
+    fitsInView: fitsInViewGeom,
+  } = geometry;
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -274,10 +269,7 @@ export function ScaleFretboardWindow({
     (fret: number, durationMs = 650) => {
       const el = scrollContainerRef.current;
       if (!el) return;
-      const target = Math.min(
-        Math.max((fret - CENTER_FRET_AT_0) * CENTER_PX_PER_FRET, 0),
-        maxScroll,
-      );
+      const target = scrollForFretGeom(fret);
       const from = el.scrollLeft;
       if (Math.abs(target - from) < 1) {
         el.scrollLeft = target;
@@ -296,7 +288,8 @@ export function ScaleFretboardWindow({
       };
       centerTweenRef.current = requestAnimationFrame(step);
     },
-    [maxScroll],
+    // scrollForFretGeom closes over the geometry, which is a function of these inputs.
+    [maxFrets, viewportWidth],
   );
   React.useEffect(
     () => () => {
@@ -322,8 +315,7 @@ export function ScaleFretboardWindow({
     }
     const lo = Math.min(...shownFrets);
     const hi = Math.max(...shownFrets);
-    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
-    const fitsInView = hi - lo <= viewFrets - 1.5;
+    const fitsInView = fitsInViewGeom(lo, hi);
     // Fits → center the whole fret SPAN's midpoint; doesn't fit → center the first lit fret.
     const firstFret =
       typeof exerciseNotes[0]?.fret === 'number'
@@ -353,29 +345,105 @@ export function ScaleFretboardWindow({
   };
   const endDrag = () => setIsDragging(false);
 
-  // ── AUTO-FOLLOW CAMERA — during playback, SLOWLY pan the neck to keep the active note in
-  //    view — but ONLY WHEN NEEDED. If the whole exercise's fret span already fits in the
-  //    window, the camera holds still (no sliding). When it doesn't fit, the view only nudges
-  //    (gently, slowly) as the active note nears the left/right edge, then settles. Reads the
-  //    gym's own clock (getPlaybackBeat). Pauses while dragging; stops when not playing. ──
+  // ── POSITIONS (clusters) — segment the path into HAND POSITIONS the camera snaps between,
+  //    instead of tracking every fret. Walking the notes in beat order, a new position starts
+  //    whenever the next note sits more than ~a hand-span from the current cluster's centre (or
+  //    would stretch the cluster past a comfortable span). Each position holds a fret RANGE +
+  //    the beat range it's active. The camera centres a WHOLE position and only moves when the
+  //    run crosses into the next one → it settles in a "room" then glides to the next, rather
+  //    than ratcheting fret-by-fret. Memoized; recomputed only when the path changes. ──
+  const positions = React.useMemo(() => {
+    const notes = playheadNotes ?? [];
+    if (notes.length === 0)
+      return [] as {
+        centerFret: number;
+        startBeat: number;
+        endBeat: number;
+      }[];
+    const GAP = 4; // a note >4 frets from the cluster centre opens a new position
+    const MAX_SPAN = 6; // a position never spans more than ~a hand (6 frets)
+    const clusters: { frets: number[]; startBeat: number; endBeat: number }[] =
+      [];
+    for (const n of notes) {
+      const cur = clusters[clusters.length - 1];
+      if (cur) {
+        const lo = Math.min(...cur.frets, n.fret);
+        const hi = Math.max(...cur.frets, n.fret);
+        const center =
+          cur.frets.reduce((s, f) => s + f, 0) / cur.frets.length;
+        // Same position if the note is within reach AND the cluster stays hand-sized.
+        if (Math.abs(n.fret - center) <= GAP && hi - lo <= MAX_SPAN) {
+          cur.frets.push(n.fret);
+          cur.endBeat = n.startBeat;
+          continue;
+        }
+      }
+      clusters.push({ frets: [n.fret], startBeat: n.startBeat, endBeat: n.startBeat });
+    }
+    return clusters.map((c) => ({
+      // Centre on the cluster's fret-SPAN midpoint (so the whole hand position is framed).
+      centerFret: (Math.min(...c.frets) + Math.max(...c.frets)) / 2,
+      startBeat: c.startBeat,
+      endBeat: c.endBeat,
+    }));
+  }, [playheadNotes]);
+
+  // ── AUTO-FOLLOW CAMERA — POSITION-BASED + ANTICIPATORY. The target is the POSITION the run is
+  //    heading into (look-ahead by LEAD_BEATS), not the live note. Because positions are stable,
+  //    the target is a STEP function — it only changes when the run enters a new position — so
+  //    the camera holds, then glides smoothly (ease-in-out tween) to the next position and
+  //    settles. Feels like a game camera moving between rooms, not chasing the player. Holds
+  //    still if the whole exercise fits; reads the gym clock; pauses while dragging; stops when
+  //    not playing. ──
   const isDraggingRef = React.useRef(isDragging);
   isDraggingRef.current = isDragging;
   React.useEffect(() => {
-    if (!getPlaybackBeat || !playheadNotes || playheadNotes.length === 0)
-      return;
-    // Does the WHOLE exercise fit in the view? View width in frets = viewport / px-per-fret.
-    // If the exercise span fits (with a margin), never pan — all notes are always visible.
-    const frets = playheadNotes.map((n) => n.fret);
-    const span = Math.max(...frets) - Math.min(...frets);
-    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
-    const fitsInView = span <= viewFrets - 1.5; // 1.5-fret margin so edges aren't jammed
+    if (!getPlaybackBeat || positions.length === 0) return;
+    const notes = playheadNotes ?? [];
+    // Does the WHOLE exercise fit in the view? If so, never pan — all notes always visible.
+    const frets = notes.map((n) => n.fret);
+    const fitsInView = fitsInViewGeom(Math.min(...frets), Math.max(...frets));
+
+    const scrollToCenterFret = (fret: number) => scrollForFretGeom(fret);
+
+    // Beats of anticipation — aim the camera at where the run will be, so the next position is
+    // already framed by the time the playhead arrives. Generous (3 beats) so the SLOW glide
+    // below has runway to complete BEFORE the notes reach the new position — the camera is
+    // never seen lagging behind the playhead, it's just quietly already there.
+    const LEAD_BEATS = 3;
+    const loop = loopBeats && loopBeats > 0 ? loopBeats : null;
+
+    // Which position is active at a given beat (the last one whose startBeat has passed).
+    const positionIndexAt = (b: number): number => {
+      let idx = 0;
+      for (let i = 0; i < positions.length; i++) {
+        if (positions[i]!.startBeat <= b) idx = i;
+        else break;
+      }
+      return idx;
+    };
+
+    // The glide between positions: when the target changes we start a SLOW, gentle tween from
+    // the current scroll to the new position's centre. Deliberately long + super-soft so the
+    // student never consciously notices the camera move — it's an ambient drift, not a slide.
+    // One tween at a time; a new target mid-glide retargets smoothly from the live position.
+    let tweenFrom = 0;
+    let tweenTo = scrollContainerRef.current?.scrollLeft ?? 0;
+    let tweenStart = 0;
+    let tweening = false;
+    let lastTargetIdx = -1;
+    // ~2.2s drift. Long enough to be imperceptible; the 3-beat look-ahead gives it runway to
+    // finish before the notes arrive (at typical practice tempos a beat is ~0.4–0.9s).
+    const TWEEN_MS = 2200;
+    // SMOOTHERSTEP (6t⁵−15t⁴+10t³): zero velocity AND zero acceleration at both ends, so there's
+    // no perceptible start-jerk or mid-whoosh — the gentlest standard ease for "don't notice it".
+    const smootherstep = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
     let raf = 0;
-    const tick = () => {
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const el = scrollContainerRef.current;
       const beat = getPlaybackBeat();
-      // Not playing, mid-drag, counting in, or the exercise fits → hold position, no pan.
       if (
         !el ||
         beat === null ||
@@ -385,37 +453,31 @@ export function ScaleFretboardWindow({
       )
         return;
 
-      // Active note's fret (the sphere's current note).
-      let idx = 0;
-      for (let i = 0; i < playheadNotes.length; i++) {
-        if (playheadNotes[i]!.startBeat <= beat) idx = i;
-        else break;
-      }
-      const followFret = playheadNotes[idx]!.fret;
+      // The position the run is heading INTO (look-ahead, loop-wrapped).
+      const leadBeat = loop ? (beat + LEAD_BEATS) % loop : beat + LEAD_BEATS;
+      const targetIdx = positionIndexAt(leadBeat);
 
-      // Where the active note currently sits on screen (px from the left edge).
-      const fretScreenX =
-        (followFret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET - el.scrollLeft;
-      // EDGE BUFFER — only pan when the note drifts into the outer ~25% on either side; while
-      // it's comfortably in frame, the camera holds completely still.
-      const buffer = viewportWidth * 0.25;
-      let target = el.scrollLeft;
-      if (fretScreenX < buffer) {
-        // Drifting off the LEFT → pan left so the note returns to the buffer line.
-        target = el.scrollLeft + (fretScreenX - buffer);
-      } else if (fretScreenX > viewportWidth - buffer) {
-        // Drifting off the RIGHT → pan right.
-        target = el.scrollLeft + (fretScreenX - (viewportWidth - buffer));
-      } else {
-        return; // comfortably centered → no movement at all
+      // Target changed → start a fresh ease-in-out tween from where we are to the new room.
+      if (targetIdx !== lastTargetIdx) {
+        lastTargetIdx = targetIdx;
+        const dest = scrollToCenterFret(positions[targetIdx]!.centerFret);
+        if (Math.abs(dest - el.scrollLeft) > 1) {
+          tweenFrom = el.scrollLeft;
+          tweenTo = dest;
+          tweenStart = now;
+          tweening = true;
+        }
       }
-      target = Math.min(Math.max(target, 0), maxScroll);
-      // VERY SLOW ease toward the target — a calm drift, not a chase.
-      el.scrollLeft += (target - el.scrollLeft) * 0.02;
+
+      if (tweening) {
+        const p = Math.min((now - tweenStart) / TWEEN_MS, 1);
+        el.scrollLeft = tweenFrom + (tweenTo - tweenFrom) * smootherstep(p);
+        if (p >= 1) tweening = false;
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [getPlaybackBeat, playheadNotes, viewportWidth, maxScroll]);
+  }, [getPlaybackBeat, playheadNotes, positions, loopBeats, viewportWidth, maxScroll]);
 
   return (
     <div
@@ -427,10 +489,10 @@ export function ScaleFretboardWindow({
         overflow: 'visible',
       }}
     >
-      {/* DEV calibration panel — commented out (values baked into fretboardViewConfig.ts).
-          To re-calibrate: uncomment this + the import above, and set
-          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
-      {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
+      {/* DEV calibration panel — draggable; renders null unless
+          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true. Edits the scene centering/fade/window params
+          live; copy the printed values into fretboardViewConfig.ts when they look right. */}
+      <FretboardCalibrationPanel values={cal} onChange={setCal} />
 
       {/* DEV playhead tuners — draggable; render null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
           PlayheadPanel = the sphere (size/color/anim/bezier/ripple). AnticipationPanel = the
