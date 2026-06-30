@@ -90,6 +90,13 @@ jobs:
           # deploy. Fix: accept "running EXPECTED_SHA *or a descendant*" — a newer
           # commit being live means our deploy was simply SUPERSEDED, which is a pass.
           #
+          # FRONTEND-ONLY: a third accept path. Railway's backend service only
+          # rebuilds on changes under its watchPatterns (railway.json — backend
+          # paths). A frontend-only merge leaves the backend correctly serving an
+          # OLDER (ancestor) commit forever, which the descendant check rejects.
+          # So we also accept "running an ancestor AND this commit touched no
+          # watched backend path" — the backend legitimately didn't redeploy.
+          #
           # GRACE: if the backend reports commit "unknown" (env var not set —
           # e.g. off-Railway, or before RAILWAY_GIT_COMMIT_SHA is wired), we
           # can't verify the SHA, so fall back to healthy-only with a warning
@@ -113,6 +120,37 @@ jobs:
               "https://api.github.com/repos/$GH_REPO/compare/${EXPECTED_SHA}...${running}" \
               | jq -r '.status // empty' 2>/dev/null || true)
             [ "$status" = "identical" ] || [ "$status" = "ahead" ]
+          }
+
+          # FRONTEND-ONLY MERGE: Railway's backend service has watchPatterns
+          # (railway.json) scoped to backend paths, so a commit that changes ONLY
+          # frontend files does NOT rebuild the backend — Railway correctly keeps
+          # serving the last backend-relevant image. That image's commit is an
+          # ANCESTOR of EXPECTED_SHA (status="behind"), which the descendant check
+          # rejects → the gate would wait 10 min for an image that, by design, is
+          # never built, and fail a perfectly good frontend-only deploy.
+          #
+          # So: if the running commit is an ancestor of ours AND nothing under the
+          # backend watch paths changed between them, the backend legitimately did
+          # not need to redeploy — the running (older) image IS correct. Accept.
+          # Keep these globs in sync with railway.json `build.watchPatterns`.
+          backend_unchanged_since() {
+            local running="$1"
+            [ -z "$running" ] || [ "$running" = "unknown" ] && return 1
+            # base=running, head=EXPECTED → files[] are what OUR commit added on top
+            # of the running image. If none touch a watched backend path, the backend
+            # had no reason to rebuild.
+            local changed
+            changed=$(curl -fsS --max-time 15 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GH_REPO/compare/${running}...${EXPECTED_SHA}" \
+              | jq -r '[.files[]?.filename] | .[]' 2>/dev/null || true)
+            # Empty file list = couldn't determine → be safe, do NOT accept.
+            [ -z "$changed" ] && return 1
+            # Any watched backend path present → backend SHOULD have rebuilt → reject.
+            echo "$changed" | grep -qE '^(apps/backend/|libs/contracts/|package\.json|pnpm-lock\.yaml|Dockerfile\.final|railway\.json|tsconfig\.base\.json)' && return 1
+            return 0
           }
 
           for i in $(seq 1 60); do
@@ -145,13 +183,24 @@ jobs:
                 echo "$body"
                 exit 0
               fi
+              # Running an OLDER image — but if THIS commit changed no backend watch
+              # path, Railway correctly didn't rebuild and the older image is right
+              # (frontend-only merge). Accept instead of waiting for a build that
+              # will never happen.
+              if backend_unchanged_since "$running_sha"; then
+                echo "Backend healthy; running ${running_sha:0:8} is older than ${EXPECTED_SHA:0:8}, \
+                  but this commit changed NO backend watch path — Railway correctly skipped a rebuild \
+                  (frontend-only merge). Accepting."
+                echo "$body"
+                exit 0
+              fi
               echo "Attempt $i: healthy but running an OLDER image (${running_sha:0:8}, want ${EXPECTED_SHA:0:8} or newer) — new build not live yet, retrying in 10s..."
             else
               echo "Attempt $i: not healthy yet (status: ${top_status:-unknown}), retrying in 10s..."
             fi
             sleep 10
           done
-          echo "::error::Backend did not deploy commit $EXPECTED_SHA (or a descendant) and report healthy within 10 minutes. The new image likely failed to build or Railway's deploy didn't trigger — check the Railway dashboard."
+          echo "::error::Backend did not deploy commit $EXPECTED_SHA (or a descendant) and report healthy within 10 minutes. Since this commit DID change a backend watch path (else the frontend-only accept above would have passed), the new image likely failed to build or Railway's deploy didn't trigger — check the Railway dashboard."
           exit 1
 
   smoke:
