@@ -10,12 +10,45 @@
  */
 
 import { Volume2, VolumeX, AudioWaveform, Music4 } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from '@/shared/components/ui/popover';
+
+/** Fade duration (ms) for the self-managed volume panel (the gym caption-row case). */
+const VOL_FADE_MS = 160;
+
+/**
+ * useFadeMount — keep content mounted through an exit fade. `mounted` stays true through the
+ * fade-out window so opacity can transition 1→0 before unmount; `shown` is the opacity flag.
+ * A double rAF on enter guarantees the element paints at opacity 0 first, so 0→1 transitions
+ * (a single frame can land in the same paint as mount → no fade). Deterministic in BOTH
+ * directions — used instead of Radix's Presence, which doesn't reliably catch the exit on a
+ * controlled popover here.
+ */
+function useFadeMount(wantVisible: boolean): { mounted: boolean; shown: boolean } {
+  const [mounted, setMounted] = useState(wantVisible);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (wantVisible) {
+      setMounted(true);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }
+    setShown(false);
+    const t = window.setTimeout(() => setMounted(false), VOL_FADE_MS);
+    return () => window.clearTimeout(t);
+  }, [wantVisible]);
+  return { mounted, shown };
+}
 
 interface GrooveCardShellProps {
   title: string;
@@ -68,6 +101,22 @@ interface GrooveCardShellProps {
    *  The right-side header controls (window toggle, volume) stay. Used by the gym
    *  equipment tools where the station already has its own heading. Default false. */
   hideTitle?: boolean;
+  /** When true, move the volume + headerExtra cluster OUT of the top-right header and into
+   *  the CAPTION ROW (bottom-right, just above the controls bar). Used by gym equipment
+   *  tools (e.g. Scales) that want those icons down by the perform controls rather than up
+   *  in the floating header. The window/chord toggles stay in the header. Default false →
+   *  the normal groove card keeps everything in the header. */
+  controlsInCaptionRow?: boolean;
+  /** An extra control rendered INSIDE the volume popover, below the master-volume row (e.g.
+   *  the Scales tool's drone-level slider — all "levels" live behind the one volume icon).
+   *  Omitted → the popover holds only the master slider, as the normal groove card does. */
+  volumePopoverExtra?: ReactNode;
+  /** Optionally CONTROL the volume popover's open state (default: uncontrolled). Gym tools
+   *  pass this so they can keep the volume sliders mutually exclusive with the Rec loop
+   *  stepper (which shares the same spot) — opening one closes/hides the other. Omitted →
+   *  the popover manages its own open state, as the normal groove card does. */
+  volumeOpen?: boolean;
+  onVolumeOpenChange?: (open: boolean) => void;
 }
 
 export function GrooveCardShell({
@@ -89,6 +138,10 @@ export function GrooveCardShell({
   headerExtra,
   bg,
   floating = false,
+  controlsInCaptionRow = false,
+  volumePopoverExtra,
+  volumeOpen,
+  onVolumeOpenChange,
   hideTitle = false,
 }: GrooveCardShellProps) {
   // The groove card is driven by keyboard SHORTCUTS (letter keys via
@@ -142,6 +195,100 @@ export function GrooveCardShell({
       bodyObserver.disconnect();
     };
   }, []);
+
+  // The slider stack shared by both volume-control variants: master volume + an optional
+  // extra level row (the gym drone level).
+  const volumeSliders = (
+    <>
+      <div className="flex items-center gap-2">
+        <VolumeX className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={masterVolume}
+          onChange={(e) => onMasterVolumeChange(Number(e.target.value))}
+          aria-label="Volume"
+          className="h-1 w-32 cursor-pointer accent-orange-500"
+        />
+        <Volume2 className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+      </div>
+      {volumePopoverExtra}
+    </>
+  );
+
+  // The trigger icon, shared.
+  const volumeIcon = masterVolume <= 0 ? (
+    <VolumeX className="w-5 h-5" aria-hidden />
+  ) : (
+    <Volume2 className="w-5 h-5" aria-hidden />
+  );
+
+  // SELF-MANAGED fading panel — used by the gym caption-row case (controlsInCaptionRow), where
+  // Radix's Presence doesn't reliably play the EXIT animation on a controlled popover. We own
+  // the open state + mount via useFadeMount (deterministic fade IN and OUT, same as the Rec
+  // loop stepper), positioned ABOVE the icon, with a click-outside backdrop to close.
+  const fade = useFadeMount(controlsInCaptionRow ? !!volumeOpen : false);
+  const volumeControl = controlsInCaptionRow ? (
+    <div className="relative flex items-center">
+      <button
+        type="button"
+        aria-label="Volume"
+        title="Volume"
+        aria-expanded={!!volumeOpen}
+        onClick={() => onVolumeOpenChange?.(!volumeOpen)}
+        className="p-2.5 rounded-full bg-white/5 text-white/50 transition-colors hover:bg-white/10 hover:text-white/80"
+      >
+        {volumeIcon}
+      </button>
+      {fade.mounted && (
+        <>
+          {/* Click-outside backdrop (invisible) — closes the panel. */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => onVolumeOpenChange?.(false)}
+          />
+          {/* The sliders panel, above the icon (the cluster sits low in the caption row),
+              right-aligned to the icon. Fades both ways via the opacity transition. */}
+          <div
+            className="absolute bottom-full right-0 z-50 mb-2 flex w-auto flex-col gap-2 rounded-md border border-white/10 bg-[#1a1716] px-3 py-2 shadow-md"
+            style={{
+              opacity: fade.shown ? 1 : 0,
+              transition: `opacity ${VOL_FADE_MS}ms ease-out`,
+            }}
+          >
+            {volumeSliders}
+          </div>
+        </>
+      )}
+    </div>
+  ) : (
+    // DEFAULT (classic groove card header): the shared Radix popover, unchanged.
+    <Popover open={volumeOpen} onOpenChange={onVolumeOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Volume"
+          title="Volume"
+          className="p-2.5 rounded-full bg-white/5 text-white/50 transition-colors hover:bg-white/10 hover:text-white/80"
+        >
+          {volumeIcon}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        // Force the dark card palette regardless of page theme (the card is always dark),
+        // so the popover matches the surface. A column so an optional extra level row can
+        // stack under the master volume.
+        className="flex w-auto flex-col gap-2 border-white/10 bg-[#1a1716] px-3 py-2"
+      >
+        {volumeSliders}
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <section
@@ -261,65 +408,39 @@ export function GrooveCardShell({
               A7
             </button>
           )}
-          {/* Master volume (MIDDLE) — scales the whole groove (all stems),
-              0..1. Tucked behind a volume icon; clicking it pops the slider. */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                aria-label="Volume"
-                title="Volume"
-                className="p-2.5 rounded-full bg-white/5 text-white/50 transition-colors hover:bg-white/10 hover:text-white/80"
-              >
-                {masterVolume <= 0 ? (
-                  <VolumeX className="w-5 h-5" aria-hidden />
-                ) : (
-                  <Volume2 className="w-5 h-5" aria-hidden />
-                )}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={8}
-              // Force the dark card palette regardless of page theme (the card
-              // is always dark), so the popover matches the surface.
-              className="flex w-auto items-center gap-2 border-white/10 bg-[#1a1716] px-3 py-2"
-            >
-              <VolumeX
-                className="w-3.5 h-3.5 shrink-0 text-white/40"
-                aria-hidden
-              />
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={masterVolume}
-                onChange={(e) => onMasterVolumeChange(Number(e.target.value))}
-                aria-label="Volume"
-                className="h-1 w-32 cursor-pointer accent-orange-500"
-              />
-              <Volume2
-                className="w-3.5 h-3.5 shrink-0 text-white/40"
-                aria-hidden
-              />
-            </PopoverContent>
-          </Popover>
-          {/* Dynamic Loop dial (RIGHT) — the headline interactive control,
-              styled to stand out (see the dial's own styling). */}
-          {headerExtra}
+          {/* Volume + headerExtra (Dynamic Loop dial / Rec icon) live HERE by default. When
+              controlsInCaptionRow is set (gym tools), they move down to the caption row
+              instead — the window/chord toggles above always stay in the header. */}
+          {!controlsInCaptionRow && (
+            <>
+              {volumeControl}
+              {headerExtra}
+            </>
+          )}
         </div>
       </header>
 
       {/* Waveform */}
       <div className="px-4 pt-4">{waveform}</div>
 
-      {/* Caption */}
-      <div className="px-4 py-3 min-h-[2.5rem]">
-        {caption ? (
-          <p className="text-sm text-white/70">{caption}</p>
-        ) : (
-          <p className="text-sm text-white/30 italic">…</p>
+      {/* Caption — left-aligned reactive copy. When controlsInCaptionRow is set, the volume
+          + headerExtra cluster is right-aligned in this same row (bottom-right, above the
+          controls bar) instead of up in the header. */}
+      <div className="flex items-center gap-3 px-4 py-3 min-h-[2.5rem]">
+        <div className="min-w-0 flex-1">
+          {caption ? (
+            <p className="text-sm text-white/70">{caption}</p>
+          ) : (
+            <p className="text-sm text-white/30 italic">…</p>
+          )}
+        </div>
+        {controlsInCaptionRow && (
+          // headerExtra (gym tools: Dynamic Loop + Rec) sits BEFORE volume so the row reads
+          // left→right as the tool intends, with volume as the rightmost icon.
+          <div className="flex shrink-0 items-center gap-2">
+            {headerExtra}
+            {volumeControl}
+          </div>
         )}
       </div>
 

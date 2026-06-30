@@ -28,7 +28,7 @@ import React from 'react';
 import { getTone } from '@/domains/playback/utils/tone';
 import { getLogger } from '@/utils/logger.js';
 import { WamMetronome } from '@/domains/playback/modules/instruments/adapters/wam/WamMetronome';
-import { loadDroneStem } from './droneStem';
+import { DroneDeck, nextBarBoundary } from './DroneDeck';
 import { buildBassSamplerUrls, midiToToneNote } from './bassSampleMap';
 import type { PlayableNote } from './scalePath';
 
@@ -52,6 +52,11 @@ const CLICK_GAIN_ACCENT = 0.3;
  *  share one AudioContext, so output latency is common-mode and cancels in their relative offset
  *  (portable across all devices). Only re-tune if the click ASSET changes again. */
 const CLICK_LATENCY_COMP = 0;
+/** Drone crossfade duration (seconds) for a mid-play key/chord transition. Medium blend:
+ *  long enough that the two tonal centres audibly wash into each other, short enough that
+ *  distant key changes don't sit dissonant for long. The transition is aligned to the next
+ *  bar by the caller; no count-in fires (count-in is a once-per-take preamble). */
+const DRONE_CROSSFADE_SEC = 0.7;
 
 export interface UseScaleSequencerOptions {
   /** The ordered, timed scale notes to play (from buildScalePath). */
@@ -62,6 +67,11 @@ export interface UseScaleSequencerOptions {
   bpm: number;
   /** The drone chord symbol (A7, Cmaj7 …) — its .ogg loops under the scale. */
   droneSymbol: string;
+  /** Whether the sustained drone plays under the scale. Default true. Toggling mid-play
+   *  fades it in/out (no click); the scale notes + metronome keep going either way. */
+  droneEnabled?: boolean;
+  /** Drone level 0..1 (the volume knob). Default 1. */
+  droneVolume?: number;
   /** Resume a prewarmed context inside the play gesture (Safari). */
   onBeforePlay?: () => Promise<void> | void;
   /** RECORD MODE: when true, the scale-note SAMPLER is muted (drone + click still play), so the
@@ -87,6 +97,9 @@ export interface UseScaleSequencerReturn {
   /** Absolute audioContext time (seconds) of the scale loop's beat 0 — the grid anchor the
    *  listening engine needs to align the player's recorded onsets. null before the first play. */
   getLoopStartAudioTime: () => number | null;
+  /** Wall-clock audio time of the NEXT loop seam (loopStart + k×loopSeconds). Feeds the
+   *  Dynamic Loop counter; null during count-in or when stopped. */
+  getNextSeamTime: () => number | null;
 }
 
 export function useScaleSequencer({
@@ -94,6 +107,8 @@ export function useScaleSequencer({
   loopBeats,
   bpm,
   droneSymbol,
+  droneEnabled = true,
+  droneVolume = 1,
   onBeforePlay,
   silentBass = false,
   maxLoops = 0,
@@ -115,7 +130,9 @@ export function useScaleSequencer({
   const metronomeRef = React.useRef<WamMetronome | null>(null);
 
   // Live scheduling state (refs so the RAF loop reads fresh values without re-subscribing).
-  const droneNodeRef = React.useRef<AudioBufferSourceNode | null>(null);
+  // The drone is a two-deck crossfading player (see DroneDeck): start() lays the first drone
+  // at loopStart; crossfadeTo() blends one tonal centre into the next mid-play, bar-aligned.
+  const droneDeckRef = React.useRef<DroneDeck | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const loopStartRef = React.useRef(0); // audioContext time when the scale loop (beat 0) begins
   const nextNoteIdxRef = React.useRef(0); // index of the next un-armed note in the path
@@ -136,6 +153,9 @@ export function useScaleSequencer({
   const loopBeatsRef = React.useRef(loopBeats);
   const bpmRef = React.useRef(bpm);
   const silentBassRef = React.useRef(silentBass);
+  const droneSymbolRef = React.useRef(droneSymbol);
+  const droneEnabledRef = React.useRef(droneEnabled);
+  const droneVolumeRef = React.useRef(droneVolume);
   React.useEffect(() => {
     pathRef.current = path;
   }, [path]);
@@ -224,34 +244,64 @@ export function useScaleSequencer({
     });
   }, []);
 
-  // Start (or restart) the looping drone stem under the scale.
+  // Lay the FIRST drone of a take at the loop's beat 0 (after the count-in). No fade —
+  // there's nothing to blend from. Mid-play transitions go through the watch effect below.
   const startDrone = React.useCallback(
     async (ctx: AudioContext, startAt: number) => {
-      // Tear down any prior drone.
-      stopDrone();
-      const buffer = await loadDroneStem(droneSymbol, ctx);
-      if (!buffer) return; // graceful: no stem yet → play dry
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.loop = true;
-      node.connect(ctx.destination);
-      node.start(startAt);
-      droneNodeRef.current = node;
+      let deck = droneDeckRef.current;
+      if (!deck) {
+        deck = new DroneDeck(ctx);
+        droneDeckRef.current = deck;
+      }
+      // Apply the current on/off + level BEFORE start so the deck is built at the right
+      // master gain (stop() drops the master, so a fresh take must re-assert these).
+      deck.setVolume(droneVolumeRef.current);
+      deck.setEnabled(droneEnabledRef.current);
+      await deck.start(droneSymbolRef.current, startAt);
     },
-    [droneSymbol],
+    [],
   );
 
+  // Live drone on/off + volume — push changes straight to the deck (fades, no click). The
+  // refs are read by startDrone too, so toggling before play just sets the next take's state.
+  React.useEffect(() => {
+    droneEnabledRef.current = droneEnabled;
+    droneDeckRef.current?.setEnabled(droneEnabled);
+  }, [droneEnabled]);
+  React.useEffect(() => {
+    droneVolumeRef.current = droneVolume;
+    droneDeckRef.current?.setVolume(droneVolume);
+  }, [droneVolume]);
+
   function stopDrone() {
-    if (droneNodeRef.current) {
-      try {
-        droneNodeRef.current.stop();
-      } catch {
-        /* already stopped */
-      }
-      droneNodeRef.current.disconnect();
-      droneNodeRef.current = null;
-    }
+    droneDeckRef.current?.stop();
   }
+
+  // ── MID-PLAY DRONE TRANSITION (key / chord-type change) ──────────────────────
+  // When droneSymbol changes WHILE PLAYING, blend the new tonal centre in — bar-aligned,
+  // crossfaded, NO count-in (the count-in is a once-per-take preamble; a mid-play change
+  // transitions seamlessly, the same contract the groove card uses for key changes).
+  // Before the first play (or after stop) we just stash the latest symbol in the ref so the
+  // next play() starts on it.
+  React.useEffect(() => {
+    droneSymbolRef.current = droneSymbol;
+    const deck = droneDeckRef.current;
+    const ctx = ctxRef.current;
+    if (!deck || !ctx || !isActiveRef.current) return; // not playing → next play() picks it up
+    if (deck.targetSymbol === droneSymbol) return; // already there / heading there
+
+    // Align the crossfade to the NEXT BAR boundary, computed from the grid (loopStart +
+    // k×barSeconds) — the tempo math, NOT the visual read-head. The lookahead guard pushes
+    // a fade that would land too soon to the following bar (clean scheduling).
+    const barSec = BEATS_PER_BAR * beatDuration();
+    const nextBar = nextBarBoundary(
+      ctx.currentTime,
+      loopStartRef.current,
+      barSec,
+      LOOKAHEAD,
+    );
+    void deck.crossfadeTo(droneSymbol, nextBar, DRONE_CROSSFADE_SEC);
+  }, [droneSymbol, beatDuration]);
 
   // ── The rolling-lookahead scheduler ──────────────────────────────────────
   // Two INDEPENDENT streams, each event armed EXACTLY ONCE within the lookahead window:
@@ -475,6 +525,23 @@ export function useScaleSequencer({
     return loopStartRef.current || null;
   }, [isPlaying]);
 
+  // Wall-clock audio time of the NEXT loop seam — the same authoritative grid the rest of
+  // the tool quantises to (loopStart + k×loopSeconds), NOT a read-head/phase. The groove-
+  // card Dynamic Loop counter reads this: as `now` climbs toward a fixed seam the value
+  // holds, then JUMPS FORWARD by one loop when we cross it — exactly the wrap signal
+  // useLoopCounter detects. null during the count-in (no loop has started) or when stopped.
+  const getNextSeamTime = React.useCallback((): number | null => {
+    const ctx = ctxRef.current;
+    if (!ctx || !isPlaying) return null;
+    const loopStart = loopStartRef.current;
+    const loopSec = (loopBeatsRef.current || 1) * beatDuration();
+    if (loopSec <= 0) return null;
+    const elapsed = ctx.currentTime - loopStart;
+    if (elapsed < 0) return null; // still counting in — no seam yet
+    const seamsPassed = Math.floor(elapsed / loopSec);
+    return loopStart + (seamsPassed + 1) * loopSec;
+  }, [isPlaying, beatDuration]);
+
   return {
     isPlaying,
     isReady,
@@ -484,5 +551,6 @@ export function useScaleSequencer({
     audioContext: ctxRef.current,
     getPlaybackBeat,
     getLoopStartAudioTime,
+    getNextSeamTime,
   };
 }

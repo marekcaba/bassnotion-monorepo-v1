@@ -20,6 +20,7 @@
  */
 
 import React from 'react';
+import { Circle, ChevronLeft, ChevronRight, Waves } from 'lucide-react';
 import type { GrooveCardBlockConfig } from '@bassnotion/contracts';
 import { GrooveCardShell } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardShell';
 import {
@@ -38,6 +39,14 @@ import {
 import { droneChordSymbol } from './droneChord';
 import { droneStemUrl } from './droneStem';
 import { useScaleSequencer } from './useScaleSequencer';
+// Dynamic Loop — the SAME control every groove card uses (Repeat-icon dial + ping-pong/
+// travel engine), driven here off the scale's key stepper instead of the groove's pitch
+// engine. The dial is purely UI; useDynamicLoop owns the cycle math.
+import { GrooveCardDynamicLoopDial } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardDynamicLoopDial';
+import {
+  useDynamicLoop,
+  type DynamicLoopConfig,
+} from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/useDynamicLoop';
 import {
   rootFromKey,
   type ScaleType,
@@ -145,6 +154,10 @@ export function ScalesTool({
   // Scales start at a practice-friendly tempo, NOT the backing groove's BPM (which is fast).
   const [bpm, setBpm] = React.useState(70);
   const [masterVolume, setMasterVolume] = React.useState(0.8);
+  // The volume popover's open state is OWNED here so it stays mutually exclusive with the Rec
+  // loop stepper (they share the same spot under the icon cluster): while the volume sliders
+  // are open, the Rec loop counter is hidden, and vice versa.
+  const [volumeOpen, setVolumeOpen] = React.useState(false);
   // RECORD MODE: the ▶ play button becomes a ● record button. In record mode the scale-note
   // bass is MUTED (only count-in + click + backing drone play) so the student plays the scale
   // themselves and the mic captures only THEM — every take is auto-armed, graded, and saved.
@@ -183,6 +196,23 @@ export function ScalesTool({
   // advances ±1 per spin (the fretboard root + the played notes both derive from it,
   // both mod-12). No engine transpose anymore — we GENERATE the notes at the right pitch.
   const [keyStep, setKeyStep] = React.useState(0);
+
+  // DYNAMIC LOOP — the groove-card dial's per-card config + engage flag. Ping-pong/travel,
+  // a relative transpose interval, and every-N-loops. The cycle math (useDynamicLoop below)
+  // drives the SCALE'S key stepper, so each auto key-change also crossfades the drone via
+  // the existing droneSymbol watch. Off by default; gated off in locked (gig) mode.
+  const [dynamicLoopConfig, setDynamicLoopConfig] =
+    React.useState<DynamicLoopConfig>({
+      intervalSemitones: 5, // a 4th up — a musical default
+      everyN: 4,
+      mode: 'ping-pong',
+    });
+  const [dynamicLoopEngaged, setDynamicLoopEngaged] = React.useState(false);
+
+  // DRONE — the sustained chord under the scale. On by default; the user can mute it or set
+  // its level. Toggling/leveling mid-play fades (no click); the scale + click keep going.
+  const [droneEnabled, setDroneEnabled] = React.useState(true);
+  const [droneVolume, setDroneVolume] = React.useState(0.8);
 
   // The scale ROOT follows the KEY wheel (the `< E >` control) — no separate root picker.
   const root = rootFromKey(backingConfig.originalKey, keyStep);
@@ -454,6 +484,8 @@ export function ScalesTool({
     loopBeats,
     bpm,
     droneSymbol,
+    droneEnabled,
+    droneVolume,
     onBeforePlay,
     // Record mode mutes the scale-note bass so the student plays it (clean mic capture).
     silentBass: recordMode,
@@ -484,6 +516,35 @@ export function ScalesTool({
     loops: recordLoops,
     onTakeScored: setLastTake,
   });
+
+  // DYNAMIC LOOP — the groove-card cycle engine, driving the SCALE'S key stepper. Each auto
+  // key-change calls setKeyStep, which moves the root → droneSymbol, so the drone crossfades
+  // between tonal centres on its own (the droneSymbol watch in useScaleSequencer). The home
+  // it holds + returns to is wherever the key stepper sits when engaged. keyStep is absolute
+  // semitones from the backing key — exactly the engine's setKey(semitonesFromOriginal)
+  // contract — so setKeyStep wires straight in. maxSemitones=6 = a full-octave window (the
+  // travel-mode wrap math assumes this; the scale generates notes at any pitch so there's no
+  // engine cap to honor). Gated off in record mode (auto-cycling would move the grader's
+  // answer key) and locked/gig mode (the gig fixes the key).
+  const dlEngaged = dynamicLoopEngaged && !recordMode && !locked;
+  const getCurrentAudioTime = React.useCallback(
+    () => sequencer.audioContext?.currentTime ?? null,
+    [sequencer.audioContext],
+  );
+  const dynamicLoop = useDynamicLoop({
+    engaged: dlEngaged,
+    isPlaying: sequencer.isPlaying,
+    isCountingDown: sequencer.countInBeat > 0,
+    config: dynamicLoopConfig,
+    homeSemitones: keyStep,
+    maxSemitones: 6,
+    setKey: setKeyStep,
+    getNextSeamTime: sequencer.getNextSeamTime,
+    getCurrentTime: getCurrentAudioTime,
+  });
+  // While the cycle is actively running, LOCK the manual key roller (the engine owns the key)
+  // — mirrors the groove card, where the stepper is disabled mid-cycle. Disengage to retune.
+  const keyLockedByDynamicLoop = dynamicLoop.isActive;
 
   const onPlayPause = React.useCallback(() => {
     if (sequencer.isPlaying) sequencer.stop();
@@ -628,6 +689,9 @@ export function ScalesTool({
     next2Label: keyName(keyStep - 2),
     onUp: () => stepKey(1),
     onDown: () => stepKey(-1),
+    // While the Dynamic Loop is actively cycling, the engine owns the key — lock the manual
+    // roller (mirrors the groove card; disengage to retune).
+    disabled: keyLockedByDynamicLoop,
   };
 
   // TEMPO — the sequencer's BPM ±1 (clamped). UP faster (sits above), DOWN slower.
@@ -684,9 +748,88 @@ export function ScalesTool({
       floating
       // The station floats by itself — drop the "GROOVE CARD / Scales —…" title header.
       hideTitle
+      // Move the volume + Rec icons OUT of the floating header and down into the caption
+      // row (bottom-right, just above the playback controls).
+      controlsInCaptionRow
       isPlaying={sequencer.isPlaying}
       masterVolume={masterVolume}
       onMasterVolumeChange={setMasterVolume}
+      // Own the volume popover's open state so it can't show at the same time as the Rec loop
+      // stepper (both sit under the icon cluster). Opening volume hides the loop stepper below.
+      volumeOpen={volumeOpen}
+      onVolumeOpenChange={setVolumeOpen}
+      // DRONE LEVEL rides in the volume popover (all "levels" behind the one volume icon).
+      // The drone ICON itself (in headerExtra) is just engage/disengage. Greyed when the
+      // drone is disengaged.
+      volumePopoverExtra={
+        <div className="flex items-center gap-2">
+          <Waves className="w-3.5 h-3.5 shrink-0 text-white/40" aria-hidden />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={droneVolume}
+            disabled={!droneEnabled}
+            onChange={(e) => setDroneVolume(Number(e.target.value))}
+            aria-label="Drone level"
+            title={droneEnabled ? 'Drone level' : 'Engage the drone to set its level'}
+            className="h-1 w-32 cursor-pointer accent-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
+          />
+        </div>
+      }
+      // HEADER ICON CLUSTER (in the caption row), left→right: Drone · Dynamic Loop · Rec ·
+      // Volume (volume is appended by the shell after headerExtra). Drone = engage/disengage
+      // the pad; Dynamic Loop = the groove-card dial; Rec = arm recording.
+      headerExtra={
+        <>
+          {/* DRONE — engage/disengage the sustained chord under the scale (its LEVEL is in
+              the volume popover). Shown in all modes (a student can silence the drone even on
+              a locked gig). Indigo when engaged, matching the drone-level slider's accent. */}
+          <button
+            type="button"
+            aria-label={droneEnabled ? 'Disengage drone' : 'Engage drone'}
+            aria-pressed={droneEnabled}
+            title="Drone — the held chord that voices the scale's tonality"
+            onClick={() => setDroneEnabled((v) => !v)}
+            className={`p-2.5 rounded-full transition-colors ${
+              droneEnabled
+                ? 'bg-indigo-500 text-white hover:bg-indigo-400'
+                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
+            }`}
+          >
+            <Waves className="w-5 h-5" aria-hidden />
+          </button>
+          {/* DYNAMIC LOOP — the groove-card dial. Hidden in locked (gig) mode (key is fixed)
+              and disabled in record mode (auto-cycling would move the grader's answer key). */}
+          {!locked && (
+            <GrooveCardDynamicLoopDial
+              config={dynamicLoopConfig}
+              onConfigChange={setDynamicLoopConfig}
+              engaged={dlEngaged}
+              onEngagedChange={setDynamicLoopEngaged}
+              maxSemitones={6}
+              disabled={!sequencer.isReady || recordMode}
+            />
+          )}
+          {/* REC ARM — single-press icon. Press once to arm (red, ▶ becomes ●), again to
+              disarm. Disabled mid-take. When armed, the loop-count stepper (‹ N× ›) drops
+              in by the icon — hidden in locked (gig) mode (the gig fixes the count) AND while
+              the volume popover is open (the two share the same spot — one or the other). */}
+          <RecArmButton
+            armed={recordMode}
+            disabled={sequencer.isPlaying}
+            onToggle={() => setRecordMode((v) => !v)}
+            showLoops={!locked && !volumeOpen}
+            recordLoops={recordLoops}
+            isPlaying={sequencer.isPlaying}
+            onRecordLoopsChange={setRecordLoops}
+            // The icons sit in the caption row, right above the controls bar — so the loop
+            // stepper drops UP (toward the fretboard) to avoid covering the controls.
+            dropUp
+          />
+        </>
+      }
       // The fretboard replaces the waveform as the main window.
       waveform={
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -749,13 +892,173 @@ export function ScalesTool({
           tempo={tempoRoller}
           onPlayPause={onPlayPause}
           recordMode={recordMode}
-          onToggleRecordMode={setRecordMode}
-          recordLoops={recordLoops}
-          onRecordLoopsChange={setRecordLoops}
           locked={locked}
         />
       }
     />
+  );
+}
+
+const FADE_MS = 180;
+
+/**
+ * useFadeMount — keep content mounted through an exit fade. Returns `mounted` (true while the
+ * element should be in the DOM, including during fade-out) and `shown` (the opacity flag: true
+ * = visible). When `wantVisible` goes false we hold `mounted` for FADE_MS so the opacity can
+ * transition 1→0, then unmount. A plain conditional render only fades IN (mount) and pops out
+ * (unmount) — this gives both directions.
+ */
+function useFadeMount(wantVisible: boolean): { mounted: boolean; shown: boolean } {
+  // Start hidden (opacity 0) even when wantVisible is already true on first mount, so the very
+  // first appearance still fades in rather than snapping to opaque.
+  const [mounted, setMounted] = React.useState(wantVisible);
+  const [shown, setShown] = React.useState(false);
+  React.useEffect(() => {
+    if (wantVisible) {
+      setMounted(true);
+      // DOUBLE rAF: the element mounts at opacity 0 on this paint; flipping `shown` true after
+      // TWO frames guarantees the browser has painted the 0 state first, so the 0→1 change
+      // actually transitions (a single rAF can land in the same paint as the mount → no fade).
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setShown(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }
+    setShown(false); // start the fade-out
+    const t = window.setTimeout(() => setMounted(false), FADE_MS); // unmount after it completes
+    return () => window.clearTimeout(t);
+  }, [wantVisible]);
+  return { mounted, shown };
+}
+
+/** REC ARM — a single icon button in the header cluster (next to volume). One press arms
+ *  record mode (red, filled dot), another disarms it. Styled to match the volume button's
+ *  pill so the header cluster reads as one row. Disabled while a take is playing.
+ *
+ *  When ARMED (and loops are shown), the take-length stepper (‹ N× ›) floats off the icon
+ *  row — absolutely positioned (below by default, above with dropUp) so it doesn't inflate
+ *  the cluster or nudge the volume icon. It fades IN on show and OUT on hide (useFadeMount). */
+function RecArmButton({
+  armed,
+  disabled,
+  onToggle,
+  showLoops,
+  recordLoops,
+  isPlaying,
+  onRecordLoopsChange,
+  dropUp = false,
+}: {
+  armed: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+  /** Whether the loop stepper may appear when armed (false in locked/gig mode). */
+  showLoops: boolean;
+  recordLoops: number;
+  isPlaying: boolean;
+  onRecordLoopsChange: (n: number) => void;
+  /** Drop the loop stepper UPWARD (above the icon) instead of below — used when the icons
+   *  sit in the caption row just above the controls bar, so the stepper doesn't cover it. */
+  dropUp?: boolean;
+}) {
+  // The loop stepper fades both ways (mount-in, hold-then-unmount on exit).
+  const { mounted: loopsMounted, shown: loopsShown } = useFadeMount(
+    armed && showLoops,
+  );
+  return (
+    <div className="relative flex items-center">
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        aria-label={armed ? 'Disarm record mode' : 'Arm record mode'}
+        aria-pressed={armed}
+        title={
+          armed
+            ? 'Recording armed — press play to capture a graded take. Click to disarm.'
+            : 'Arm recording: mute the scale, play it yourself, get graded'
+        }
+        className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          armed
+            ? 'bg-red-600 text-white hover:bg-red-500'
+            : 'bg-white/5 text-rose-400/70 hover:bg-white/10 hover:text-rose-400'
+        }`}
+      >
+        <Circle
+          className="h-4 w-4"
+          // ALWAYS a FILLED dot (currentColor) so it reads as a "record" dot at a glance.
+          // Idle: a MUTED red (rose-400/70 via the button's text color) — present enough that
+          // a student recognizes "this records", but quiet, not the loud armed state. Armed:
+          // the loud filled red pill with a white dot.
+          fill="currentColor"
+          aria-hidden
+        />
+      </button>
+
+      {/* LOOPS stepper — only while armed. A BARE horizontal unit (‹ N× ›) floating just
+          off the icon row: no card, no border, no shadow — it sits straight on the surface
+          so the cluster stays uncluttered. Legibility over the busy texture comes from a
+          text drop-shadow, not a panel.
+
+          VERTICAL: drops BELOW (top-full) by default; with dropUp it rises ABOVE
+          (bottom-full) — used when the icons sit in the caption row right above the controls
+          bar, so the stepper goes toward the fretboard instead of covering the controls.
+
+          CENTERING: it sits at the MIDPOINT of the rec+volume pair, not just the Rec icon.
+          With the cluster order [Dynamic Loop · Rec · Volume], the volume center is 46px to
+          the RIGHT of the Rec center (rec½ 18 + gap-2 8 + vol½ 20), so the pair's midpoint is
+          23px RIGHT of Rec. The wrapper is anchored at Rec's left-1/2 and shifted by
+          calc(-50% + 23px): -50% recenters the dropdown on its own width, the +23px nudges it
+          right to the shared midpoint. The chevrons match the key picker's (lucide Chevron,
+          h-4 w-4, white/70, rounded hover bg). */}
+      {loopsMounted && (
+        <div
+          className={`pointer-events-none absolute left-1/2 z-20 -translate-x-[calc(50%-23px)] ${
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
+        >
+          <div
+            className="pointer-events-auto flex select-none items-center gap-0.5 whitespace-nowrap [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]"
+            role="group"
+            aria-label="Take length in loops"
+            // Fade in/out: opacity flips with `loopsShown` (false on mount + on exit), so it
+            // eases both directions instead of popping out.
+            style={{
+              opacity: loopsShown ? 1 : 0,
+              transition: `opacity ${FADE_MS}ms ease-out`,
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Fewer loops"
+              disabled={isPlaying || recordLoops <= 1}
+              onClick={() => onRecordLoopsChange(Math.max(1, recordLoops - 1))}
+              className="rounded-md p-0.5 text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+            </button>
+            <span className="flex items-baseline gap-0.5 tabular-nums">
+              <span className="text-sm font-bold text-red-400">{recordLoops}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                ×&nbsp;loops
+              </span>
+            </span>
+            <button
+              type="button"
+              aria-label="More loops"
+              disabled={isPlaying || recordLoops >= 8}
+              onClick={() => onRecordLoopsChange(Math.min(8, recordLoops + 1))}
+              className="rounded-md p-0.5 text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

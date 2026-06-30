@@ -16,9 +16,39 @@
 
 import React from 'react';
 import { RollerPicker } from './RollerPicker';
+// The KEY + TEMPO pickers use the platform-wide animated HORIZONTAL roller (the groove card's
+// Stepper) so they match every other groove card. The content pickers (Scale/Exercise/Variant/
+// Position) keep the vertical RollerPicker wheel. Cross-domain import, like the Dynamic Loop dial.
+import { Stepper } from '@/domains/widgets/components/YouTubeWidgetPage/blocks/groove-card/GrooveCardControls';
 // import { RollerCalibrationPanel } from './RollerCalibrationPanel'; // dev tuner — values baked
 import { ROLLER_ANIM, type RollerAnimConfig } from './rollerConfig';
 import type { CountdownState } from '@/domains/widgets/hooks/useCountdown';
+
+/**
+ * Adapt a vertical-wheel RollerSpec to the horizontal Stepper's props. The wheel's UP raises
+ * the value (revealing prevLabel/prev2Label above); the horizontal stepper's RIGHT chevron
+ * (onNext) raises too. So onNext←onUp, onPrev←onDown, and the neighbour to the RIGHT (offset
+ * +1) is the wheel's raised value (prevLabel), to the LEFT (−1) the lowered (nextLabel).
+ */
+function stepperPropsFromSpec(spec: RollerSpec) {
+  const neighbor = (offset: number): string =>
+    offset === 1
+      ? (spec.prevLabel ?? spec.currentLabel)
+      : offset === 2
+        ? (spec.prev2Label ?? spec.prevLabel ?? spec.currentLabel)
+        : offset === -1
+          ? (spec.nextLabel ?? spec.currentLabel)
+          : offset === -2
+            ? (spec.next2Label ?? spec.nextLabel ?? spec.currentLabel)
+            : spec.currentLabel;
+  return {
+    label: spec.currentLabel,
+    onPrev: spec.onDown,
+    onNext: spec.onUp,
+    disabled: spec.disabled,
+    neighborFor: neighbor,
+  };
+}
 
 /** A roller's visible labels (+ two-out neighbors for a continuous slide) + its
  *  up/down handlers. */
@@ -63,13 +93,10 @@ export interface ScalesControlsProps {
   keyRoller: RollerSpec;
   tempo: RollerSpec;
   onPlayPause: () => void;
-  /** RECORD MODE: a little switch flips the orange ▶ Play into a red ● Record. In record mode
-   *  the scale bass is muted and every take is captured + graded. Omit to hide the switch. */
+  /** RECORD MODE: when armed (via the header Rec icon), the orange ▶ Play becomes a red ●
+   *  Record — the scale bass is muted and every take is captured + graded. The ARM control
+   *  lives in the header cluster now; this is read-only here (drives the center button). */
   recordMode?: boolean;
-  onToggleRecordMode?: (next: boolean) => void;
-  /** How many loops a record-mode take captures (1-8) before auto-stopping. */
-  recordLoops?: number;
-  onRecordLoopsChange?: (n: number) => void;
   /** ASSIGNMENT (gig) mode — the exercise/key/tempo/loops are LOCKED presets. Greys out + no-ops
    *  every roller, hides the content row (the WHAT is fixed), and pins record mode ON. The student
    *  only gets ▶/●. */
@@ -91,9 +118,6 @@ export function ScalesControls({
   tempo,
   onPlayPause,
   recordMode = false,
-  onToggleRecordMode,
-  recordLoops = 2,
-  onRecordLoopsChange,
   locked = false,
 }: ScalesControlsProps) {
   const showBeat =
@@ -141,18 +165,28 @@ export function ScalesControls({
             {showVariant && (
               <RollerPicker {...variant} anim={anim} ariaLabel="Variant" />
             )}
+            {/* POSITION — which box of the scale (Runs/Patterns); hidden for Paths (a full-
+                neck path has no box). Lives on the CONTENT row so the PERFORM row below stays
+                a fixed Key · ▶ · Tempo regardless of kind. */}
+            {showPosition && (
+              <RollerPicker {...lock(position)} anim={anim} ariaLabel="Position" />
+            )}
           </div>
         </div>
       )}
 
-      {/* ROW 2 — PERFORM: Position? | Key | ▶ | Tempo */}
+      {/* ROW 2 — PERFORM: Key | ▶ | Tempo. Fixed layout for every kind (Position moved to the
+          content row above). Dynamic Loop / Drone / Rec live in the header icon cluster. */}
       <div className="flex items-center gap-3">
-        {/* LEFT group — Position (hidden for paths) | Key */}
-        <div className="flex flex-1 items-center justify-evenly">
-          {showPosition && (
-            <RollerPicker {...lock(position)} anim={anim} ariaLabel="Position" />
-          )}
-          <RollerPicker {...lock(keyRoller)} anim={anim} ariaLabel="Key" />
+        {/* LEFT group — Key. The platform-wide animated horizontal roller (Stepper), same as
+            every groove card; note-anchored so the letter doesn't shift when an accidental
+            appears. */}
+        <div className="flex flex-1 items-center justify-evenly gap-2">
+          <Stepper
+            {...stepperPropsFromSpec(lock(keyRoller))}
+            labelKind="note"
+            ariaLabel="Key"
+          />
         </div>
 
         {/* CENTER — Play (orange) or RECORD (red), fixed island, always centered. In record
@@ -196,75 +230,21 @@ export function ScalesControls({
           )}
         </button>
 
-        {/* RIGHT group — Tempo + the Record-mode switch */}
+        {/* RIGHT group — Tempo */}
         <div className="flex flex-1 items-center justify-evenly gap-2">
-          {/* Tempo: press-and-hold the arrows to fly through BPM (stepping one at a time
-              is tedious over a big range). */}
-          <RollerPicker {...lock(tempo)} anim={anim} ariaLabel="Tempo" holdRepeat />
-          {/* The Rec toggle stays VISIBLE in locked mode so the student can play the gig through
-              first, then ARM it. (Only the loops stepper below is hidden — the gig fixes the
-              count.) */}
-          {onToggleRecordMode && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={recordMode}
-              aria-label="Record mode — grade your playing"
-              disabled={isPlaying}
-              onClick={() => onToggleRecordMode(!recordMode)}
-              className="flex flex-col items-center gap-1 disabled:cursor-not-allowed disabled:opacity-40"
-              title="Record mode: mute the scale, play it yourself, get graded"
-            >
-              <span
-                className={`relative h-5 w-9 rounded-full transition-colors ${
-                  recordMode ? 'bg-red-600' : 'bg-gray-600'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                    recordMode ? 'translate-x-4' : 'translate-x-0.5'
-                  }`}
-                />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                Rec
-              </span>
-            </button>
-          )}
-          {/* LOOPS picker — how many loops a recorded take captures before auto-stopping.
-              Only shown in record mode AND not locked. Compact ▲/number/▼ stepper, clamped 1-8. */}
-          {!locked && recordMode && onRecordLoopsChange && (
-            <div className="flex flex-col items-center">
-              <button
-                type="button"
-                aria-label="More loops"
-                disabled={isPlaying || recordLoops >= 8}
-                onClick={() =>
-                  onRecordLoopsChange(Math.min(8, recordLoops + 1))
-                }
-                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
-              >
-                ▲
-              </button>
-              <span className="text-sm font-bold text-white tabular-nums">
-                {recordLoops}×
-              </span>
-              <button
-                type="button"
-                aria-label="Fewer loops"
-                disabled={isPlaying || recordLoops <= 1}
-                onClick={() =>
-                  onRecordLoopsChange(Math.max(1, recordLoops - 1))
-                }
-                className="leading-none text-gray-400 hover:text-white disabled:opacity-30"
-              >
-                ▼
-              </button>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                Loops
-              </span>
-            </div>
-          )}
+          {/* Tempo: the platform-wide animated horizontal roller, with " BPM" suffix and
+              press-and-hold to fly through values (stepping one tap at a time is tedious). */}
+          <Stepper
+            {...stepperPropsFromSpec(lock(tempo))}
+            suffix=" BPM"
+            ariaLabel="Tempo"
+            holdRepeat
+          />
+
+          {/* Drone (engage toggle), Dynamic Loop, Rec, and Volume ALL live in the header
+              icon cluster now (see ScalesTool's headerExtra + the shell's caption row): the
+              drone icon engages/disengages the pad; its LEVEL rides in the volume popover.
+              Nothing drone/rec/cycle related clutters this perform bar anymore. */}
         </div>
       </div>
     </div>
@@ -274,8 +254,8 @@ export function ScalesControls({
 function PlayIcon() {
   return (
     <svg
-      width="20"
-      height="20"
+      width="28"
+      height="28"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden
@@ -287,8 +267,8 @@ function PlayIcon() {
 function PauseIcon() {
   return (
     <svg
-      width="20"
-      height="20"
+      width="28"
+      height="28"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden
@@ -299,14 +279,14 @@ function PauseIcon() {
 }
 function RecordIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <circle cx="12" cy="12" r="7" />
     </svg>
   );
 }
 function StopIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </svg>
   );
