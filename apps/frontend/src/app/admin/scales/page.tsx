@@ -28,7 +28,14 @@ import { SCALE_BLUEPRINTS } from '@/domains/training-engine/equipment/scales/sca
 import { buildNoteUniverse } from '@/domains/training-engine/equipment/scales/noteUniverse';
 import { rootFromKey } from '@/domains/training-engine/equipment/scales/scaleGenerator';
 import {
+  CHORD_TYPES,
+  parentScaleFor,
+  chordTypeForScale,
+  type ChordType,
+} from '@/domains/training-engine/equipment/scales/chordType';
+import {
   buildScaleLadder,
+  buildLadderFromPath,
   generatePatternDegrees,
   degreesToPositions,
   type ScalePatternRule,
@@ -69,6 +76,10 @@ const ADMIN_FRETBOARD_CAL: FretboardCalibrationValues = {
   tiltAxisOffsetX: 448,
   contentScale: 1.57,
   contentScaleX: 0.878,
+  contentScaleY: 0.949, // neutral vertical scale (rotation/scaleY added with the gym panel)
+  rotationX: 0,
+  rotationY: 0,
+  rotationZ: 0,
   leftFadeZone: 10,
   rightFadeZone: 10,
   viewportWidth: 1000,
@@ -78,15 +89,6 @@ const ADMIN_FRETBOARD_CAL: FretboardCalibrationValues = {
 // The most frets a user can configure (BassSettingsCard offers 19–25), so paths must be
 // authorable all the way up the neck.
 const MAX_FRETS = 25;
-
-const SCALE_TYPES: { value: ScaleTypeId; label: string }[] = [
-  { value: 'major', label: 'Major' },
-  { value: 'natural_minor', label: 'Minor' },
-  { value: 'dorian', label: 'Dorian' },
-  { value: 'mixolydian', label: 'Mixolydian' },
-  { value: 'minor_pentatonic', label: 'Minor Pentatonic' },
-  { value: 'major_pentatonic', label: 'Major Pentatonic' },
-];
 
 const RHYTHMS: { value: ScaleRhythmValue; label: string }[] = [
   { value: '4n', label: 'Quarters (4n)' },
@@ -114,7 +116,12 @@ export default function AdminScalesPage() {
   const { data: serverBlueprints, isLoading } = useAdminScaleBlueprints();
   const updateBlueprint = useUpdateScaleBlueprint();
 
-  const [scaleType, setScaleType] = React.useState<ScaleTypeId>('major');
+  // The tool is organised around CHORD TYPES now: the admin picks a chord (Maj7, Min9, 13♯11,
+  // …) and the practiced notes / box blueprints use that chord's PARENT SCALE. scaleType is
+  // DERIVED from the chord type; both are saved (scaleType for the blueprint editor + legacy
+  // back-compat, chordType so the gym groups the exercise correctly).
+  const [chordType, setChordType] = React.useState<ChordType>('maj7');
+  const scaleType: ScaleTypeId = parentScaleFor(chordType) as ScaleTypeId;
   const [positions, setPositions] = React.useState<ScalePositionShape[]>([]);
   const [rhythm, setRhythm] = React.useState<ScaleRhythmValue>('8n');
   const [selectedPos, setSelectedPos] = React.useState(1);
@@ -150,6 +157,9 @@ export default function AdminScalesPage() {
     setPaths({ ...paths, stringCount: n });
   };
   const [pathKey, setPathKey] = React.useState<PathKey>('E');
+  // When authoring a PATTERN, optionally constrain it to a saved PATH exercise's notes (so
+  // the pattern climbs only that path's fingering, not the whole neck). '' = whole neck.
+  const [sourcePathId, setSourcePathId] = React.useState<string>('');
   const [pathPreviewDir, setPathPreviewDir] = React.useState<
     'ascending' | 'descending'
   >('ascending');
@@ -207,16 +217,24 @@ export default function AdminScalesPage() {
       variantGroup: payload.variantGroup ?? '',
       variantLabel: payload.variantLabel ?? '',
     });
-    if (ex.scaleType) setScaleType(ex.scaleType as ScaleTypeId);
+    // CHORD TYPE: from the payload if authored with one, else derived from the legacy
+    // scaleType column (back-compat). This drives the parent scale + blueprint editor.
+    setChordType(
+      (payload.chordType as ChordType | undefined) ??
+        chordTypeForScale((ex.scaleType ?? 'major') as ScaleTypeId),
+    );
     setPathKey('E');
     setPathSaved(false);
     setPathError(null);
   };
 
-  // Save (create or update). Draft-friendly — partial exercises save fine.
+  // Save (create or update). Draft-friendly — partial exercises save fine. The payload carries
+  // the CHORD TYPE (so the gym groups it correctly); scaleType (the derived parent scale) is
+  // saved at the column level too for the blueprint editor + legacy back-compat.
   const saveExercise = async () => {
     setPathError(null);
     setSavingPath(true);
+    const payload = { ...paths, chordType };
     try {
       if (currentExerciseId) {
         await updateExercise.mutateAsync({
@@ -225,7 +243,7 @@ export default function AdminScalesPage() {
             name: paths.name,
             description: paths.description,
             scaleType,
-            payload: paths,
+            payload,
           },
         });
       } else {
@@ -235,7 +253,7 @@ export default function AdminScalesPage() {
           name: paths.name,
           description: paths.description,
           scaleType,
-          payload: paths,
+          payload,
         });
         setCurrentExerciseId(created.id);
       }
@@ -250,15 +268,62 @@ export default function AdminScalesPage() {
   // Generate a fingered note seed from a PATTERN rule, for the active key + scale. The
   // engine produces the degree sequence + nearest-position fingering; we wrap each as an
   // eighth-note PathEvent. The admin then drag-refines the fingerings + saves.
+  // Saved PATH exercises the admin can constrain a pattern to (same scale type + neck). A
+  // "path" is a known authored fingering; picking one makes Generate climb only its notes.
+  const pathSourceOptions = React.useMemo(
+    () =>
+      (exercises ?? [])
+        .filter((ex: GymExercise) => {
+          const p = ex.payload as Partial<PathsByKey> | null;
+          return (
+            (ex.scaleType ?? null) === scaleType &&
+            (p?.pathKind ?? 'path') === 'path' &&
+            (p?.stringCount ?? 4) === previewStrings &&
+            ex.id !== currentExerciseId // can't base a pattern on the one being edited
+          );
+        })
+        .map((ex: GymExercise) => {
+          const p = ex.payload as Partial<PathsByKey> | null;
+          return {
+            id: ex.id,
+            label: p?.variantGroup || p?.name || 'Path',
+          };
+        }),
+    [exercises, scaleType, previewStrings, currentExerciseId],
+  );
+
   const generatePattern = React.useCallback(
     (rule: ScalePatternRule): PathEvent[] => {
-      const root = rootFromKey(pathKey, 0); // path key string → sharp PitchClass
-      const universe = buildNoteUniverse(
-        { stringCount: previewStrings, maxFrets: MAX_FRETS },
-        root,
-        scaleType,
-      );
-      const ladder = buildScaleLadder(universe);
+      // CONSTRAINED MODE: a saved PATH is picked → build the ladder from ONLY that path's
+      // notes for the current key, so the pattern climbs the authored fingering (not the
+      // whole neck). Falls through to whole-neck if the path has nothing for this key.
+      let ladder = null as ReturnType<typeof buildScaleLadder> | null;
+      if (sourcePathId) {
+        const srcEx = (exercises ?? []).find(
+          (ex: GymExercise) => ex.id === sourcePathId,
+        );
+        const srcPayload = srcEx?.payload as Partial<PathsByKey> | null;
+        const events = srcPayload?.byKey?.[pathKey]?.ascending ?? [];
+        const notes = events.filter(
+          (e): e is { kind?: 'note'; string: number; fret: number; durationTicks: number } =>
+            (e as { kind?: string }).kind !== 'rest',
+        );
+        if (notes.length > 0) {
+          ladder = buildLadderFromPath(notes, previewStrings);
+        }
+      }
+
+      // WHOLE-NECK fallback (no source path, or it had no notes for this key).
+      if (!ladder) {
+        const root = rootFromKey(pathKey, 0); // path key string → sharp PitchClass
+        const universe = buildNoteUniverse(
+          { stringCount: previewStrings, maxFrets: MAX_FRETS },
+          root,
+          scaleType,
+        );
+        ladder = buildScaleLadder(universe);
+      }
+
       const degrees = generatePatternDegrees(rule, ladder.length);
       const positions = degreesToPositions(degrees, ladder);
       return positions.map((p) => ({
@@ -267,7 +332,7 @@ export default function AdminScalesPage() {
         durationTicks: DURATIONS.eighth,
       }));
     },
-    [pathKey, previewStrings, scaleType],
+    [pathKey, previewStrings, scaleType, sourcePathId, exercises],
   );
 
   // POPULATE the other 11 keys from the CURRENT key's path, transposed by `method`.
@@ -462,23 +527,27 @@ export default function AdminScalesPage() {
         the selected position.
       </p>
 
-      {/* Scale picker */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {SCALE_TYPES.map((s) => (
+      {/* Chord-type picker — the exercise belongs under a CHORD; its parent scale (shown
+          below) drives the box blueprints + generated notes. */}
+      <div className="mb-2 flex flex-wrap gap-2">
+        {CHORD_TYPES.map((c) => (
           <button
-            key={s.value}
+            key={c.value}
             type="button"
-            onClick={() => setScaleType(s.value)}
+            onClick={() => setChordType(c.value)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              scaleType === s.value
+              chordType === c.value
                 ? 'bg-emerald-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {s.label}
+            {c.label}
           </button>
         ))}
       </div>
+      <p className="mb-6 text-xs text-gray-400">
+        Parent scale (notes + boxes): <span className="font-mono">{scaleType}</span>
+      </p>
 
       {isLoading && (
         <p className="text-sm text-gray-400">Loading saved blueprints…</p>
@@ -491,7 +560,7 @@ export default function AdminScalesPage() {
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Preview — {SCALE_TYPES.find((s) => s.value === scaleType)?.label}{' '}
+              Preview — {CHORD_TYPES.find((c) => c.value === chordType)?.label}{' '}
               · key {pathKey} · {pathPreviewDir} ({litNotes.length} notes)
             </span>
             {/* String-count picker — preview the path on a 4-, 5- or 6-string neck. */}
@@ -563,6 +632,11 @@ export default function AdminScalesPage() {
             onGenerate={generatePattern}
             onPopulate={populateKeys}
             onPopulateOne={populateOneKey}
+            // Constrain a generated pattern to a saved PATH's notes (only shown for the
+            // 'pattern' kind). '' = the whole neck (the original behaviour).
+            pathSourceOptions={pathSourceOptions}
+            sourcePathId={sourcePathId}
+            onSourcePathChange={setSourcePathId}
           />
           {/* Preview direction toggle (which route the fretboard lights). */}
           <div className="mt-3 flex items-center gap-2">
