@@ -84,6 +84,9 @@ const ADMIN_FRETBOARD_CAL: FretboardCalibrationValues = {
   rightFadeZone: 10,
   viewportWidth: 1000,
   windowHeight: 305,
+  // px/fret for the admin board's contentScale 1.57 (≈ 45.5 × 1.57/1.17). Tune via the panel
+  // slider if the scroll reach / sphere tracking looks off on the wider admin board.
+  screenPxPerFret: 61,
 };
 
 // The most frets a user can configure (BassSettingsCard offers 19–25), so paths must be

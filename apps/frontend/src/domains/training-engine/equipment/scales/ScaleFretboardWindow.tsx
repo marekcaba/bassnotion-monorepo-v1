@@ -26,6 +26,7 @@ import {
   FRETBOARD_WINDOW,
 } from './fretboardViewConfig';
 import { computeFretboardGeometry } from './fretboardGeometry';
+import { useFretboardSizeTier } from './useFretboardSizeTier';
 import {
   FretboardCalibrationPanel,
   CALIBRATION_ENABLED,
@@ -162,20 +163,33 @@ export function ScaleFretboardWindow({
     [stringCount],
   );
 
+  // RESPONSIVE SIZE TIER — measure the card container's own width and pick a tier. Enabled: the
+  // board scales to its tier (mobile/tablet/desktop/large on the 640/1024/1536 thresholds). Tablet
+  // is the 1.0 baseline (today's calibration). `sizeRef` attaches to the root div, which is
+  // width:100% so it reflects the space the card/page grants the fretboard.
+  const {
+    ref: sizeRef,
+    scaleFactor: tierScaleFactor,
+    viewportWidth: tierViewportWidth,
+  } = useFretboardSizeTier({ enabled: true });
+
   // DEV tuning: the playhead sphere config (size/color/anim/easing). The PlayheadPanel
   // adjusts it live when NEXT_PUBLIC_PLAYHEAD_PANEL=true; otherwise the baked default.
   const [playheadCfg, setPlayheadCfg] = React.useState<PlayheadConfig>(
     DEFAULT_PLAYHEAD_CONFIG,
   );
 
-  // DEV calibration: live overrides for the centering/fade params, seeded from the
-  // base config. When CALIBRATION_ENABLED, the panel adjusts these live; otherwise
-  // the base config is used as-is.
+  // DEV calibration: live overrides for the centering/fade params. SEEDED FROM THE TIER-SCALED
+  // values (not the raw baseline) so opening the panel doesn't snap the board back to the tablet
+  // proportions — it matches what's currently on screen, and you tune FROM there. The seed applies
+  // the SAME contentScale×f + sceneX re-anchor + viewportWidth as the live (non-panel) path below.
   const [cal, setCal] = React.useState<FretboardCalibrationValues>(() => ({
-    sceneX: baseConfig.sceneX,
+    sceneX:
+      baseConfig.sceneX -
+      (tierViewportWidth - FRETBOARD_WINDOW.viewportWidth) / 2,
     offsetX: baseConfig.offsetX,
     tiltAxisOffsetX: baseConfig.tiltAxisOffsetX,
-    contentScale: baseConfig.contentScale,
+    contentScale: baseConfig.contentScale * tierScaleFactor,
     contentScaleX: baseConfig.contentScaleX,
     contentScaleY: baseConfig.contentScaleY,
     rotationX: baseConfig.rotationX,
@@ -183,9 +197,39 @@ export function ScaleFretboardWindow({
     rotationZ: baseConfig.rotationZ,
     leftFadeZone: baseConfig.leftFadeZone,
     rightFadeZone: baseConfig.rightFadeZone,
-    viewportWidth: FRETBOARD_WINDOW.viewportWidth,
-    windowHeight: FRETBOARD_CANVAS_HEIGHT,
+    viewportWidth: tierViewportWidth,
+    windowHeight: FRETBOARD_CANVAS_HEIGHT * tierScaleFactor,
+    // The scroll↔fret px rate, seeded from the geometry's baseline × the tier factor so the panel
+    // starts matching the live board; drag the slider to tune scroll reach + sphere tracking.
+    screenPxPerFret: computeFretboardGeometry({
+      maxFrets,
+      viewportWidth: tierViewportWidth,
+      scaleFactor: tierScaleFactor,
+    }).screenPxPerFret,
   }));
+
+  // RE-SEED the panel when the resolved tier changes. useState's initializer runs ONCE on first
+  // render — before the ResizeObserver has measured, so it captures the tablet fallback (factor
+  // 1.0 / viewport 700). Once the real tier resolves (and on any resize), refresh `cal` to the
+  // tier-scaled values so the panel matches the live board instead of snapping it to baseline.
+  // Only when the panel is enabled (it's the only consumer of `cal`); a no-op otherwise.
+  React.useEffect(() => {
+    if (!CALIBRATION_ENABLED) return;
+    setCal((prev) => ({
+      ...prev,
+      sceneX:
+        baseConfig.sceneX -
+        (tierViewportWidth - FRETBOARD_WINDOW.viewportWidth) / 2,
+      contentScale: baseConfig.contentScale * tierScaleFactor,
+      viewportWidth: tierViewportWidth,
+      windowHeight: FRETBOARD_CANVAS_HEIGHT * tierScaleFactor,
+      screenPxPerFret: computeFretboardGeometry({
+        maxFrets,
+        viewportWidth: tierViewportWidth,
+        scaleFactor: tierScaleFactor,
+      }).screenPxPerFret,
+    }));
+  }, [tierScaleFactor, tierViewportWidth, baseConfig, maxFrets]);
 
   // The active calibration: an explicit override (the admin panel) wins; else the live
   // `cal` when the env-gated dev panel is on; else nothing (use the baked base config).
@@ -229,11 +273,30 @@ export function ScaleFretboardWindow({
   // content is centered on viewportWidth, so widening alone shifts it right; we cancel
   // that by pulling sceneX left by half the extra width → LEFT EDGE STAYS ANCHORED,
   // right edge extends. The outer box grows to fit so the wider canvas isn't clipped.
-  const viewportWidth = activeCal
-    ? activeCal.viewportWidth
-    : FRETBOARD_WINDOW.viewportWidth;
-  const height = activeCal ? activeCal.windowHeight : FRETBOARD_CANVAS_HEIGHT;
-  const anchoredConfig = overlay3DConfig;
+  // viewportWidth precedence: the dev calibration panel (when active) wins; else the responsive
+  // tier's width. With the tier disabled (step 4) tierViewportWidth === FRETBOARD_WINDOW.viewport
+  // (700), so this is identical to the old `activeCal ? … : FRETBOARD_WINDOW.viewportWidth`.
+  const viewportWidth = activeCal ? activeCal.viewportWidth : tierViewportWidth;
+  // Height scales with the tier too, so the board's vertical proportion grows with its width.
+  const height = activeCal
+    ? activeCal.windowHeight
+    : FRETBOARD_CANVAS_HEIGHT * tierScaleFactor;
+
+  // RESPONSIVE SIZE — scale the 3D scene to the tier. `contentScale` is the TRUE uniform size
+  // lever (one Three.js group scale over dots/neck/rings/sphere — see [[fretboard-scale-lever]]),
+  // so the whole board zooms by the factor. Because the content is centered on `viewportWidth`,
+  // the wider canvas would shift the neck RIGHT; we cancel that by pulling `sceneX` left by half
+  // the extra width, keeping the LEFT EDGE anchored while the right edge extends. The dev
+  // calibration panel sets these by hand, so we DON'T re-scale when it's active (no double-scale).
+  const anchoredConfig = React.useMemo(() => {
+    if (activeCal || tierScaleFactor === 1) return overlay3DConfig;
+    const extraWidth = viewportWidth - FRETBOARD_WINDOW.viewportWidth;
+    return {
+      ...overlay3DConfig,
+      contentScale: overlay3DConfig.contentScale * tierScaleFactor,
+      sceneX: overlay3DConfig.sceneX - extraWidth / 2,
+    };
+  }, [activeCal, overlay3DConfig, tierScaleFactor, viewportWidth]);
 
   // ── MOVEMENT: the tutorial's model (the working reference) ─────────────────────────
   // A native horizontal scroll container drives the pan: the canvas reads its scrollLeft
@@ -248,7 +311,16 @@ export function ScaleFretboardWindow({
   // computeFretboardGeometry. scaleFactor defaults to 1 here (no size tier yet) → byte-identical
   // to the old inline math; the responsive tiers will pass a real factor that scales the px-rates
   // in lockstep with contentScale so the scroll + sphere stay locked to the dots.
-  const geometry = computeFretboardGeometry({ maxFrets, viewportWidth });
+  // scaleFactor is 1.0 while the tier is disabled → byte-identical geometry. When the size step
+  // enables it, the px-rates scale in lockstep with contentScale (see [[fretboard-scale-lever]]).
+  const geometry = computeFretboardGeometry({
+    maxFrets,
+    viewportWidth,
+    scaleFactor: tierScaleFactor,
+    // When the dev calibration panel is active, its px/fret slider drives the scroll mapping
+    // (absolute value); otherwise the baked baseline × tier factor is used.
+    screenPxPerFretOverride: activeCal ? activeCal.screenPxPerFret : undefined,
+  });
   const {
     maxScroll,
     fullContentWidth,
@@ -481,6 +553,9 @@ export function ScaleFretboardWindow({
 
   return (
     <div
+      // sizeRef measures THIS container's width (= the space the card grants the fretboard) to
+      // pick the responsive tier. It's width:100%, so it reflects the card/page constraints.
+      ref={sizeRef}
       style={{
         position: 'relative',
         width: '100%',
@@ -516,8 +591,18 @@ export function ScaleFretboardWindow({
         onMouseMove={onMouseMove}
         onMouseUp={endDrag}
         onMouseLeave={endDrag}
-        className="h-full w-full overflow-x-auto overflow-y-hidden"
+        className="h-full overflow-x-auto overflow-y-hidden"
         style={{
+          // The scroll WINDOW must be exactly viewportWidth (the visible canvas window), centered
+          // in the card — NOT w-full. The spacer below is fullContentWidth (= maxScroll +
+          // viewportWidth), so it overflows this window by exactly maxScroll → drag range exists
+          // at every tier. When the card was widened (responsive tiers), a w-full container grew
+          // wider than the spacer and ate the whole scroll range → drag stopped working.
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: viewportWidth,
           cursor: isDragging ? 'grabbing' : 'grab',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',

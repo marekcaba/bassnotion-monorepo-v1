@@ -18,32 +18,31 @@
 /** The canvas the tutorial calibrated against is ~568px wide (originX 284 = center). */
 export const FRETBOARD_CANVAS_WIDTH = 568;
 /** Container height that gives the same vertical proportion as the tutorial.
- *  Ear/eye-calibrated for the gym scales tool (2026-06-24). */
-export const FRETBOARD_CANVAS_HEIGHT = 305;
+ *  Re-calibrated by eye 2026-07-01 (the new full-desktop baseline). */
+export const FRETBOARD_CANVAS_HEIGHT = 315;
 
-/** WINDOW geometry (the canvas box, not the 3D scene). The gym fretboard now uses the
- *  TUTORIAL's scroll model — a native scroll container pans the neck (ScaleFretboardWindow)
- *  — so the scene config below MIRRORS the tutorial's, and the viewport is the tutorial's
- *  default 580 (the scroll container, not a wide canvas, reveals more frets). The old 710 +
- *  custom sceneX was the pre-scroll static-layout tuning and fought the scroll offset. */
+/** WINDOW geometry (the canvas box, not the 3D scene). The gym fretboard uses the tutorial's
+ *  scroll model — a native scroll container pans the neck (ScaleFretboardWindow). The viewport
+ *  width is the BASELINE (scaleFactor 1.0); the responsive size tiers in useFretboardSizeTier
+ *  scale from here. Re-calibrated by eye on a full-desktop window 2026-07-01: 880. */
 export const FRETBOARD_WINDOW = {
-  /** Canvas width in px. The scroll container pans the neck; this sets how many frets are
-   *  visible at once. Re-calibrated to 700 (2026-06-30). The scroll-range + scrollToFret
-   *  math in ScaleFretboardWindow read this, so they stay consistent. */
-  viewportWidth: 700,
+  /** Canvas width in px at the baseline tier. The scroll-range + scrollToFret math in
+   *  ScaleFretboardWindow read this, so they stay consistent; tiers multiply it by scaleFactor. */
+  viewportWidth: 880,
 };
 
 export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
-  // Scroll-model scene config. Re-calibrated by eye on the gym board (5-string) 2026-06-30
-  // via the FretboardCalibrationPanel: sceneX -96, contentScale 1.17, contentScaleX 0.865,
-  // contentScaleY 0.833, rotationX 13°, tiltAxisOffsetX 375, viewport 700 (above). sceneX is
-  // string-count-dependent — keep the old +17 gap for 4-string (it sits higher).
-  const sceneX = stringCount === 4 ? -79 : -96;
+  // Scroll-model scene config. Re-calibrated by eye on a full-desktop window 2026-07-01 via the
+  // FretboardCalibrationPanel: contentScale 1.521, contentScaleX 0.865, contentScaleY 0.833,
+  // rotationX 13°, tiltAxisOffsetX 430, offsetX -1, viewport 880, height 315. sceneX is
+  // string-count-dependent: tuned by eye on the 5-STRING board → -376. 4-string sits higher, so
+  // it keeps the old +17 gap (less negative) → -359.
+  const sceneX = stringCount === 4 ? -359 : -376;
   return {
     rotationX: 13,
     rotationY: 0,
     rotationZ: 0,
-    offsetX: -14,
+    offsetX: -1,
     offsetY: 3,
     sceneX,
     sceneY: 0,
@@ -52,7 +51,7 @@ export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
     fovOffset: 0,
     originX: 284, // center of the 568px canvas
     originY: 136,
-    contentScale: 1.17,
+    contentScale: 1.521,
     contentScaleX: 0.865,
     contentScaleY: 0.833,
     cameraY: 0,
@@ -61,7 +60,7 @@ export function getFretboardOverlayConfig(stringCount: 4 | 5 | 6) {
     bottomEdgeScale: 1.0,
     positioningMode: 'flat' as 'flat' | 'tilted-plane' | 'screen-space',
     tiltAxisOffset: -23,
-    tiltAxisOffsetX: 375,
+    tiltAxisOffsetX: 430,
     leftFadeZone: 10,
     rightFadeZone: 10,
     fadeEdgeAngle: 0,

@@ -33,6 +33,12 @@ export interface FretboardCalibrationValues {
   viewportWidth: number;
   /** WINDOW: canvas height in px. */
   windowHeight: number;
+  /** On-screen PIXELS PER FRET — the scroll↔fret mapping. HIGHER = each fret is treated as
+   *  wider, so the scroll range reaches FURTHER (you can scroll to higher frets) and the
+   *  gliding playhead sphere moves more per fret. Must match the actual dot spacing at the
+   *  current contentScale, or the sphere/scroll drift off the dots. Bake into
+   *  fretboardGeometry.ts (BASE_SCREEN_PX_PER_FRET). */
+  screenPxPerFret: number;
 }
 
 const SLIDERS: {
@@ -56,6 +62,13 @@ const SLIDERS: {
     min: 200,
     max: 480,
     step: 5,
+  },
+  {
+    key: 'screenPxPerFret',
+    label: '★ px / FRET (scroll reach)',
+    min: 35,
+    max: 90,
+    step: 0.25,
   },
   // ── SCENE (content inside the canvas) ──
   { key: 'sceneX', label: 'sceneX (slide L/R)', min: -1500, max: 500, step: 1 },

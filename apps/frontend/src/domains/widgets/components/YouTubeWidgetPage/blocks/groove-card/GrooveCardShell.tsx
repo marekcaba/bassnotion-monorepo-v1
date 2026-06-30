@@ -433,32 +433,42 @@ export function GrooveCardShell({
       {/* Waveform */}
       <div className="px-4 pt-4">{waveform}</div>
 
-      {/* Caption — left-aligned reactive copy. When controlsInCaptionRow is set, the volume
-          + headerExtra cluster is right-aligned in this same row (bottom-right, above the
-          controls bar) instead of up in the header. */}
-      <div className="flex items-center gap-3 px-4 py-3 min-h-[2.5rem]">
-        <div className="min-w-0 flex-1">
-          {caption ? (
-            <p className="text-sm text-white/70">{caption}</p>
-          ) : (
-            <p className="text-sm text-white/30 italic">…</p>
+      {/* Caption row + controls + footer. For gym tools (controlsInCaptionRow) the CARD can go
+          very wide so the fretboard fills the screen, but the controls bar shouldn't stretch with
+          it — cap it at a comfortable reading width and center it under the (wider) board. Classic
+          groove cards keep full-card-width controls (the card itself is the cap there). */}
+      <div
+        className={
+          controlsInCaptionRow ? 'mx-auto w-full max-w-[900px]' : undefined
+        }
+      >
+        {/* Caption — left-aligned reactive copy. When controlsInCaptionRow is set, the volume
+            + headerExtra cluster is right-aligned in this same row (bottom-right, above the
+            controls bar) instead of up in the header. */}
+        <div className="flex items-center gap-3 px-4 py-3 min-h-[2.5rem]">
+          <div className="min-w-0 flex-1">
+            {caption ? (
+              <p className="text-sm text-white/70">{caption}</p>
+            ) : (
+              <p className="text-sm text-white/30 italic">…</p>
+            )}
+          </div>
+          {controlsInCaptionRow && (
+            // headerExtra (gym tools: Dynamic Loop + Rec) sits BEFORE volume so the row reads
+            // left→right as the tool intends, with volume as the rightmost icon.
+            <div className="flex shrink-0 items-center gap-2">
+              {headerExtra}
+              {volumeControl}
+            </div>
           )}
         </div>
-        {controlsInCaptionRow && (
-          // headerExtra (gym tools: Dynamic Loop + Rec) sits BEFORE volume so the row reads
-          // left→right as the tool intends, with volume as the rightmost icon.
-          <div className="flex shrink-0 items-center gap-2">
-            {headerExtra}
-            {volumeControl}
-          </div>
-        )}
+
+        {/* Controls bar */}
+        {controls}
+
+        {/* Footer slot — part of the card frame (e.g. premium Lines & Fills). */}
+        {footer}
       </div>
-
-      {/* Controls bar */}
-      {controls}
-
-      {/* Footer slot — part of the card frame (e.g. premium Lines & Fills). */}
-      {footer}
     </section>
   );
 }

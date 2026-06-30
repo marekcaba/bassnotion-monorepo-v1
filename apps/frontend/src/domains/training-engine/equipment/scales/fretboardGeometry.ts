@@ -25,10 +25,11 @@
  * in IEEE-754, exactly), which the gate test asserts.
  */
 
-/** Baseline measured constants — the calibration locked at contentScale 1.17 + viewportWidth 700
- *  (ScaleFretboardWindow comments dated 2026-06-28/30). scaleFactor multiplies the px-rates. */
-const BASE_SCREEN_PX_PER_FRET = 45.5;
-const BASE_CENTER_PX_PER_FRET = 45.5; // same measured rate as SCREEN_PX_PER_FRET (kept locked)
+/** Baseline on-screen px per fret — the scroll↔fret mapping. EYE-TUNED via the calibration
+ *  panel's "px / FRET" slider 2026-07-01 at the contentScale-1.521 baseline → 53.5 (the derived
+ *  59.15 over-reached; measured-by-eye wins). scaleFactor still multiplies this per tier. */
+const BASE_SCREEN_PX_PER_FRET = 53.5;
+const BASE_CENTER_PX_PER_FRET = 53.5; // same measured rate as SCREEN_PX_PER_FRET (kept locked)
 const BASE_SCROLL_SLACK = 40;
 /** The fret centered at scrollLeft 0. A FRET INDEX — never scales. */
 const CENTER_FRET_AT_0 = 4.77;
@@ -42,6 +43,10 @@ export interface FretboardGeometryInput {
   viewportWidth: number;
   /** Size-tier multiplier on the px-rates. 1 = baseline (byte-identical to the old inline math). */
   scaleFactor?: number;
+  /** Override the on-screen px/fret (the dev calibration panel feeds this so it can be tuned by
+   *  eye). When given, it REPLACES BASE_SCREEN_PX_PER_FRET × scaleFactor — it's the absolute,
+   *  already-scaled value. Omit to use the baked baseline. */
+  screenPxPerFretOverride?: number;
 }
 
 export interface FretboardGeometry {
@@ -73,9 +78,13 @@ export function computeFretboardGeometry({
   maxFrets,
   viewportWidth,
   scaleFactor = 1,
+  screenPxPerFretOverride,
 }: FretboardGeometryInput): FretboardGeometry {
-  const screenPxPerFret = BASE_SCREEN_PX_PER_FRET * scaleFactor;
-  const centerPxPerFret = BASE_CENTER_PX_PER_FRET * scaleFactor;
+  // The px/fret rate: the eye-tuned override (absolute, from the calibration panel) wins; else
+  // the baked baseline × the tier factor. Both screen + center rates stay locked to it.
+  const screenPxPerFret =
+    screenPxPerFretOverride ?? BASE_SCREEN_PX_PER_FRET * scaleFactor;
+  const centerPxPerFret = screenPxPerFret;
   const scrollSlack = BASE_SCROLL_SLACK * scaleFactor;
   const centerFretAt0 = CENTER_FRET_AT_0; // fret index — unscaled
 
