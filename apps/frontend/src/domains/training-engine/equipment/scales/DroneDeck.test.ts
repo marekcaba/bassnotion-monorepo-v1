@@ -37,12 +37,21 @@ class MockParam {
   linearRampToValueAtTime = vi.fn(() => this);
 }
 
+// The audio graph per deck is now:  copySource → copyGain → DECK gain → MASTER gain → dest.
+// (The SelfLooper schedules one or more buffer COPIES, each with its own copyGain, into the
+// single deck gain so the buffer loops by crossfading into itself.) We tag each gain by what
+// connects INTO it so tests can pick the deck gains + master without counting copies.
 class MockGain {
   gain = new MockParam();
-  /** True once a SOURCE has connected into this gain — i.e. it's a per-deck gain, not the
-   *  master (the master only ever has gains connected to it). */
+  /** True once a SOURCE connected into this gain → it's a per-copy gain (inside a looper). */
   fedBySource = false;
-  connect = vi.fn();
+  /** True once this gain CONNECTS INTO another gain → it's a deck gain (decks connect into the
+   *  master). Set on the SOURCE gain at connect time, so it's true the moment makeDeck wires
+   *  the deck gain → master, even before the looper has scheduled any copy. */
+  connectsToGain = false;
+  connect = vi.fn((dest: unknown) => {
+    if (dest instanceof MockGain) this.connectsToGain = true;
+  });
   disconnect = vi.fn();
 }
 
@@ -51,6 +60,7 @@ class MockSource {
   loop = false;
   started: number | null = null;
   stopped = false;
+  onended: (() => void) | null = null;
   connect = vi.fn((dest: unknown) => {
     if (dest instanceof MockGain) dest.fedBySource = true;
   });
@@ -79,17 +89,32 @@ class MockCtx {
     return g as unknown as GainNode;
   });
 
-  /** Per-deck gains (fed by a source), in creation order. */
+  /** The master gain: the deck builds it FIRST (getMaster() before any deck/copy gain), so
+   *  it's gains[0]. It connects to the destination, not into another gain. */
+  get master(): MockGain | undefined {
+    return this.gains[0];
+  }
+  /** DECK gains — gains that connect INTO another gain (the master) but are NOT themselves fed
+   *  by a source. (Copy gains also connect into a gain, but they ARE source-fed → excluded.)
+   *  Tagged at wire time, so a deck counts even before its looper schedules a copy. */
   get deckGains(): MockGain[] {
+    return this.gains.filter(
+      (g) => g !== this.master && g.connectsToGain && !g.fedBySource,
+    );
+  }
+  /** COPY gains — the per-copy looper gains (fed directly by a source). */
+  get copyGains(): MockGain[] {
     return this.gains.filter((g) => g.fedBySource);
   }
-  /** The master gain (the one NOT fed by a source — decks connect INTO it). */
-  get master(): MockGain | undefined {
-    return this.gains.find((g) => !g.fedBySource);
+  /** DECK gains still WIRED IN (disconnect() never called) — i.e. decks that can still sound.
+   *  The leak detector: more than ~2 of these mid-fade, or >1 after fades settle, = stacking. */
+  get connectedDeckGains(): MockGain[] {
+    return this.deckGains.filter((g) => g.disconnect.mock.calls.length === 0);
   }
 }
 
-const fakeBuffer = (label: string) => ({ label }) as unknown as AudioBuffer;
+const fakeBuffer = (label: string, duration = 4) =>
+  ({ label, duration }) as unknown as AudioBuffer;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -126,15 +151,16 @@ describe('nextBarBoundary — bar-aligned transition scheduling', () => {
 });
 
 describe('DroneDeck.start — the first drone of a take', () => {
-  it('plays the loaded buffer at the given time, looping, at full gain', async () => {
+  it('starts the self-loop at the given time, with the deck gain at full level', async () => {
     const ctx = new MockCtx();
     const deck = new DroneDeck(ctx as unknown as AudioContext);
     await deck.start('Cmaj7', 5);
 
-    expect(ctx.sources).toHaveLength(1);
-    const src = ctx.sources[0]!;
-    expect(src.loop).toBe(true);
-    expect(src.started).toBe(5);
+    // The self-looper scheduled at least one buffer copy; the FIRST copy starts at 5.
+    expect(ctx.sources.length).toBeGreaterThan(0);
+    expect(ctx.sources[0]!.started).toBe(5);
+    // The deck gain (fed by the copy gains) sits at full level — chord crossfade rides on it.
+    expect(ctx.deckGains).toHaveLength(1);
     expect(ctx.deckGains[0]!.gain.value).toBe(1);
     expect(deck.targetSymbol).toBe('Cmaj7');
   });
@@ -145,6 +171,7 @@ describe('DroneDeck.start — the first drone of a take', () => {
     const deck = new DroneDeck(ctx as unknown as AudioContext);
     await deck.start('F#7', 0);
     expect(ctx.sources).toHaveLength(0); // dry — no audio node built
+    expect(ctx.deckGains).toHaveLength(0);
     // target tracks INTENT (the drone is "set to F#7", it just has no .ogg) so a later dial
     // to a different key still triggers a transition and isn't swallowed by the no-op guard.
     expect(deck.targetSymbol).toBe('F#7');
@@ -183,8 +210,11 @@ describe('DroneDeck.crossfadeTo — the blend between tonal centres', () => {
       expect(sum).toBeCloseTo(1, 5);
     }
 
-    // The incoming source starts AT the fade start (so it's audible as it rises).
-    expect(ctx.sources[1]!.started).toBe(6);
+    // The incoming deck's self-loop starts AT the fade start — its FIRST new copy (the first
+    // source created after the crossfade began) starts at t=6 so it's audible as the deck
+    // gain rises.
+    const incomingFirstSrc = ctx.sources.find((s) => s.started === 6);
+    expect(incomingFirstSrc).toBeDefined();
   });
 
   it('promotes the incoming deck to active after the fade completes (old torn down)', async () => {
@@ -208,9 +238,9 @@ describe('DroneDeck.crossfadeTo — the blend between tonal centres', () => {
     const ctx = new MockCtx();
     const deck = new DroneDeck(ctx as unknown as AudioContext);
     await deck.start('Cmaj7', 0);
-    const sourcesBefore = ctx.sources.length;
+    const decksBefore = ctx.deckGains.length;
     await deck.crossfadeTo('Cmaj7', 4, 0.7);
-    expect(ctx.sources.length).toBe(sourcesBefore); // no new deck built
+    expect(ctx.deckGains.length).toBe(decksBefore); // no new deck built
   });
 
   it('crossfading TO a missing stem fades the current drone out (goes quiet, no throw)', async () => {
@@ -223,10 +253,10 @@ describe('DroneDeck.crossfadeTo — the blend between tonal centres', () => {
     ctx.currentTime = 0;
     await deck.crossfadeTo('F#7', 1, 0.7);
 
-    // Outgoing still gets a fade-OUT curve; no incoming source was created.
+    // Outgoing deck gets a fade-OUT curve; no incoming deck was built (the stem is missing).
     expect(oldGain.gain.curves).toHaveLength(1);
     expect(oldGain.gain.curves[0]!.curve[oldGain.gain.curves[0]!.curve.length - 1]).toBeCloseTo(0);
-    expect(ctx.sources).toHaveLength(1); // only the original
+    expect(ctx.deckGains).toHaveLength(1); // only the original deck
     expect(deck.targetSymbol).toBe('F#7');
   });
 
@@ -239,10 +269,54 @@ describe('DroneDeck.crossfadeTo — the blend between tonal centres', () => {
     await deck.crossfadeTo('Dmaj7', 1, 0.7); // Cmaj7 → Dmaj7
     await deck.crossfadeTo('Emaj7', 1, 0.7); // immediately Dmaj7 → Emaj7
 
-    // The last target wins; we never leak more than the decks we built (3 sources total:
-    // the original + the two incoming), and the earliest is torn down on promotion.
+    // The last target wins; only ever the decks we built (≤3 deck gains over the run: the
+    // original + the two incoming), the earliest torn down on promotion. (Each deck has many
+    // looper copies, so we count DECK gains, not raw sources.)
     expect(deck.targetSymbol).toBe('Emaj7');
-    expect(ctx.sources.length).toBeLessThanOrEqual(3);
+    expect(ctx.deckGains.length).toBeLessThanOrEqual(3);
+  });
+
+  it('many crossfades over a long run leave exactly ONE deck connected (no stacking)', async () => {
+    // Reproduces the reported bug: after travelling for a while, clicking through chords
+    // stacked them. Fire a long sequence of crossfades, run all timers, then assert only the
+    // FINAL deck is still wired in — every superseded deck was torn down.
+    const ctx = new MockCtx();
+    const deck = new DroneDeck(ctx as unknown as AudioContext);
+    await deck.start('Cmaj7', 0);
+
+    const symbols = ['Dmaj7', 'Emaj7', 'Fmaj7', 'Gmaj7', 'Amaj7', 'Bmaj7', 'Cmaj7'];
+    let t = 0;
+    for (const sym of symbols) {
+      t += 1;
+      ctx.currentTime = t;
+      await deck.crossfadeTo(sym, t, 0.7);
+    }
+    // Let every promotion/teardown timer fire. advanceTimersByTime (not runAllTimers — the
+    // looper's 500ms poll is an endless interval that would spin forever) past the last fade.
+    ctx.currentTime = t + 5;
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(deck.targetSymbol).toBe('Cmaj7');
+    // The whole point: exactly one deck still sounds, not a stack of them.
+    expect(ctx.connectedDeckGains).toHaveLength(1);
+  });
+
+  it('overlapping crossfades that interleave across the await never orphan a deck', async () => {
+    // Two crossfades launched WITHOUT awaiting the first — the time-transposer firing while the
+    // user clicks a chord. Serialization must keep the bookkeeping atomic so no deck leaks.
+    const ctx = new MockCtx();
+    const deck = new DroneDeck(ctx as unknown as AudioContext);
+    await deck.start('Cmaj7', 0);
+    ctx.currentTime = 0;
+
+    const p1 = deck.crossfadeTo('Dmaj7', 1, 0.7);
+    const p2 = deck.crossfadeTo('Emaj7', 1, 0.7); // fired before p1 resolves
+    await Promise.all([p1, p2]);
+    ctx.currentTime = 5;
+    await vi.advanceTimersByTimeAsync(2000);
+
+    expect(deck.targetSymbol).toBe('Emaj7');
+    expect(ctx.connectedDeckGains).toHaveLength(1);
   });
 });
 
@@ -289,11 +363,13 @@ describe('DroneDeck on/off + level — the drone UI controls', () => {
     await deck.start('Cmaj7', 0);
     deck.setEnabled(false);
 
+    const masterBefore = ctx.master;
     ctx.currentTime = 0;
     await deck.crossfadeTo('Dmaj7', 1, 0.7);
     // No NEW master is created — the incoming deck connects to the same muted master, so the
-    // crossfade is inaudible until the user re-enables.
-    expect(ctx.gains.filter((g) => !g.fedBySource)).toHaveLength(1);
+    // crossfade is inaudible until the user re-enables. (gains[0] is still the one master.)
+    expect(ctx.master).toBe(masterBefore);
+    expect(ctx.deckGains.length).toBeLessThanOrEqual(2); // two decks at most during the blend
   });
 });
 

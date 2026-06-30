@@ -18,6 +18,13 @@
  * TIMEBASE: all scheduling is on the shared AudioContext.currentTime (seconds), the same
  * clock the scale notes + metronome use. Callers pass absolute audio times so a transition
  * can be ALIGNED to a musical boundary (e.g. the next bar) by the sequencer.
+ *
+ * SEAMLESS LOOPING: the exported drone bounces are NOT seamless loops — each starts at
+ * digital silence (a fade-in) and ends mid-sustain, so a bare `source.loop = true` would
+ * click + re-swell at every wrap (~21s). Instead each deck uses a SelfLooper that crossfades
+ * the buffer into ITSELF: copy N+1 starts SELF_OVERLAP_SEC before copy N ends, each fading
+ * in/out (equal-power) over that overlap, so the sustain is continuous and the seam is never
+ * heard. Works for any non-seamless source — no re-export needed.
  */
 
 import { loadDroneStem } from './droneStem';
@@ -30,9 +37,138 @@ const logger = getLogger('DroneDeck');
 const RAMP_STEPS = 32;
 /** A fast fade-to-silence on stop(), so ending a take doesn't click. */
 const STOP_FADE_SEC = 0.06;
+/** Extra silence held AFTER the stop fade reaches 0, before the buffer source is actually
+ *  stopped. A buffer source stopped at the *instant* a linear ramp hits 0 still clicks: the
+ *  ramp is only exactly 0 at its end sample, the buffer sits at an arbitrary (per-channel,
+ *  per-run) sample value, and src.stop() cutting a not-quite-silent signal pops — which is
+ *  why the spike wandered L/R and varied in level. Holding gain flat at 0 for this margin
+ *  before stopping means there's genuinely nothing to cut. */
+const STOP_HOLD_SEC = 0.04;
+
+/** Self-loop overlap (seconds) — how long consecutive buffer copies crossfade into each other
+ *  at the wrap. ~0.6s is long enough to hide the mid-sustain seam of the drone bounces without
+ *  audibly doubling the chord. */
+const SELF_OVERLAP_SEC = 0.6;
+/** How far ahead (seconds) the self-looper schedules the next copy — comfortably more than a
+ *  timer tick so a copy is always queued before the current one's crossfade-out begins. */
+const SELF_SCHEDULE_AHEAD_SEC = 1.5;
+
+/**
+ * SelfLooper — loops a buffer SEAMLESSLY by crossfading it into itself. Rather than one node
+ * with `loop = true` (which hard-cuts at the buffer's end), it schedules a chain of one-shot
+ * copies: each copy fades IN over the first SELF_OVERLAP_SEC and fades OUT over the last
+ * SELF_OVERLAP_SEC (equal-power), and the next copy starts (bufferDur − overlap) after the
+ * previous — so while one copy is fading out the next is fading in, holding the sustain. All
+ * copies feed one shared `gain` (the deck's gain), so the chord-crossfade + master volume
+ * ride on top unchanged. A short poll keeps the chain scheduled ahead of the clock.
+ */
+class SelfLooper {
+  private readonly ctx: AudioContext;
+  private readonly buffer: AudioBuffer;
+  private readonly out: GainNode;
+  private readonly period: number; // seconds between consecutive copy starts
+  private nextStart: number; // audio time the next copy should start
+  private sources = new Set<AudioBufferSourceNode>();
+  private timer: number | null = null;
+  private stopped = false;
+
+  constructor(ctx: AudioContext, buffer: AudioBuffer, out: GainNode, startAt: number) {
+    this.ctx = ctx;
+    this.buffer = buffer;
+    this.out = out;
+    // If the buffer is too short to overlap meaningfully, fall back to back-to-back (no
+    // overlap) — still gapless because copies are scheduled contiguously.
+    const overlap = Math.min(SELF_OVERLAP_SEC, buffer.duration / 3);
+    this.period = Math.max(0.05, buffer.duration - overlap);
+    this.nextStart = Math.max(startAt, ctx.currentTime);
+    // ALWAYS schedule the FIRST copy now — the caller chose its start time (e.g. loopStart a
+    // few seconds out, after the count-in), so it must be queued even if it's past the
+    // horizon. Subsequent copies are scheduled just-in-time by scheduleAhead via the poll.
+    this.scheduleCopy(this.nextStart, overlap);
+    this.nextStart += this.period;
+    this.scheduleAhead(overlap);
+    // Poll to keep copies queued ahead of the clock (period can be many seconds; a 0.5s tick
+    // is plenty of margin against SELF_SCHEDULE_AHEAD_SEC).
+    this.timer = window.setInterval(() => this.scheduleAhead(overlap), 500);
+  }
+
+  private scheduleAhead(overlap: number): void {
+    if (this.stopped) return;
+    const horizon = this.ctx.currentTime + SELF_SCHEDULE_AHEAD_SEC;
+    while (this.nextStart <= horizon) {
+      this.scheduleCopy(this.nextStart, overlap);
+      this.nextStart += this.period;
+    }
+  }
+
+  private scheduleCopy(startAt: number, overlap: number): void {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.buffer;
+    const g = this.ctx.createGain();
+    src.connect(g);
+    g.connect(this.out);
+    const dur = this.buffer.duration;
+    // Equal-power fade IN over [start, start+overlap] and OUT over [end−overlap, end].
+    // NOTE: a setValueAtTime() landing ON a setValueCurveAtTime()'s time span throws
+    // NotSupportedError ("overlaps setValueCurveAtTime"), which aborts the REST of this
+    // method — leaving the fade-OUT curve unscheduled and the copy stuck at full gain, so
+    // stop() cuts it at amplitude 1 → a click/spike (this was the end-of-fade spike). The
+    // two setValueAtTime(1, …) "pins" were redundant anyway: the fade-in curve already ends
+    // at 1 and setValueCurveAtTime HOLDS its last value until the next automation event. So
+    // we just schedule the two curves; the sustain between them holds at 1 on its own.
+    g.gain.setValueCurveAtTime(equalPowerCurve(true), startAt, overlap);
+    g.gain.setValueCurveAtTime(
+      equalPowerCurve(false),
+      startAt + dur - overlap,
+      overlap,
+    );
+    src.start(startAt);
+    src.stop(startAt + dur + 0.01);
+    this.sources.add(src);
+    src.onended = () => {
+      g.disconnect();
+      this.sources.delete(src);
+    };
+  }
+
+  /**
+   * Schedule every sounding source to stop at the ABSOLUTE audio time `at` (must be ≥ now). New
+   * copies stop being scheduled immediately. The caller is responsible for having the gain reach
+   * (and HOLD at) 0 before `at`, so when the source actually stops there's no signal to cut —
+   * see DroneDeck.stop()'s fade+hold. The onended handlers disconnect each source as it ends.
+   */
+  stopAt(at: number): void {
+    this.stopped = true;
+    if (this.timer !== null) {
+      window.clearInterval(this.timer);
+      this.timer = null;
+    }
+    const stopAt = Math.max(at, this.ctx.currentTime);
+    for (const src of this.sources) {
+      try {
+        // stop() throws if the source never started or already stopped — ignore.
+        src.stop(stopAt);
+      } catch {
+        try {
+          src.disconnect();
+        } catch {
+          /* already torn down */
+        }
+        this.sources.delete(src);
+      }
+    }
+  }
+
+  /** Immediate hard stop — for tearing down a deck that's already silent (no fade needed). */
+  stop(): void {
+    this.stopAt(this.ctx.currentTime);
+  }
+}
 
 interface Deck {
-  source: AudioBufferSourceNode;
+  /** The self-overlap looper that holds this deck's sounding copies (replaces a single
+   *  loop=true source so the non-seamless bounces loop without a click). */
+  looper: SelfLooper;
   gain: GainNode;
   /** The chord symbol this deck is currently playing (for de-dup / debugging). */
   symbol: string;
@@ -90,9 +226,28 @@ export class DroneDeck {
    *  this, fading to a stem-less symbol would leave targetSymbol on the old chord and the
    *  no-op guard would swallow a later change back to that symbol. */
   private target: string | null = null;
+  /** EVERY deck that's been created and not yet torn down — the leak backstop. Promotions and
+   *  the post-fade timers can race (rapid crossfades from the time-transposer + manual chord
+   *  clicks interleaving across crossfadeTo's await), and a deck that stops being `active`/
+   *  `incoming` without being torn down would keep SOUNDING → chords stack. After every
+   *  transition we sweep this set and tear down anything that isn't the current active/incoming. */
+  private liveDecks = new Set<Deck>();
+  /** Serializes crossfadeTo so two overlapping calls can't interleave their deck-state mutations
+   *  across the loadDroneStem await (which produced orphaned, still-sounding decks). */
+  private crossfadeChain: Promise<void> = Promise.resolve();
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
+  }
+
+  /** Tear down every live deck that is NOT the current active or incoming. The backstop that
+   *  guarantees at most two decks ever sound, no matter how the promotion timers race. */
+  private sweepOrphans(): void {
+    for (const deck of this.liveDecks) {
+      if (deck !== this.active && deck !== this.incoming) {
+        this.teardown(deck);
+      }
+    }
   }
 
   /** The symbol the drone is currently sounding or heading toward. Lets the caller skip a
@@ -146,26 +301,22 @@ export class DroneDeck {
     initialGain: number,
   ): Deck | null {
     if (!buffer) return null;
-    const source = this.ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(initialGain, Math.max(startAt, this.ctx.currentTime));
-    source.connect(gain);
     gain.connect(this.getMaster());
-    source.start(startAt);
-    return { source, gain, symbol };
+    // Self-overlap looping instead of source.loop=true — the bounces aren't seamless loops,
+    // so we crossfade the buffer into itself behind this deck's gain.
+    const looper = new SelfLooper(this.ctx, buffer, gain, startAt);
+    const deck = { looper, gain, symbol };
+    this.liveDecks.add(deck); // tracked so sweepOrphans() can never let it leak
+    return deck;
   }
 
   /** Stop + disconnect a deck immediately. Safe to call on an already-stopped deck. */
   private teardown(deck: Deck | null): void {
     if (!deck) return;
-    try {
-      deck.source.stop();
-    } catch {
-      /* already stopped */
-    }
-    deck.source.disconnect();
+    this.liveDecks.delete(deck);
+    deck.looper.stop();
     deck.gain.disconnect();
   }
 
@@ -174,15 +325,20 @@ export class DroneDeck {
    * from). Used in the sequencer's play() at loopStart, after the count-in.
    */
   async start(symbol: string, startAt: number): Promise<void> {
-    // Clear anything left over (e.g. a re-play without an explicit stop).
-    this.teardown(this.incoming);
-    this.teardown(this.active);
+    // Clear anything left over (e.g. a re-play without an explicit stop) — including any decks
+    // a previous in-flight crossfade left in liveDecks but no longer points at.
     this.incoming = null;
     this.active = null;
+    for (const deck of this.liveDecks) this.teardown(deck);
     this.target = symbol;
     this.getMaster(); // ensure the master exists (at the current enabled/volume) up front
 
     const buffer = await loadDroneStem(symbol, this.ctx);
+    // A stop()/newer start() could have intervened during the await; only adopt if still ours.
+    if (this.target !== symbol) {
+      this.teardown(this.makeDeck(buffer, symbol, startAt, 1));
+      return;
+    }
     this.active = this.makeDeck(buffer, symbol, startAt, 1); // null deck = play dry
   }
 
@@ -191,8 +347,27 @@ export class DroneDeck {
    * The incoming deck starts at `at` from gain 0 and rises (sin); the outgoing falls (cos)
    * over the same span, then is torn down. Aligning `at` to a musical boundary (next bar)
    * is the caller's job. No count-in — this is a seamless mid-play transition.
+   *
+   * SERIALIZED: each call waits for the previous crossfade's deck-state mutation to finish
+   * before starting. crossfadeToImpl awaits loadDroneStem, and without serialization two
+   * overlapping calls (the time-transposer firing WHILE the user clicks chords) would
+   * interleave across that await and orphan still-sounding decks → chords stack. Chaining
+   * makes the active/incoming bookkeeping atomic per call.
    */
-  async crossfadeTo(symbol: string, at: number, fadeSec: number): Promise<void> {
+  crossfadeTo(symbol: string, at: number, fadeSec: number): Promise<void> {
+    const run = this.crossfadeChain.then(() =>
+      this.crossfadeToImpl(symbol, at, fadeSec),
+    );
+    // Keep the chain alive even if a crossfade rejects (e.g. a stem fails to load).
+    this.crossfadeChain = run.catch(() => {});
+    return run;
+  }
+
+  private async crossfadeToImpl(
+    symbol: string,
+    at: number,
+    fadeSec: number,
+  ): Promise<void> {
     // Already heading there? Don't stack a redundant fade.
     if (this.target === symbol) return;
     this.target = symbol;
@@ -204,8 +379,14 @@ export class DroneDeck {
       this.active = this.incoming;
       this.incoming = null;
     }
+    // Backstop: tear down anything that isn't active/incoming before we add another deck.
+    this.sweepOrphans();
 
     const buffer = await loadDroneStem(symbol, this.ctx);
+
+    // A newer crossfade may have run while we awaited (serialization makes that rare, but a
+    // stop()/start() can also intervene). If our intent is stale, drop this fade entirely.
+    if (this.target !== symbol) return;
 
     // loadDroneStem awaited — `at` may now be in the past on a slow network. Floor the
     // fade start to "now" so the ramps are always valid; the blend just starts a hair late.
@@ -227,27 +408,28 @@ export class DroneDeck {
       incoming.gain.gain.setValueCurveAtTime(equalPowerCurve(true), start, fadeSec);
       this.incoming = incoming;
 
-      // After the fade completes, the incoming deck IS the active drone and the old one
-      // can be released. setTimeout on wall-clock; (end−now) is the fade's remaining time.
+      // After the fade completes, the incoming deck IS the active drone and the old one is
+      // released. ALWAYS tear down THIS outgoing (don't gate on this.incoming === incoming —
+      // a superseding crossfade could have moved the pointer, which previously leaked the
+      // outgoing and stacked chords). The active/incoming pointers only advance if still ours;
+      // sweepOrphans() mops up any deck a racing promotion left behind.
       const delayMs = Math.max(0, (end - this.ctx.currentTime) * 1000);
       window.setTimeout(() => {
-        // Guard: only promote if THIS deck is still the pending incoming (a newer
-        // crossfade may have superseded it and already promoted/torn it down).
         if (this.incoming === incoming) {
-          this.teardown(outgoing);
           this.active = incoming;
           this.incoming = null;
         }
+        this.teardown(outgoing);
+        this.sweepOrphans();
       }, delayMs);
     } else {
       // Crossfading TO a missing stem: just let the outgoing fade out to silence and drop
       // it. The drone goes quiet until a symbol with an uploaded .ogg is selected.
       const delayMs = Math.max(0, (end - this.ctx.currentTime) * 1000);
       window.setTimeout(() => {
-        if (this.active === outgoing) {
-          this.teardown(outgoing);
-          this.active = null;
-        }
+        if (this.active === outgoing) this.active = null;
+        this.teardown(outgoing);
+        this.sweepOrphans();
       }, delayMs);
       logger.info(`Crossfade to "${symbol}" has no stem; fading drone out.`);
     }
@@ -256,24 +438,34 @@ export class DroneDeck {
   /** Stop ALL drone audio with a short fade so ending a take doesn't click, then tear down. */
   stop(): void {
     const now = this.ctx.currentTime;
-    for (const deck of [this.active, this.incoming]) {
-      if (!deck) continue;
+    // Fade EVERY live deck, not just active/incoming — a racing crossfade can leave an orphan
+    // in liveDecks that would keep sounding after stop otherwise.
+    const captured = [...this.liveDecks];
+    for (const deck of captured) {
       try {
+        // Fade the deck's gain to 0 over STOP_FADE_SEC, then HOLD it flat at 0 for STOP_HOLD_SEC,
+        // and only stop the buffer sources after that hold. Stopping a source the instant a ramp
+        // hits 0 still clicks (ramp is exactly 0 only at its end sample; the buffer is at an
+        // arbitrary per-channel value; cutting it pops — that was the wandering L/R spike). The
+        // flat-zero hold guarantees there's no signal left to cut.
+        const rampEnd = now + STOP_FADE_SEC;
+        const stopAt = rampEnd + STOP_HOLD_SEC;
         deck.gain.gain.cancelScheduledValues(now);
         deck.gain.gain.setValueAtTime(deck.gain.gain.value, now);
-        deck.gain.gain.linearRampToValueAtTime(0, now + STOP_FADE_SEC);
-        deck.source.stop(now + STOP_FADE_SEC + 0.01);
+        deck.gain.gain.linearRampToValueAtTime(0, rampEnd);
+        deck.gain.gain.setValueAtTime(0, stopAt); // hold flat at 0 through the margin
+        deck.looper.stopAt(stopAt);
       } catch {
         this.teardown(deck);
       }
     }
-    // Disconnect after the fade so we don't cut it short.
-    const captured = [this.active, this.incoming];
+    // Disconnect the gain nodes after the fade so we don't cut it short.
     const capturedMaster = this.master;
     window.setTimeout(() => {
-      captured.forEach((d) => this.teardown(d));
+      captured.forEach((d) => d.gain.disconnect());
       capturedMaster?.disconnect();
-    }, (STOP_FADE_SEC + 0.05) * 1000);
+    }, (STOP_FADE_SEC + STOP_HOLD_SEC + 0.05) * 1000);
+    this.liveDecks.clear();
     this.active = null;
     this.incoming = null;
     this.target = null;
