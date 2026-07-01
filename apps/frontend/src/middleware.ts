@@ -105,8 +105,17 @@ export async function middleware(req: NextRequest) {
   // ---------- App subdomain (and local dev) ----------
   if (isAppHost(host)) {
     // Defensive: a stale /app/* link or a Stripe return → serve directly (the
-    // double-prefix guard prevents /app/app/*).
+    // double-prefix guard prevents /app/app/*). But P2-gate it first: a LOGGED-OUT
+    // /app* hit must edge-307 to /login like every clean protected route, not serve
+    // the shell and let the client AuthGuard bounce it (the split-second flash P2
+    // kills). A logged-IN request (has the cookie) still serves directly, so Stripe
+    // returns + valid deep links are untouched. Same same-origin /login as the gate below.
     if (pathname === '/app' || pathname.startsWith('/app/')) {
+      if (!isLocalHost(host) && !hasAuthCookie(req)) {
+        const login = new URL('/login', req.url);
+        login.searchParams.set('next', `${pathname}${search}`);
+        return NextResponse.redirect(login, 307);
+      }
       return await refreshSession(req, NextResponse.next());
     }
 
