@@ -1,7 +1,9 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
-import { WELCOME_COOKIE } from '@/domains/user/components/auth/justLoggedIn';
+// Import the constant from the NEUTRAL module, NOT the 'use client' justLoggedIn — a client-module
+// export read server-side is a client-reference proxy (function), not the string. This was the bug.
+import { WELCOME_COOKIE } from '@/domains/user/components/auth/welcomeCookie';
 
 /**
  * Server read of the one-shot bn-welcome cookie (set at login). When present, the /app server layout
