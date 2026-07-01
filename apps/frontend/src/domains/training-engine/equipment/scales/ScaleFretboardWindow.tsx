@@ -313,14 +313,22 @@ export function ScaleFretboardWindow({
   // in lockstep with contentScale so the scroll + sphere stay locked to the dots.
   // scaleFactor is 1.0 while the tier is disabled → byte-identical geometry. When the size step
   // enables it, the px-rates scale in lockstep with contentScale (see [[fretboard-scale-lever]]).
-  const geometry = computeFretboardGeometry({
-    maxFrets,
-    viewportWidth,
-    scaleFactor: tierScaleFactor,
-    // When the dev calibration panel is active, its px/fret slider drives the scroll mapping
-    // (absolute value); otherwise the baked baseline × tier factor is used.
-    screenPxPerFretOverride: activeCal ? activeCal.screenPxPerFret : undefined,
-  });
+  // Memoized so the scrollForFret/fitsInView helpers keep a STABLE identity across renders —
+  // the idle-drift camera effect depends on them, and a fresh geometry each render would restart
+  // its rAF loop every frame (killing the smooth continuous drift).
+  const calPxPerFret = activeCal ? activeCal.screenPxPerFret : undefined;
+  const geometry = React.useMemo(
+    () =>
+      computeFretboardGeometry({
+        maxFrets,
+        viewportWidth,
+        scaleFactor: tierScaleFactor,
+        // When the dev calibration panel is active, its px/fret slider drives the scroll mapping
+        // (absolute value); otherwise the baked baseline × tier factor is used.
+        screenPxPerFretOverride: calPxPerFret,
+      }),
+    [maxFrets, viewportWidth, tierScaleFactor, calPxPerFret],
+  );
   const {
     maxScroll,
     fullContentWidth,
@@ -417,139 +425,86 @@ export function ScaleFretboardWindow({
   };
   const endDrag = () => setIsDragging(false);
 
-  // ── POSITIONS (clusters) — segment the path into HAND POSITIONS the camera snaps between,
-  //    instead of tracking every fret. Walking the notes in beat order, a new position starts
-  //    whenever the next note sits more than ~a hand-span from the current cluster's centre (or
-  //    would stretch the cluster past a comfortable span). Each position holds a fret RANGE +
-  //    the beat range it's active. The camera centres a WHOLE position and only moves when the
-  //    run crosses into the next one → it settles in a "room" then glides to the next, rather
-  //    than ratcheting fret-by-fret. Memoized; recomputed only when the path changes. ──
-  const positions = React.useMemo(() => {
-    const notes = playheadNotes ?? [];
-    if (notes.length === 0)
-      return [] as {
-        centerFret: number;
-        startBeat: number;
-        endBeat: number;
-      }[];
-    const GAP = 4; // a note >4 frets from the cluster centre opens a new position
-    const MAX_SPAN = 6; // a position never spans more than ~a hand (6 frets)
-    const clusters: { frets: number[]; startBeat: number; endBeat: number }[] =
-      [];
-    for (const n of notes) {
-      const cur = clusters[clusters.length - 1];
-      if (cur) {
-        const lo = Math.min(...cur.frets, n.fret);
-        const hi = Math.max(...cur.frets, n.fret);
-        const center =
-          cur.frets.reduce((s, f) => s + f, 0) / cur.frets.length;
-        // Same position if the note is within reach AND the cluster stays hand-sized.
-        if (Math.abs(n.fret - center) <= GAP && hi - lo <= MAX_SPAN) {
-          cur.frets.push(n.fret);
-          cur.endBeat = n.startBeat;
-          continue;
-        }
-      }
-      clusters.push({ frets: [n.fret], startBeat: n.startBeat, endBeat: n.startBeat });
-    }
-    return clusters.map((c) => ({
-      // Centre on the cluster's fret-SPAN midpoint (so the whole hand position is framed).
-      centerFret: (Math.min(...c.frets) + Math.max(...c.frets)) / 2,
-      startBeat: c.startBeat,
-      endBeat: c.endBeat,
-    }));
-  }, [playheadNotes]);
-
-  // ── AUTO-FOLLOW CAMERA — POSITION-BASED + ANTICIPATORY. The target is the POSITION the run is
-  //    heading into (look-ahead by LEAD_BEATS), not the live note. Because positions are stable,
-  //    the target is a STEP function — it only changes when the run enters a new position — so
-  //    the camera holds, then glides smoothly (ease-in-out tween) to the next position and
-  //    settles. Feels like a game camera moving between rooms, not chasing the player. Holds
-  //    still if the whole exercise fits; reads the gym clock; pauses while dragging; stops when
-  //    not playing. ──
+  // ── IDLE-DRIFT CAMERA. The neck now shows ~12 frets at once, so there's no room-to-room
+  //    jumping — the camera stays STILL by default and only drifts when the ACTIVE NOTE reaches
+  //    the trigger zone (~fret 9, i.e. it's wandering toward the right edge of what's visible).
+  //    Then it drifts VERY SLOWLY and CONTINUOUSLY toward keeping the active note comfortably in
+  //    frame — an exponential (critically-damped) approach so there's no start/stop, just an
+  //    almost-imperceptible glide. Holds if the whole exercise fits; pauses on drag; stops when
+  //    not playing. No note clustering, no look-ahead, no fixed-duration tween. ──
   const isDraggingRef = React.useRef(isDragging);
   isDraggingRef.current = isDragging;
   React.useEffect(() => {
-    if (!getPlaybackBeat || positions.length === 0) return;
+    if (!getPlaybackBeat) return;
     const notes = playheadNotes ?? [];
-    // Does the WHOLE exercise fit in the view? If so, never pan — all notes always visible.
-    const frets = notes.map((n) => n.fret);
-    const fitsInView = fitsInViewGeom(Math.min(...frets), Math.max(...frets));
+    if (notes.length === 0) return;
 
-    const scrollToCenterFret = (fret: number) => scrollForFretGeom(fret);
+    // Whole exercise already visible? Then never move — everything's in sight.
+    const allFrets = notes.map((n) => n.fret);
+    const fitsInView = fitsInViewGeom(Math.min(...allFrets), Math.max(...allFrets));
 
-    // Beats of anticipation — aim the camera at where the run will be, so the next position is
-    // already framed by the time the playhead arrives. Generous (3 beats) so the SLOW glide
-    // below has runway to complete BEFORE the notes reach the new position — the camera is
-    // never seen lagging behind the playhead, it's just quietly already there.
-    const LEAD_BEATS = 3;
     const loop = loopBeats && loopBeats > 0 ? loopBeats : null;
 
-    // Which position is active at a given beat (the last one whose startBeat has passed).
-    const positionIndexAt = (b: number): number => {
-      let idx = 0;
-      for (let i = 0; i < positions.length; i++) {
-        if (positions[i]!.startBeat <= b) idx = i;
+    // The active note's fret at a beat = the last note whose startBeat has passed (loop-wrapped).
+    const activeFretAt = (b: number): number => {
+      const wrapped = loop ? ((b % loop) + loop) % loop : b;
+      let fret = notes[0]!.fret;
+      for (const n of notes) {
+        if (n.startBeat <= wrapped) fret = n.fret;
         else break;
       }
-      return idx;
+      return fret;
     };
 
-    // The glide between positions: when the target changes we start a SLOW, gentle tween from
-    // the current scroll to the new position's centre. Deliberately long + super-soft so the
-    // student never consciously notices the camera move — it's an ambient drift, not a slide.
-    // One tween at a time; a new target mid-glide retargets smoothly from the live position.
-    let tweenFrom = 0;
-    let tweenTo = scrollContainerRef.current?.scrollLeft ?? 0;
-    let tweenStart = 0;
-    let tweening = false;
-    let lastTargetIdx = -1;
-    // ~2.2s drift. Long enough to be imperceptible; the 3-beat look-ahead gives it runway to
-    // finish before the notes arrive (at typical practice tempos a beat is ~0.4–0.9s).
-    const TWEEN_MS = 2200;
-    // SMOOTHERSTEP (6t⁵−15t⁴+10t³): zero velocity AND zero acceleration at both ends, so there's
-    // no perceptible start-jerk or mid-whoosh — the gentlest standard ease for "don't notice it".
-    const smootherstep = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+    // ── DRIFT TUNING ──────────────────────────────────────────────────────────
+    // The camera drifts only once the active note is at/above this fret (it's heading toward the
+    // right edge of the visible window). Below it, the camera holds dead still.
+    const TRIGGER_FRET = 9;
+    // Where we try to keep the active note once drifting — a hair left of centre so there's
+    // runway ahead of it. Expressed as a fret offset the scroll aims to put at viewport centre.
+    const FRAME_FRET_LEAD = 2; // aim the scroll ~2 frets AHEAD of the active note
+    // Critically-damped approach: each frame move a small FRACTION of the remaining distance,
+    // capped to a MAX pixels/second so even a big jump stays idle-slow. Tiny fraction + hard cap
+    // = "almost like idle, but very very smooth".
+    const APPROACH_PER_SEC = 0.6; // 60% of the gap closes per second (very gentle)
+    const MAX_DRIFT_PX_PER_SEC = 55; // hard speed ceiling — the "idle" feel
+    const SNAP_EPSILON = 0.5; // px; stop fidgeting when essentially there
 
     let raf = 0;
+    let lastNow = 0;
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const el = scrollContainerRef.current;
       const beat = getPlaybackBeat();
-      if (
-        !el ||
-        beat === null ||
-        beat < 0 ||
-        isDraggingRef.current ||
-        fitsInView
-      )
+      if (!el || beat === null || beat < 0 || isDraggingRef.current || fitsInView) {
+        lastNow = now;
         return;
-
-      // The position the run is heading INTO (look-ahead, loop-wrapped).
-      const leadBeat = loop ? (beat + LEAD_BEATS) % loop : beat + LEAD_BEATS;
-      const targetIdx = positionIndexAt(leadBeat);
-
-      // Target changed → start a fresh ease-in-out tween from where we are to the new room.
-      if (targetIdx !== lastTargetIdx) {
-        lastTargetIdx = targetIdx;
-        const dest = scrollToCenterFret(positions[targetIdx]!.centerFret);
-        if (Math.abs(dest - el.scrollLeft) > 1) {
-          tweenFrom = el.scrollLeft;
-          tweenTo = dest;
-          tweenStart = now;
-          tweening = true;
-        }
       }
+      const dt = lastNow ? Math.min((now - lastNow) / 1000, 0.05) : 0; // clamp big gaps
+      lastNow = now;
 
-      if (tweening) {
-        const p = Math.min((now - tweenStart) / TWEEN_MS, 1);
-        el.scrollLeft = tweenFrom + (tweenTo - tweenFrom) * smootherstep(p);
-        if (p >= 1) tweening = false;
-      }
+      const activeFret = activeFretAt(beat);
+      // SYMMETRIC target: above the trigger, keep the active note (a touch ahead) framed → drift
+      // UP as the run climbs. At/below the trigger, target HOME (scroll 0) → drift back DOWN the
+      // same continuous way as the run descends. So ascending and descending mirror each other;
+      // the camera returns exactly as it left, and rests at home when the run is in the low zone.
+      const target =
+        activeFret >= TRIGGER_FRET
+          ? scrollForFretGeom(activeFret + FRAME_FRET_LEAD)
+          : 0;
+      const gap = target - el.scrollLeft;
+      if (Math.abs(gap) < SNAP_EPSILON) return;
+
+      // Exponential approach, speed-capped → continuous, ultra-smooth, never a jerk.
+      const ease = 1 - Math.exp(-APPROACH_PER_SEC * dt); // fraction of gap to close this frame
+      let stepPx = gap * ease;
+      const maxStep = MAX_DRIFT_PX_PER_SEC * dt;
+      if (Math.abs(stepPx) > maxStep) stepPx = Math.sign(stepPx) * maxStep;
+      el.scrollLeft += stepPx;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [getPlaybackBeat, playheadNotes, positions, loopBeats, viewportWidth, maxScroll]);
+  }, [getPlaybackBeat, playheadNotes, loopBeats, fitsInViewGeom, scrollForFretGeom]);
 
   return (
     <div

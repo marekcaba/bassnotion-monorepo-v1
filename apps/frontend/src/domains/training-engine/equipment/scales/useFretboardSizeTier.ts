@@ -39,7 +39,8 @@ export interface FretboardSizeTierResult {
 }
 
 /** Baseline canvas width — the value the board is calibrated at (FRETBOARD_WINDOW.viewportWidth). */
-const BASELINE_VIEWPORT_WIDTH = 880;
+// MUST stay in sync with FRETBOARD_WINDOW.viewportWidth in fretboardViewConfig.
+const BASELINE_VIEWPORT_WIDTH = 940;
 
 /**
  * Per-tier config. scaleFactor is the size multiplier; viewportWidth = baseline × scaleFactor so
