@@ -8,7 +8,7 @@ import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { AuthWarmingScreen } from './AuthWarmingScreen';
+import { AuthWarmingScreen } from '@/domains/user/components/auth/AuthWarmingScreen';
 
 function isEmailConfirmation(
   searchParams: URLSearchParams | ReturnType<typeof useSearchParams>,
