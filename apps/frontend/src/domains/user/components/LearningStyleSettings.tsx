@@ -5,7 +5,7 @@ import { Check, Waves, Compass, Lock } from 'lucide-react';
 import type { LearningStyle } from '@bassnotion/contracts';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/shared/hooks/use-toast';
-import { profileService } from '../api/profile';
+import { useUpdateLearningStyle } from '../hooks/use-user-profile';
 
 interface LearningStyleOption {
   value: LearningStyle;
@@ -60,6 +60,8 @@ export function LearningStyleSettings({
   const [updatingStyle, setUpdatingStyle] = useState<LearningStyle | null>(
     null,
   );
+  // Save through the mutation hook → refreshes the shared profile cache on success.
+  const updateLearningStyle = useUpdateLearningStyle();
   const { toast } = useToast();
 
   const handleSelect = useCallback(
@@ -73,7 +75,7 @@ export function LearningStyleSettings({
       setUpdatingStyle(style);
 
       try {
-        await profileService.updateLearningStyle(style);
+        await updateLearningStyle.mutateAsync(style);
         onUpdate?.(style);
 
         const selectedOption = LEARNING_STYLES.find((s) => s.value === style);

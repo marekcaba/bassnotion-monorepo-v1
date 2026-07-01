@@ -27,7 +27,10 @@ import { GymClimbCard } from '@/domains/training-engine/components/GymClimbCard'
 import type { UserProfileData } from '@bassnotion/contracts';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
-import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
+import {
+  useUserProfile,
+  useUpdateProfile,
+} from '@/domains/user/hooks/use-user-profile';
 import { useAuthStore } from '@/domains/user/hooks/use-auth';
 
 function SettingsPageContent() {
@@ -37,6 +40,8 @@ function SettingsPageContent() {
   const { logger } = useCorrelation('SettingsPage');
   const { profile } = useUserProfile();
   const resetAuth = useAuthStore((state) => state.reset);
+  // Save name/bio/avatar through the mutation hook → refreshes the shared profile cache on success.
+  const updateProfile = useUpdateProfile();
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -91,7 +96,7 @@ function SettingsPageContent() {
   const handleProfileUpdate = useCallback(
     async (data: UserProfileData) => {
       try {
-        await profileService.updateProfile(data);
+        await updateProfile.mutateAsync(data);
         setProfileData({
           displayName: data.displayName,
           bio: data.bio ?? undefined,
@@ -129,7 +134,7 @@ function SettingsPageContent() {
           avatarUrl: newAvatarUrl ?? undefined,
         };
 
-        await profileService.updateProfile(updatedData);
+        await updateProfile.mutateAsync(updatedData);
         setProfileData({
           ...profileData,
           avatarUrl: newAvatarUrl ?? undefined,

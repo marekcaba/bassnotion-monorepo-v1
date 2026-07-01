@@ -33,3 +33,23 @@ export async function serverFetchJson<T>(
     return null;
   }
 }
+
+/**
+ * Server-side fetch of a PUBLIC backend GET (no auth) for SSR prefetch — e.g. the store product
+ * catalog, which is the same for everyone. Cacheable (not per-user), so unlike the auth'd variant
+ * this allows Next's data cache with a short revalidate. NEVER throws: null on any failure → the
+ * client fetches it live.
+ */
+export async function serverFetchPublicJson<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      // Public catalog — safe to cache briefly at the edge (not per-user data).
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
