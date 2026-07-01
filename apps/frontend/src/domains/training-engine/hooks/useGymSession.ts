@@ -106,9 +106,9 @@ export function useGymSession(
   /** Gate the whole flow. The gym is the membership product's entitlement —
    *  the page passes `enabled: isMember` so a non-member never auto-enrolls
    *  (which the backend would 403 anyway). Defaults to true. */
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; initialDoneTodayUtc?: boolean | null } = {},
 ): GymSession {
-  const { enabled = true } = options;
+  const { enabled = true, initialDoneTodayUtc = null } = options;
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<GymStatus>('loading');
   const [slug, setSlug] = useState<string | null>(null);
@@ -128,7 +128,10 @@ export function useGymSession(
     null,
   );
   const [goalTitle, setGoalTitle] = useState<string | null>(null);
-  const [doneTodayUtc, setDoneTodayUtc] = useState(false);
+  // Seed from the SSR read-only status (P3) so the gym renders completed-vs-fresh on first paint
+  // (no flip). null = server couldn't determine it → false, resolved live by planFor as before.
+  // planFor still overwrites this with the authoritative value once today-rep is planned.
+  const [doneTodayUtc, setDoneTodayUtc] = useState(initialDoneTodayUtc ?? false);
   // Goal picker (the "set up your goal for the month" step).
   const [goals, setGoals] = useState<EnrollableGoal[]>([]);
   const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
