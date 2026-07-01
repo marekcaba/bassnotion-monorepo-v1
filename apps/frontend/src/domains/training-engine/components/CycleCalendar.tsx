@@ -69,13 +69,24 @@ export function CycleCalendar() {
   const { cycleStart, cycleEnd, repDays, enrollment, isLoading, error } =
     useCycleRepCalendar();
 
-  const today = React.useMemo(() => new Date(), []);
-  const todayKey = localDayKey(today);
+  // `today` is CLIENT-ONLY: computing new Date() during render mismatches SSR vs hydration (server
+  // clock/timezone vs client) → the "today" ring lands on a different cell → React #418 (text-content
+  // hydration mismatch). So start null (server + first client render agree: no ring), then set it in
+  // an effect; the ring appears one tick after hydration. localDayKey tolerates null (→ '' matches
+  // no cell).
+  const [today, setToday] = React.useState<Date | null>(null);
+  React.useEffect(() => {
+    setToday(new Date());
+  }, []);
+  const todayKey = today ? localDayKey(today) : '';
 
   // Anchor month: the cycle-start month (or this month if no active cycle yet). Offsets below are
-  // RELATIVE to this anchor month (0 = anchor, −1 = prev, +1 = next, …).
+  // RELATIVE to this anchor month (0 = anchor, −1 = prev, +1 = next, …). Falls back to `today` only
+  // once it's set client-side; before that (and with no cycle) there's nothing time-sensitive to
+  // anchor, so we hold at a stable neutral until either resolves.
   const anchor = React.useMemo(() => {
     const base = cycleStart ?? today;
+    if (!base) return null;
     return new Date(base.getFullYear(), base.getMonth(), 1);
   }, [cycleStart, today]);
 
@@ -133,8 +144,11 @@ export function CycleCalendar() {
     [cycleStart, cycleEnd, repDays, todayKey],
   );
 
-  // The rendered sections, one per offset in the current range.
+  // The rendered sections, one per offset in the current range. Empty until `anchor` resolves
+  // (client-side `today` set, or `cycleStart` loaded) — so SSR + first client render agree (no
+  // month grid), avoiding the hydration mismatch; the grid fills in a tick later.
   const sections = React.useMemo<MonthSection[]>(() => {
+    if (!anchor) return [];
     const out: MonthSection[] = [];
     for (let off = range.startOff; off <= range.endOff; off++) {
       out.push(buildMonth(anchor.getFullYear(), anchor.getMonth() + off));
