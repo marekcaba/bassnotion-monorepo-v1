@@ -22,6 +22,7 @@ export type BlockType =
   | 'exercise'
   | 'groove'
   | 'groove-card'
+  | 'scales'
   | 'text'
   | 'celebration'
   | 'explain'
@@ -541,6 +542,29 @@ export interface TaskBlockConfig {
   completionCriterion: DrillCompletionCriterion;
 }
 
+/**
+ * A SCALES block — mounts the gym Scales tool (fretboard + drone + pickers) inside the block
+ * player, LOCKED to a preset. The gym Scales tool is the first fully-built gym equipment tool;
+ * this block is how it's served as a rep brick (and, later, other authored surfaces). The preset
+ * fields mirror GymToolPreset; the tool consumes them via its `context` prop. ATTENDED completion
+ * for now (see the training-engine context contract) — a scale rep is "did you run it", not a
+ * graded take.
+ */
+export interface ScalesBlockConfig {
+  /** The authored gym exercise to run (GymExercise.id). Null = tool default / open. */
+  exerciseId: string | null;
+  /** Optional exercise name for labelling. */
+  exerciseName?: string | null;
+  /** Locked key as an ASCII PathKey, e.g. "Gb". Null = tool default. */
+  scaleKey?: string | null;
+  /** Locked tempo (BPM). Null = tool default. */
+  tempoBpm?: number | null;
+  /** Take length in loops (1-8). Default 2. */
+  recordLoops?: number;
+  /** How the brick completes — attended (time/manual), like the other rep bricks. */
+  completionCriterion?: DrillCompletionCriterion;
+}
+
 // =====================================================
 // Block Type Map (discriminated union helper)
 // =====================================================
@@ -550,6 +574,7 @@ export interface BlockConfigMap {
   exercise: ExerciseBlockConfig;
   groove: GrooveBlockConfig;
   'groove-card': GrooveCardBlockConfig;
+  scales: ScalesBlockConfig;
   text: TextBlockConfig;
   celebration: CelebrationBlockConfig;
   explain: ExplainBlockConfig;
@@ -592,6 +617,7 @@ export type VideoBlock = TutorialBlock<'video'>;
 export type ExerciseBlock = TutorialBlock<'exercise'>;
 export type GrooveBlock = TutorialBlock<'groove'>;
 export type GrooveCardBlock = TutorialBlock<'groove-card'>;
+export type ScalesBlock = TutorialBlock<'scales'>;
 export type TextBlock = TutorialBlock<'text'>;
 export type CelebrationBlock = TutorialBlock<'celebration'>;
 export type ExplainBlock = TutorialBlock<'explain'>;
@@ -603,6 +629,7 @@ export type AnyBlock =
   | ExerciseBlock
   | GrooveBlock
   | GrooveCardBlock
+  | ScalesBlock
   | TextBlock
   | CelebrationBlock
   | ExplainBlock

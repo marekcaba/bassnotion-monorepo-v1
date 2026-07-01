@@ -201,11 +201,31 @@ export class TrainingEngineController {
     bricks: TutorialBlock[];
     goalTitle?: string | null;
     topicProgress?: TopicProgress[];
+    /** True when today's rep is already done (UTC) — the gym shows the completed state. */
+    doneTodayUtc?: boolean;
   }> {
     // Story 5: the gym can request the short 'floor' rep. Anything but the
     // explicit 'floor' string plans the full rep.
     const mode = body?.mode === 'floor' ? 'floor' : 'full';
     return this.trainingEngineService.getTodayRep(user.id, enrollmentId, mode);
+  }
+
+  /**
+   * GET /api/v1/training-engine/enrollments/:enrollmentId/today-rep-status
+   *
+   * READ-ONLY "is today's rep already done?" — for the SSR shell (P3). The POST today-rep MINTS
+   * (plans the rep + mints the virtual tutorial), so it must NOT run on a page load; this GET
+   * returns just { doneTodayUtc } from a pure climb read so the gym can server-render the
+   * completed-vs-fresh screen without a flip. Never mutates.
+   */
+  @Get('enrollments/:enrollmentId/today-rep-status')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getTodayRepStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+  ): Promise<{ doneTodayUtc: boolean }> {
+    return this.trainingEngineService.getTodayRepStatus(user.id, enrollmentId);
   }
 
   /**

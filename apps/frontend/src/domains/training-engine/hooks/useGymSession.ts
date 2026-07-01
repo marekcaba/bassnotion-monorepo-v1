@@ -77,6 +77,10 @@ export interface GymSession {
   /** The goal's user-facing title (coach header names the goal); null until the
    *  rep is planned, or for goals that predate the title snapshot. */
   goalTitle: string | null;
+  /** True when TODAY's rep is already done (UTC) — the gym shows the "session completed" state
+   *  instead of a fresh rep. DB-backed (climb.lastRepDate), so it persists across reloads and
+   *  clears when the UTC day rolls over. */
+  doneTodayUtc: boolean;
   /** status 'choosing' → the enrollable goals to pick from (the goal picker). */
   goals: EnrollableGoal[];
   /** The goal the student picked (set by chooseGoal), shown on the placement
@@ -102,9 +106,9 @@ export function useGymSession(
   /** Gate the whole flow. The gym is the membership product's entitlement —
    *  the page passes `enabled: isMember` so a non-member never auto-enrolls
    *  (which the backend would 403 anyway). Defaults to true. */
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; initialDoneTodayUtc?: boolean | null } = {},
 ): GymSession {
-  const { enabled = true } = options;
+  const { enabled = true, initialDoneTodayUtc = null } = options;
   const { isAuthenticated, user } = useAuth();
   const [status, setStatus] = useState<GymStatus>('loading');
   const [slug, setSlug] = useState<string | null>(null);
@@ -124,6 +128,10 @@ export function useGymSession(
     null,
   );
   const [goalTitle, setGoalTitle] = useState<string | null>(null);
+  // Seed from the SSR read-only status (P3) so the gym renders completed-vs-fresh on first paint
+  // (no flip). null = server couldn't determine it → false, resolved live by planFor as before.
+  // planFor still overwrites this with the authoritative value once today-rep is planned.
+  const [doneTodayUtc, setDoneTodayUtc] = useState(initialDoneTodayUtc ?? false);
   // Goal picker (the "set up your goal for the month" step).
   const [goals, setGoals] = useState<EnrollableGoal[]>([]);
   const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
@@ -149,6 +157,7 @@ export function useGymSession(
         bricks: repBricks,
         goalTitle: repGoalTitle,
         topicProgress: repTopicProgress,
+        doneTodayUtc: repDoneToday,
       } = user?.id
         ? await queryClient.fetchQuery({
             queryKey: gymKeys.todayRep(user.id, active.id, mode),
@@ -162,6 +171,8 @@ export function useGymSession(
       setGoalTitle(repGoalTitle ?? null);
       // Content-ladder (Build B): the path bars ride the today-rep response.
       setTopicProgress(repTopicProgress ?? null);
+      // Is today's rep already done? → the gym shows the completed state (persists per UTC day).
+      setDoneTodayUtc(!!repDoneToday);
       // Best-effort: a graduation-check failure must not block the rep.
       try {
         const grad = await fetchGraduation(active.id);
@@ -361,6 +372,7 @@ export function useGymSession(
     repMode,
     topicProgress,
     goalTitle,
+    doneTodayUtc,
     goals,
     chosenGoal,
     chooseGoal,

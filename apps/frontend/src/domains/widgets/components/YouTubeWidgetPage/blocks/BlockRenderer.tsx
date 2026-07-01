@@ -6,6 +6,7 @@ import { VideoBlockView } from './VideoBlockView.js';
 import { ExerciseBlockView } from './ExerciseBlockView.js';
 import { GrooveBlockView } from './GrooveBlockView.js';
 import { GrooveCardBlockView } from './GrooveCardBlockView.js';
+import { ScalesBlockView } from './ScalesBlockView.js';
 import { TextBlockView } from './TextBlockView.js';
 import { CelebrationBlockView } from './CelebrationBlockView.js';
 import { ExplainBlockView } from './ExplainBlockView.js';
@@ -16,6 +17,7 @@ const BLOCK_COMPONENTS: Record<BlockType, React.ComponentType<any>> = {
   exercise: ExerciseBlockView,
   groove: GrooveBlockView,
   'groove-card': GrooveCardBlockView,
+  scales: ScalesBlockView,
   text: TextBlockView,
   celebration: CelebrationBlockView,
   explain: ExplainBlockView,

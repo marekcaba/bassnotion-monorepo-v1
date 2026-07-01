@@ -44,10 +44,17 @@ interface GrooveCardDynamicLoopDialProps {
   /** Hover-hint reporter, matching the metronome button's pattern. Pointer
    *  only — touch is filtered by the caller. */
   onHover?: (hovering: boolean) => void;
+  /** What the "Every N" dial counts: loop cycles (default, exercise mode) or SECONDS (the
+   *  Scales freestyle mode, where there are no loops). Only changes the dial's units/range +
+   *  the copy; the same config.everyN field is reused. */
+  everyUnit?: 'loops' | 'seconds';
 }
 
-const EVERY_MIN = 1;
-const EVERY_MAX = 16;
+// Range/step per unit. Loops: 1–16. Seconds: 15–300 in 15s steps (freestyle long drifts).
+const EVERY_RANGE = {
+  loops: { min: 1, max: 16, step: 1 },
+  seconds: { min: 15, max: 300, step: 15 },
+} as const;
 
 export function GrooveCardDynamicLoopDial({
   config,
@@ -57,15 +64,17 @@ export function GrooveCardDynamicLoopDial({
   maxSemitones,
   disabled,
   onHover,
+  everyUnit = 'loops',
 }: GrooveCardDynamicLoopDialProps) {
   const max = Math.max(1, Math.round(maxSemitones));
   const interval = Math.max(
     -max,
     Math.min(max, Math.round(config.intervalSemitones)),
   );
+  const range = EVERY_RANGE[everyUnit];
   const everyN = Math.max(
-    EVERY_MIN,
-    Math.min(EVERY_MAX, Math.round(config.everyN)),
+    range.min,
+    Math.min(range.max, Math.round(config.everyN)),
   );
   const mode: DynamicLoopMode = config.mode ?? 'ping-pong';
 
@@ -75,7 +84,10 @@ export function GrooveCardDynamicLoopDial({
       onConfigChange({ ...config, intervalSemitones: next });
   };
   const stepEvery = (delta: number) => {
-    const next = Math.max(EVERY_MIN, Math.min(EVERY_MAX, everyN + delta));
+    const next = Math.max(
+      range.min,
+      Math.min(range.max, everyN + delta * range.step),
+    );
     if (next !== everyN) onConfigChange({ ...config, everyN: next });
   };
   const setMode = (next: DynamicLoopMode) => {
@@ -124,9 +136,13 @@ export function GrooveCardDynamicLoopDial({
           <div>
             <h4 className="text-sm font-semibold">Dynamic loop</h4>
             <p className="mt-0.5 text-xs text-white/50">
-              {mode === 'travel'
-                ? 'Keep moving by the interval, key after key.'
-                : 'Move your key by an interval every few loops, then back.'}
+              {everyUnit === 'seconds'
+                ? mode === 'travel'
+                  ? 'Move the chord up by the interval every so often.'
+                  : 'Move the chord by an interval on a timer, then back.'
+                : mode === 'travel'
+                  ? 'Keep moving by the interval, key after key.'
+                  : 'Move your key by an interval every few loops, then back.'}
             </p>
           </div>
 
@@ -162,14 +178,18 @@ export function GrooveCardDynamicLoopDial({
             ariaLabel="Dynamic loop transpose interval"
           />
 
-          {/* Every-N-loops dial */}
+          {/* Every-N dial — loops (exercise) or seconds (freestyle). */}
           <DialRow
             label="Every"
-            value={`${everyN} ${everyN === 1 ? 'loop' : 'loops'}`}
+            value={
+              everyUnit === 'seconds'
+                ? `${everyN} sec`
+                : `${everyN} ${everyN === 1 ? 'loop' : 'loops'}`
+            }
             onPrev={() => stepEvery(-1)}
             onNext={() => stepEvery(1)}
-            prevDisabled={everyN <= EVERY_MIN}
-            nextDisabled={everyN >= EVERY_MAX}
+            prevDisabled={everyN <= range.min}
+            nextDisabled={everyN >= range.max}
             ariaLabel="Dynamic loop length"
           />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { ChevronsUpDown, Edit2, LogOut, Shield } from 'lucide-react';
 import {
@@ -44,6 +44,17 @@ export function UserAccountSection({
   const { user } = useAuth();
   const { profile, isLoading } = useUserProfile();
   const resetAuth = useAuthStore((state) => state.reset);
+
+  // HYDRATION GUARD. `isLoading` differs between SSR and the first client render: on the
+  // server the profile query is DISABLED (auth is client-only) so isLoading is false → the
+  // server renders the full DropdownMenu (which calls Radix's useId). On the client, once
+  // auth hydrates the query ENABLES and isLoading flips true → it would render the Skeleton
+  // (no useId). That branch swap offsets React's useId counter, so every Radix id downstream
+  // mismatches at hydration. Gating the skeleton on `mounted` keeps the SSR + first-client
+  // render identical (always the menu); the loading skeleton only appears AFTER hydration,
+  // as a normal client state change.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { navigateWithTransition } = useViewTransitionRouter();
   // Internal path so the /^\/app\/tutorials\// admin-gate regex matches on the
   // app subdomain (clean URL) too.
@@ -88,7 +99,9 @@ export function UserAccountSection({
     resetAuth();
   }, [resetAuth, navigateWithTransition]);
 
-  if (isLoading) {
+  // Only show the loading skeleton AFTER hydration (see the `mounted` guard above) — never on
+  // the server or the first client render, so the hydrated tree shape matches.
+  if (mounted && isLoading) {
     return (
       <div className="flex items-center gap-3 px-2">
         <div className="flex items-center justify-center p-2">

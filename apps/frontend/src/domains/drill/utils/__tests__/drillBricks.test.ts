@@ -47,6 +47,20 @@ function videoBlock(): AnyBlock {
   } as AnyBlock;
 }
 
+function scalesBlock(
+  config: Record<string, unknown> = {},
+  overrides: Partial<AnyBlock> = {},
+): AnyBlock {
+  return {
+    id: 'sc-1',
+    type: 'scales',
+    title: 'Scales',
+    order: 2,
+    config: { exerciseId: 'ex-major-run', exerciseName: 'C Major Run', ...config },
+    ...overrides,
+  } as AnyBlock;
+}
+
 function tut(blocks: AnyBlock[]): Pick<Tutorial, 'blocks'> {
   return { blocks };
 }
@@ -75,6 +89,12 @@ describe('isDrillBrickBlock', () => {
 
   it('does NOT treat a video block as a brick', () => {
     expect(isDrillBrickBlock(videoBlock())).toBe(false);
+  });
+
+  it('always treats a scales block as a brick (a locked deliverable)', () => {
+    expect(isDrillBrickBlock(scalesBlock())).toBe(true);
+    // even with an open (null exercise) config it's still a brick.
+    expect(isDrillBrickBlock(scalesBlock({ exerciseId: null }))).toBe(true);
   });
 });
 
@@ -129,6 +149,19 @@ describe('getDrillBricks', () => {
     expect(brick.subtitle).toBe('Funk in E');
     expect(brick.timeboxMinutes).toBe(5);
     expect(brick.criterion).toEqual({ type: 'loops', target: 4 });
+  });
+
+  it('maps a scales block (kind scales, exerciseName → title)', () => {
+    const [brick] = getDrillBricks(tut([scalesBlock()]));
+    expect(brick.kind).toBe('scales');
+    expect(brick.title).toBe('C Major Run');
+  });
+
+  it('falls back to the block title when a scales block has no exerciseName', () => {
+    const [brick] = getDrillBricks(
+      tut([scalesBlock({ exerciseName: null }, { title: 'Daily Scale' })]),
+    );
+    expect(brick.title).toBe('Daily Scale');
   });
 
   it('returns [] for a non-drill tutorial', () => {

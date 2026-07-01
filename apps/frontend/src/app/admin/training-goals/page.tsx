@@ -20,6 +20,7 @@ import type {
   GoalType,
   CreateGoalInput,
   Topic,
+  ScalesBlockConfig,
 } from '@bassnotion/contracts';
 
 import {
@@ -30,6 +31,7 @@ import {
   useArchiveTrainingGoal,
 } from '@/domains/admin/hooks/useAdminTrainingGoals';
 import { TopicStageEditor } from '@/domains/admin/components/TopicStageEditor';
+import { ScalesBlockForm } from '@/domains/admin/components/BlockEditor/configs/ScalesBlockForm';
 import { Button } from '@/shared/components/ui/button';
 
 const GOAL_TYPES: GoalType[] = ['speed', 'knowledge', 'vocabulary', 'feel'];
@@ -43,10 +45,17 @@ interface Draft {
   tempoNotch: number;
   instruction: string;
   /** Content-ladder: when true the goal is MULTI-TOPIC (ships `topics`); else
-   *  the single-focal SPEED shape (one inline task block). */
+   *  the single-focal SPEED shape (one inline focal block). */
   multiTopic: boolean;
   topics: Topic[];
+  /** Single-focal: whether the focal block is a text TASK or the SCALES tool.
+   *  A scales focal block is the clean shape for "Get better with scales". */
+  focalKind: 'task' | 'scales';
+  /** Single-focal SCALES config (exercise/key/tempo/loops), when focalKind === 'scales'. */
+  scalesConfig: ScalesBlockConfig;
 }
+
+const EMPTY_SCALES_CONFIG: ScalesBlockConfig = { exerciseId: null };
 
 const EMPTY_DRAFT: Draft = {
   type: 'speed',
@@ -57,15 +66,25 @@ const EMPTY_DRAFT: Draft = {
   instruction: 'Play the {item} at {tempo} BPM. Keep it even and relaxed.',
   multiTopic: false,
   topics: [],
+  focalKind: 'task',
+  scalesConfig: EMPTY_SCALES_CONFIG,
 };
 
 /** Hydrate the form from an existing goal (the EDIT path). Detects multi-topic
  *  from `topics`; pulls the focal instruction back out of the single task block. */
 function goalToDraft(g: Goal): Draft {
   const multiTopic = !!g.topics && g.topics.length > 0;
+  const focalBlock = g.blockSet?.[0]?.block;
   const focalInstruction =
-    (g.blockSet?.[0]?.block?.config as { instruction?: string } | undefined)
-      ?.instruction ?? EMPTY_DRAFT.instruction;
+    (focalBlock?.config as { instruction?: string } | undefined)?.instruction ??
+    EMPTY_DRAFT.instruction;
+  // A single-focal goal's focal block is either a task or the scales tool — reflect it back.
+  const focalKind: Draft['focalKind'] =
+    focalBlock?.type === 'scales' ? 'scales' : 'task';
+  const scalesConfig: ScalesBlockConfig =
+    focalBlock?.type === 'scales'
+      ? (focalBlock.config as ScalesBlockConfig)
+      : EMPTY_SCALES_CONFIG;
   return {
     type: g.type,
     title: g.title,
@@ -77,6 +96,8 @@ function goalToDraft(g: Goal): Draft {
     instruction: focalInstruction,
     multiTopic,
     topics: multiTopic ? (g.topics ?? []) : [],
+    focalKind,
+    scalesConfig,
   };
 }
 
@@ -103,26 +124,42 @@ function draftToInput(d: Draft): CreateGoalInput {
   }
 
   const focalId = `${slugify(d.title) || 'goal'}-focal`;
-  return {
-    ...base,
-    topics: [], // clear topics if switched away from multi-topic
-    blockSet: [
-      {
-        blockId: focalId,
-        ladderPosition: 'L2',
-        block: {
+
+  // The single-focal block is EITHER a text task (no audio) OR the Scales tool. A scales focal
+  // block is the clean shape for a SPEED-scales goal: the engine stamps the climbed tempo onto
+  // cfg.tempoBpm and the locked ScalesTool renders it inside the daily rep.
+  const focalBlock =
+    d.focalKind === 'scales'
+      ? {
           id: focalId,
-          type: 'task',
+          type: 'scales' as const,
+          title: d.title.trim(),
+          order: 0,
+          tempoRange: { min: 50, max: 180 },
+          config: {
+            ...d.scalesConfig,
+            // tempoBpm is engine-driven per rep level (materializeBrick stamps it); don't pin it.
+            tempoBpm: null,
+          },
+        }
+      : {
+          id: focalId,
+          type: 'task' as const,
           title: d.title.trim(),
           order: 0,
           tempoRange: { min: 50, max: 180 },
           config: {
             heading: d.title.trim(),
             instruction: d.instruction.trim(),
-            completionCriterion: { type: 'time', target: 2 },
+            completionCriterion: { type: 'time' as const, target: 2 },
           },
-        },
-      },
+        };
+
+  return {
+    ...base,
+    topics: [], // clear topics if switched away from multi-topic
+    blockSet: [
+      { blockId: focalId, ladderPosition: 'L2', block: focalBlock },
     ] as CreateGoalInput['blockSet'],
   };
 }
@@ -177,9 +214,15 @@ export default function AdminTrainingGoalsPage() {
         t.stages.length > 0 &&
         t.stages.every((s) => (s.blocks ?? []).some((b) => !!b.block)),
     );
+  // Single-focal validity depends on the focal kind: a task needs an instruction; a scales
+  // focal block needs an exercise picked (an "open" scales block wouldn't lock the rep).
+  const focalValid =
+    draft.focalKind === 'scales'
+      ? !!draft.scalesConfig.exerciseId
+      : !!draft.instruction.trim();
   const canSave =
     draft.title.trim().length > 0 &&
-    (draft.multiTopic ? topicsValid : !!draft.instruction.trim());
+    (draft.multiTopic ? topicsValid : focalValid);
 
   const startEdit = (g: AdminGoalSummary) => {
     setEditing(g);
@@ -415,16 +458,53 @@ export default function AdminTrainingGoalsPage() {
               />
             </div>
           ) : (
-            <label className="block space-y-1 text-xs font-medium text-gray-600">
-              Focal task instruction (use {'{tempo}'} — the engine fills the
-              per-level BPM)
-              <textarea
-                value={draft.instruction}
-                onChange={(e) => set('instruction', e.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
-              />
-            </label>
+            <div className="space-y-3">
+              {/* Focal block type — a text task (no audio) or the Scales tool (the daily rep
+                  mounts the locked ScalesTool; the engine climbs its tempo). */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-medium text-gray-600">Focal block:</span>
+                {(['task', 'scales'] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => set('focalKind', k)}
+                    className={`rounded-md px-3 py-1 font-medium ${
+                      draft.focalKind === k
+                        ? 'bg-[#E8A44A] text-black'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {k === 'task' ? 'Text task' : 'Scales tool'}
+                  </button>
+                ))}
+              </div>
+
+              {draft.focalKind === 'scales' ? (
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                  <ScalesBlockForm
+                    config={draft.scalesConfig}
+                    onChange={(c) => set('scalesConfig', c)}
+                    variant="light"
+                  />
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    The daily rep serves this scale locked; the engine climbs the
+                    tempo automatically toward the target (the tempo you set here
+                    is ignored — it's engine-driven per rep level).
+                  </p>
+                </div>
+              ) : (
+                <label className="block space-y-1 text-xs font-medium text-gray-600">
+                  Focal task instruction (use {'{tempo}'} — the engine fills the
+                  per-level BPM)
+                  <textarea
+                    value={draft.instruction}
+                    onChange={(e) => set('instruction', e.target.value)}
+                    rows={2}
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  />
+                </label>
+              )}
+            </div>
           )}
         </div>
 

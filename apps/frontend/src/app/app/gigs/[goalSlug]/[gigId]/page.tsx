@@ -106,11 +106,24 @@ function GigPerformContent() {
           backingConfig={WAITLIST_DEMO_CONFIG}
           stringCount={stringCount}
           maxFrets={maxFrets}
-          assignment={{
-            gig,
-            backingId: WAITLIST_DEMO_BLOCK_ID,
-            // After submitting, collapse back to the /gigs list (which marks this gig done).
-            onSubmitted: () => router.push('/gigs'),
+          // GIG context: locked to the gig's preset; a graded take submits against this gig.
+          context={{
+            kind: 'gig',
+            locked: true,
+            preset: {
+              exerciseId: gig.exerciseId,
+              exerciseName: gig.exerciseName,
+              scaleKey: gig.scaleKey,
+              tempoBpm: gig.tempoBpm,
+              recordLoops: gig.recordLoops,
+            },
+            resultSink: {
+              kind: 'submit',
+              gig,
+              backingId: WAITLIST_DEMO_BLOCK_ID,
+              // After submitting, collapse back to the /gigs list (which marks this gig done).
+              onSubmitted: () => router.push('/gigs'),
+            },
           }}
         />
       </div>

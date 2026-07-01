@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { refreshSession } from '@/infrastructure/supabase/middleware';
 
 /**
- * Host-rewrite middleware for the app-subdomain migration.
+ * Host-rewrite middleware for the app-subdomain migration + Supabase cookie-session refresh.
  *
  * On app.bassicology.com it serves the clean URL /gym off the internal folder
  * /app/gym (URL-preserving rewrite), keeps auth pages on the same origin
- * (single-origin auth — the Supabase session is localStorage, origin-scoped),
+ * (single-origin auth — the Supabase session is a HOST-ONLY cookie on this origin),
  * and 308-bounces apex-only routes back to the apex. On the apex it 308s
  * /login,/register to the app subdomain and 308s legacy /app/* to the clean URL.
+ *
+ * Every terminal RENDER response (next()/rewrite()) is passed through refreshSession first, which
+ * validates + refreshes the Supabase cookie session at the edge and writes any new token cookies
+ * onto the response. The 308 redirects are intentionally NOT refreshed (Set-Cookie on a
+ * cross-origin bounce is fragile, and those responses don't render).
  *
  * This is a NO-OP on any host not in APP_HOSTS (localhost, *.vercel.app preview),
  * so local dev and preview deploys are unaffected.
@@ -36,7 +42,7 @@ function isAppHost(host: string): boolean {
 }
 
 // Served as-is on the app host (auth + api + assets). Auth pages MUST resolve on
-// the app origin so the Supabase session is written to app.bassicology.com.
+// the app origin so the Supabase session cookie is written to app.bassicology.com.
 const PASS_THROUGH = ['/login', '/register', '/auth', '/api', '/_next'];
 
 // The ONLY clean paths the app host rewrites onto /app/*. Root '/' is handled
@@ -71,7 +77,28 @@ const APEX_ONLY = [
 const matchesPrefix = (pathname: string, prefixes: string[]) =>
   prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
-export function middleware(req: NextRequest) {
+// The Supabase session cookie (see infrastructure/supabase — cookieOptions.name='sb-bn').
+// @supabase/ssr chunks a large token into sb-bn.0 / sb-bn.1, so match the base name OR any chunk.
+const AUTH_COOKIE_BASE = 'sb-bn';
+
+// P2 edge gate: is an auth cookie PRESENT on the request? Deliberately a pure presence check —
+// NOT a getUser() validation. Reasons:
+//  - Zero edge latency / no network round-trip on every protected request.
+//  - LOCKOUT-PROOF: a transient Auth-server outage can't 307 a logged-in user to /login (getUser
+//    can't distinguish "no session" from "network down"; cookie-presence has no such ambiguity).
+// The common case this kills is the logged-OUT load (no cookie → instant 307, no HTML shipped, no
+// client-side flash). The rare present-but-expired cookie falls through to render and is handled by
+// the client AuthGuard exactly as today. So this is purely additive: it can only turn a
+// definitely-logged-out request away earlier; it never changes a logged-in request.
+function hasAuthCookie(req: NextRequest): boolean {
+  return req.cookies
+    .getAll()
+    .some(
+      (c) => c.name === AUTH_COOKIE_BASE || c.name.startsWith(AUTH_COOKIE_BASE + '.'),
+    );
+}
+
+export async function middleware(req: NextRequest) {
   const host = req.headers.get('host') ?? '';
   const { pathname, search } = req.nextUrl;
 
@@ -80,12 +107,12 @@ export function middleware(req: NextRequest) {
     // Defensive: a stale /app/* link or a Stripe return → serve directly (the
     // double-prefix guard prevents /app/app/*).
     if (pathname === '/app' || pathname.startsWith('/app/')) {
-      return NextResponse.next();
+      return await refreshSession(req, NextResponse.next());
     }
 
     // Auth / api / assets → as-is (single-origin auth).
     if (matchesPrefix(pathname, PASS_THROUGH)) {
-      return NextResponse.next();
+      return await refreshSession(req, NextResponse.next());
     }
 
     // Apex-only routes → bounce to apex (never rewrite into a nonexistent /app/*).
@@ -100,6 +127,34 @@ export function middleware(req: NextRequest) {
       );
     }
 
+    // P2 EDGE AUTH GATE. The KNOWN protected render paths are /college* and the
+    // allow-listed APP_ROUTES (both rewrite to /app/* below). If there's NO auth cookie
+    // the user is DEFINITELY logged out — 307 them to /login BEFORE any HTML ships,
+    // instead of shipping the shell and letting the client-side AuthGuard resolve auth
+    // and redirect (the flash we're killing). `next` lets /login send them back after
+    // auth. 307 (temporary) not 308 — the path isn't moved.
+    //
+    // Scope note: this gates ONLY the protected routes. Unknown paths still hit the
+    // explicit-404 fall-through below regardless of auth (typos/bots 404, they don't all
+    // funnel to /login), and '/' redirects as before. Skipped on localhost: local dev has
+    // no apex/app origin split and its own auth flow; gating there would bounce local /gym
+    // to the PRODUCTION /login. PASS_THROUGH + APEX_ONLY are handled above (never gated).
+    // A present-but-expired cookie intentionally falls through to render (AuthGuard handles it).
+    const isProtectedRoute =
+      pathname === '/college' ||
+      pathname.startsWith('/college/') ||
+      matchesPrefix(pathname, APP_ROUTES);
+    if (isProtectedRoute && !isLocalHost(host) && !hasAuthCookie(req)) {
+      // Redirect to /login on the SAME origin the request arrived on (req.url), NOT the hardcoded
+      // APP_ORIGIN — otherwise a logged-out load on app-STAGING bounces to PRODUCTION login. The app
+      // host serves /login on its own origin (PASS_THROUGH, single-origin auth), so same-origin is
+      // correct on both app.bassicology.com and app-staging.bassicology.com. Mirrors the '/' →
+      // /backstage redirect below, which builds from req.url for the same reason.
+      const login = new URL('/login', req.url);
+      login.searchParams.set('next', `${pathname}${search}`);
+      return NextResponse.redirect(login, 307);
+    }
+
     // College room. Bare /college is the room landing (→ /app/bassment). A tutorial
     // opened FROM the College room is room-scoped — /college/<slug> serves the existing
     // tutorial page (→ /app/tutorials/<slug>), so the URL bar reads /college/<slug> while
@@ -109,18 +164,18 @@ export function middleware(req: NextRequest) {
     if (pathname === '/college') {
       const url = req.nextUrl.clone();
       url.pathname = '/app/bassment';
-      return NextResponse.rewrite(url);
+      return await refreshSession(req, NextResponse.rewrite(url));
     }
     const collegeSlug = pathname.match(/^\/college\/([^/]+)$/);
     if (collegeSlug) {
       const url = req.nextUrl.clone();
       url.pathname = `/app/tutorials/${collegeSlug[1]}`;
-      return NextResponse.rewrite(url);
+      return await refreshSession(req, NextResponse.rewrite(url));
     }
     if (pathname.startsWith('/college/')) {
       const url = req.nextUrl.clone();
       url.pathname = pathname.replace(/^\/college/, '/app/bassment');
-      return NextResponse.rewrite(url);
+      return await refreshSession(req, NextResponse.rewrite(url));
     }
 
     // Root → /backstage (the app's home room). The bare '/app' home is an empty placeholder
@@ -139,7 +194,7 @@ export function middleware(req: NextRequest) {
     if (matchesPrefix(pathname, APP_ROUTES)) {
       const url = req.nextUrl.clone();
       url.pathname = `/app${pathname}`;
-      return NextResponse.rewrite(url);
+      return await refreshSession(req, NextResponse.rewrite(url));
     }
 
     // Unknown path on the app host → EXPLICIT 404. Do NOT fall through to
@@ -149,12 +204,15 @@ export function middleware(req: NextRequest) {
     // app/not-found.tsx (OUTSIDE the AuthGuard layout — so it 404s, not redirects).
     const notFound = req.nextUrl.clone();
     notFound.pathname = '/__not_found__';
-    return NextResponse.rewrite(notFound);
+    return await refreshSession(req, NextResponse.rewrite(notFound));
   }
 
   // ---------- Apex ----------
   // Single-origin auth: push apex login/register to the app subdomain so the
-  // session is never written to the apex origin's localStorage.
+  // session cookie is never written to the apex origin. The apex serves only
+  // PUBLIC pages (no session cookie here, since it's host-only to app.), so the
+  // fall-through next() below is intentionally NOT wrapped in refreshSession —
+  // there's nothing to refresh and we must not set an auth cookie on the apex.
   if (matchesPrefix(pathname, ['/login', '/register'])) {
     return NextResponse.redirect(
       new URL(`${APP_ORIGIN}${pathname}${search}`),

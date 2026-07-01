@@ -34,11 +34,19 @@ export default function GymScalesPage() {
           (flex items-center justify-center). The inner div keeps the groove-card's
           exact responsive width. */}
       <div className="flex min-h-[calc(100svh-2rem)] w-full items-center justify-center px-4">
-        <div className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-[800px]">
+        {/* The card grows with the viewport so the fretboard's responsive size tiers can
+            actually be reached: lg→desktop tier, 2xl→large tier. The board reads THIS
+            container's width (ResizeObserver) to pick its tier; the px-4 page padding means
+            the card is a touch narrower than the viewport, which the tier thresholds account
+            for. (Was capped at 800px, which pinned the board to the tablet tier on every
+            screen.) */}
+        <div className="mx-auto w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-[1040px] xl:max-w-[1320px] 2xl:max-w-[1560px]">
           <ScalesTool
             backingConfig={WAITLIST_DEMO_CONFIG}
             stringCount={stringCount}
             maxFrets={maxFrets}
+            // GYM context: open practice — nothing locked, nothing stored.
+            context={{ kind: 'gym', locked: false, resultSink: { kind: 'none' } }}
           />
         </div>
       </div>

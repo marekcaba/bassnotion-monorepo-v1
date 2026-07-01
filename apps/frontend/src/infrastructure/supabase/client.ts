@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 import { isMockTestEnv, isWebkitBrowser } from '@/shared/utils/testEnv';
 
@@ -71,40 +71,27 @@ const createSupabaseClient = () => {
     };
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-      debug: false,
-      // Webkit-compatible storage configuration
-      storage: isWebkitBrowser()
-        ? {
-            getItem: (key: string) => {
-              try {
-                return localStorage.getItem(key);
-              } catch {
-                return null; // Fallback if localStorage is blocked
-              }
-            },
-            setItem: (key: string, value: string) => {
-              try {
-                localStorage.setItem(key, value);
-              } catch {
-                // Silently fail if localStorage is blocked in webkit
-              }
-            },
-            removeItem: (key: string) => {
-              try {
-                localStorage.removeItem(key);
-              } catch {
-                // Silently fail if localStorage is blocked in webkit
-              }
-            },
-          }
-        : undefined,
+  // Cookie-backed browser client (@supabase/ssr): the session lives in cookies (chunked +
+  // base64url-encoded automatically) instead of localStorage, so the SERVER can read it (edge
+  // middleware + server components — later SSR phases). createBrowserClient uses document.cookie
+  // automatically in the browser, so no custom `cookies` handler is needed here, and it sets the
+  // SSR-correct auth defaults internally (autoRefreshToken/persistSession/detectSessionInUrl/
+  // flowType:'pkce') — we don't re-pass them. The old WebKit localStorage `storage` shim is gone:
+  // its reason (session persistence) is now the cookie adapter, which try/catches internally.
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      name: 'sb-bn',
+      // 'lax' (NOT 'strict'): 'strict' would drop the cookie on the OAuth/magic-link top-level
+      // return, breaking those flows. 'lax' is the correct, safe default for auth cookies.
+      sameSite: 'lax',
+      // Only require Secure in production — localhost is http and would silently drop a Secure
+      // cookie, logging you out on every reload.
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      // No `domain` → HOST-ONLY (app.bassicology.com), matching today's origin-scoped session.
     },
+    // base64url safely encodes any character in the cookie value (production recommendation).
+    cookieEncoding: 'base64url',
     global: {
       headers: {
         'x-client-info': '@supabase/auth-ui-react@latest',

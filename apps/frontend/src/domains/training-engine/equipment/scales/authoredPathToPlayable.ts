@@ -159,6 +159,51 @@ export function authoredPathToPlayable(
   return out;
 }
 
+/**
+ * Build the full UP-THEN-DOWN event list for an authored PATH: the ascending pass, then a
+ * descent so a loop runs all the way up to the top note and back down (instead of snapping
+ * from the last note to the first).
+ *
+ * The descent is the authored `descending` array when the admin provided one; otherwise it's
+ * the ascending notes REVERSED with BOTH endpoints dropped:
+ *   - the TOP note (last ascending event) is skipped so the turnaround isn't played twice;
+ *   - the BOTTOM note (first ascending event) is skipped so when the sequence LOOPS the last
+ *     descent note isn't the same as the first note of the next ascent (that doubled the
+ *     bottom note across the loop seam — "repeats the first note when it comes back").
+ * So E F# G# → E F# G# F# (loops cleanly back to E). Trailing rests are trimmed first so the
+ * descent doesn't start on silence. Pure; the caller decides WHEN to apply this (path kind).
+ */
+export function buildUpDownEvents(
+  ascending: unknown,
+  descending: unknown,
+): unknown[] {
+  const asc = Array.isArray(ascending) ? ascending : [];
+  if (asc.length === 0) return [];
+
+  // Authored descent wins when present + non-empty (the admin owns those exact notes).
+  if (Array.isArray(descending) && descending.length > 0) {
+    return [...asc, ...descending];
+  }
+
+  // Otherwise reverse the ascending pass, dropping trailing rests first so the descent doesn't
+  // open on silence.
+  let end = asc.length;
+  while (end > 0 && readEvent(asc[end - 1]) && isTrailingRest(asc[end - 1])) {
+    end -= 1;
+  }
+  const toReverse = asc.slice(0, end);
+  // Reverse only the MIDDLE — drop the top (turnaround, already played) AND the bottom (it's
+  // the first note of the next loop). slice(1, -1) → both endpoints excluded.
+  const descent = toReverse.slice(1, -1).reverse();
+  return [...asc, ...descent];
+}
+
+/** True when the event narrows to a rest (used to trim trailing rests before reversing). */
+function isTrailingRest(raw: unknown): boolean {
+  const e = readEvent(raw);
+  return e !== null && isAuthoredRest(e);
+}
+
 /** Total length of an authored event list in BEATS (notes + rests), for loop scheduling.
  *  Unlike scalePathBeats (which reads the last note), this counts trailing rests too. */
 export function authoredPathBeats(events: unknown): number {

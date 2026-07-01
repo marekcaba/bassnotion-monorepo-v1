@@ -21,13 +21,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
-import { queryClient } from '@/lib/react-query';
-import { gymKeys } from '@/domains/training-engine/api/gymQueryKeys';
-import {
-  fetchMyEnrollments,
-  planTodayRep,
-} from '@/domains/training-engine/api/training-engine.api';
-import { fetchTutorialExercises } from '@/domains/widgets/api/tutorials';
+import { warmTodayRep } from '@/domains/training-engine/lib/warmTodayRep';
 
 const noop = () => undefined;
 
@@ -65,46 +59,10 @@ export function AppGymWarmup() {
     // membership-gated endpoints for anon/free users (they'd 401/403).
     if (!isReady || !isAuthenticated || !userId || tier !== 'member') return;
 
+    // Warm the whole rep chain (enrollments → today-rep → tutorial) into the shared cache, so the
+    // gym opens instantly. The shared warmTodayRep() is also called on the Backstage page. (1)
     const cancel = onIdle(() => {
-      void (async () => {
-        try {
-          // 1) Enrollments (pure read). Cache under the user-scoped key the gym
-          //    + dashboard share.
-          const enrollments = await queryClient.fetchQuery({
-            queryKey: gymKeys.enrollments(userId),
-            queryFn: fetchMyEnrollments,
-            staleTime: 5 * 60 * 1000,
-          });
-
-          // 2) Today's rep for the active enrollment (pure read+mint now). Skip
-          //    if there's no active enrollment (the gym will route to the
-          //    goal picker, which doesn't need a warm rep).
-          const active = enrollments.find((e) => e.status === 'active');
-          if (!active) return;
-
-          const rep = await queryClient.fetchQuery({
-            queryKey: gymKeys.todayRep(userId, active.id, 'full'),
-            queryFn: () => planTodayRep(active.id, 'full'),
-            staleTime: 5 * 60 * 1000,
-          });
-
-          // 3) The rep's tutorial content (bricks/exercises) — the LAST fetch the
-          //    gym needs before the Start button goes live. Warming it here means
-          //    the button is clickable the instant the overlay paints, instead of
-          //    showing the in-button spinner while this fetches on open. Same key
-          //    useTutorialExercises(slug) reads: ['tutorial-exercises', slug].
-          if (rep?.slug) {
-            await queryClient.prefetchQuery({
-              queryKey: ['tutorial-exercises', rep.slug],
-              queryFn: () => fetchTutorialExercises(rep.slug),
-              staleTime: 5 * 60 * 1000,
-            });
-          }
-        } catch {
-          // Login prefetch is best-effort — a lapsed sub / missing climb /
-          // not-ready goal must never bubble up. The gym handles those live.
-        }
-      })();
+      void warmTodayRep(userId);
     }, 3000);
 
     return cancel;

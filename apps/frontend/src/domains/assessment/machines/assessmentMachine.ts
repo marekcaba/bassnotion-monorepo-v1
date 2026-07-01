@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Assessment Quiz State Machine (XState v5)
  *
@@ -81,6 +83,9 @@ export type AssessmentEvent =
 const STORAGE_KEY = 'bassnotion_assessment_progress';
 
 const saveProgressToStorage = (context: AssessmentContext): void => {
+  // SSR guard: this machine's context factory calls loadProgressFromStorage EAGERLY, so a server
+  // render (once server components import this graph) must not touch localStorage. No-op on server.
+  if (typeof window === 'undefined') return;
   const progress: AssessmentProgress = {
     currentQuestionIndex: context.currentQuestionIndex,
     answers: context.answers,
@@ -92,6 +97,7 @@ const saveProgressToStorage = (context: AssessmentContext): void => {
 };
 
 const loadProgressFromStorage = (): AssessmentProgress | null => {
+  if (typeof window === 'undefined') return null; // SSR: no saved progress on the server
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
@@ -101,6 +107,7 @@ const loadProgressFromStorage = (): AssessmentProgress | null => {
 };
 
 const clearProgressFromStorage = (): void => {
+  if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);
 };
 

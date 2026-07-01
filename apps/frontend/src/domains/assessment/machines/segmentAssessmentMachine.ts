@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Segment Assessment State Machine (XState v5)
  *
@@ -110,6 +112,7 @@ export type SegmentAssessmentEvent =
 const STORAGE_KEY = 'bassnotion_segment_assessment_session';
 
 const saveSessionToStorage = (context: SegmentAssessmentContext): void => {
+  if (typeof window === 'undefined') return; // SSR guard (symmetry with assessmentMachine)
   if (!context.sessionId) return;
 
   const sessionState = {
@@ -126,6 +129,7 @@ const saveSessionToStorage = (context: SegmentAssessmentContext): void => {
 };
 
 const loadSessionFromStorage = (): Partial<AssessmentSession> | null => {
+  if (typeof window === 'undefined') return null;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
@@ -135,6 +139,7 @@ const loadSessionFromStorage = (): Partial<AssessmentSession> | null => {
 };
 
 const clearSessionFromStorage = (): void => {
+  if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);
 };
 

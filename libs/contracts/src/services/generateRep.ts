@@ -229,6 +229,9 @@ function materializeBrick(
     tempoBpm = clampTempoToBlock(opts.tempoBpm, source);
     if (opts.tempoBand) tempoBpm = clampTempoToBand(tempoBpm, opts.tempoBand);
     cfg.tempoOverride = tempoBpm;
+    // A scales block reads `tempoBpm` (the tool's preset field), not `tempoOverride`. Stamp it
+    // so the engine's tempo climb reaches the locked Scales tool. Other block types ignore it.
+    if (source.type === 'scales') cfg.tempoBpm = tempoBpm;
   }
   if (typeof opts.keyOverride === 'number') {
     cfg.keyOverride = clampKey(opts.keyOverride);

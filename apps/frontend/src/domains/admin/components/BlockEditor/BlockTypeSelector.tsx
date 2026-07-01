@@ -19,6 +19,7 @@ import {
   PartyPopper,
   BookOpen,
   Timer,
+  Guitar,
   X,
 } from 'lucide-react';
 
@@ -57,6 +58,12 @@ const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
     label: 'Groove Card',
     icon: Disc3,
     description: 'Interactive 4-stem groove with key + tempo levers',
+  },
+  {
+    type: 'scales',
+    label: 'Scales',
+    icon: Guitar,
+    description: 'Gym Scales tool — 3D fretboard + drone, locked to a preset',
   },
   {
     type: 'text',

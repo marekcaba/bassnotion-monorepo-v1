@@ -16,7 +16,9 @@
  */
 
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -302,6 +304,11 @@ export function GrooveCardControls({
               // Dynamic Loop: the upcoming key (green) shown after the arrow so
               // the player can anticipate the change.
               nextKeyLabel={nextKeyLabel}
+              // Roller-wheel neighbours: the keys ±offset semitones from the current one, so
+              // the wheel shows the adjacent keys sliding through (e.g. D♯ ‹ E › F).
+              neighborFor={(offset) =>
+                formatKeyLabel(originalKey, displayedSemitones + offset)
+              }
             />
           </div>,
         )}
@@ -355,6 +362,9 @@ export function GrooveCardControls({
               disablePrev={atLowerTempoEdge}
               disableNext={atUpperTempoEdge}
               ariaLabel="Tempo"
+              // Roller-wheel neighbours: the BPM values ±offset, so the wheel shows the
+              // adjacent tempos sliding through (e.g. 119 ‹ 120 › 121).
+              neighborFor={(offset) => `${currentBpm + offset}`}
             />
           </div>,
         )}
@@ -485,6 +495,176 @@ function NoteLabel({ label }: { label: string }) {
   );
 }
 
+/**
+ * RollerStrip — the HORIZONTAL port of the gym RollerPicker's wheel. This is what makes the
+ * roller READ as a wheel (rather than a crossfade): it renders a STRIP of cells — the prev
+ * and next values flanking the current one — and on a step the WHOLE STRIP slides one cell so
+ * a real NEIGHBOUR slides into the bright centre while the current value slides out to a
+ * faded edge. A fixed gradient-mask LENS (opaque centre band → transparent edges, left↔right)
+ * stays put; values flow through it. After the slide it snaps back to centre with NO
+ * transition and commits the new value (onStep) — invisible because the values shifted in
+ * lockstep. Identical mechanism to the vertical roller, just translateX + a left/right mask.
+ *
+ * `neighborFor(offset)` returns the label `offset` cells from centre (−2..+2). `renderCell`
+ * renders one label (a NoteLabel for keys, plain text for tempo). `onStep(dir)` commits the
+ * value change (dir −1 prev / +1 next) AFTER the slide, so the parent's new `currentLabel`
+ * is already the value that slid into centre.
+ */
+const ROLLER_MS = 320;
+const ROLLER_EASING = 'ease-in-out';
+
+/** The handle a Stepper holds to drive its strip's slide from the chevrons. */
+export interface RollerStripHandle {
+  step: (dir: number) => void;
+}
+
+const RollerStrip = forwardRef<
+  RollerStripHandle,
+  {
+    currentLabel: string;
+    neighborFor: (offset: number) => string;
+    renderCell: (label: string) => React.ReactNode;
+    /** Commit the value change after the slide (the deferred onPrev/onNext). dir: −1 | +1. */
+    onStepCommit: (dir: number) => void;
+    cellWidthPx: number;
+  }
+>(function RollerStrip(
+  { currentLabel, neighborFor, renderCell, onStepCommit, cellWidthPx },
+  ref,
+) {
+  // offset in CELLS: 0 = centred. A step sets ±1 (animated); on transition-end we commit the
+  // value and reset to 0 (no animation) — exactly the vertical roller's spin/snap dance.
+  const [offset, setOffset] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const animatingRef = useRef(false);
+  animatingRef.current = animating;
+  const pendingRef = useRef<null | (() => void)>(null);
+  const safetyTimerRef = useRef<number | null>(null);
+
+  // Commit the deferred value change + snap back to centre. Idempotent: guarded by the
+  // pending callback so the transitionend handler and the safety timeout can't double-fire it.
+  const settle = () => {
+    if (safetyTimerRef.current !== null) {
+      window.clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
+    }
+    const commit = pendingRef.current;
+    pendingRef.current = null;
+    if (!commit) return;
+    commit();
+    setAnimating(false);
+    setOffset(0);
+  };
+
+  // NEXT (dir +1) reveals the value to the RIGHT → the strip moves LEFT (offset −1).
+  useImperativeHandle(ref, () => ({
+    step: (dir: number) => {
+      if (animatingRef.current) return;
+      setAnimating(true);
+      pendingRef.current = () => onStepCommit(dir);
+      setOffset(-dir);
+      // Safety net: if transitionend never fires (reduced-motion, a dropped frame, a
+      // backgrounded tab), settle anyway so the value still commits and the strip re-arms.
+      safetyTimerRef.current = window.setTimeout(settle, ROLLER_MS + 80);
+    },
+  }));
+
+  useEffect(
+    () => () => {
+      if (safetyTimerRef.current !== null)
+        window.clearTimeout(safetyTimerRef.current);
+    },
+    [],
+  );
+
+  const onTransitionEnd = () => settle();
+
+  // 5 cells: prev2 | prev | CURRENT | next | next2. The outer two are BUFFER so a value always
+  // covers the viewport edge mid-slide (the cell sliding in isn't blank until snap).
+  const cells = [
+    neighborFor(-2),
+    neighborFor(-1),
+    currentLabel,
+    neighborFor(1),
+    neighborFor(2),
+  ];
+  const CENTER = 2;
+  // The VIEWPORT is exactly ONE cell wide — the visible footprint is just the current value,
+  // so the control doesn't spread open with neighbours sitting beside it (the bug we're
+  // fixing). The other cells overflow OUTSIDE this slot (clipped); they're invisible at rest
+  // and only seen as they swipe THROUGH the slot during a step. So a value slides FROM/TO the
+  // fixed centre rather than living next to it — for both key and tempo identically.
+  const viewportPx = cellWidthPx;
+
+  // Gradient LENS (left→right): solid through the centre, fading to transparent at the two
+  // edges, so the incoming value fades IN at the edge as it arrives and the outgoing fades OUT
+  // as it leaves — the "swipe" dissolve. The solid core is wide (most of the cell) so the
+  // resting value is crisp; only the outer ~22% on each side feathers.
+  const EDGE = 22; // % of the slot that feathers on each side
+  const curve = (t: number) => Math.pow(1 - t, 2.2);
+  const stopsArr = [0, 0.25, 0.5, 0.75, 1];
+  const leftStops = stopsArr
+    .map((t) => `rgba(0,0,0,${curve(t).toFixed(3)}) ${(EDGE * (1 - t)).toFixed(2)}%`)
+    .reverse()
+    .join(', ');
+  const rightStops = stopsArr
+    .map(
+      (t) =>
+        `rgba(0,0,0,${curve(t).toFixed(3)}) ${(100 - EDGE + EDGE * t).toFixed(2)}%`,
+    )
+    .join(', ');
+  const maskGradient = `linear-gradient(to right, ${leftStops}, #000 ${EDGE}%, #000 ${100 - EDGE}%, ${rightStops})`;
+
+  return (
+    <div
+      style={{
+        width: viewportPx,
+        height: 24,
+        overflow: 'hidden',
+        position: 'relative',
+        maskImage: maskGradient,
+        WebkitMaskImage: maskGradient,
+      }}
+    >
+      <div
+        onTransitionEnd={onTransitionEnd}
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          // The viewport is ONE cell wide (its left edge = x 0). The strip's CENTER cell must
+          // sit there, so shift the strip left by CENTER cells — the prev cells then hang off
+          // to the left (clipped) and the next cells off to the right (clipped), ready to
+          // swipe in. The lower cells stay in the DOM as the slide buffer.
+          left: -CENTER * cellWidthPx,
+          display: 'flex',
+          flexDirection: 'row',
+          transform: `translateX(${offset * cellWidthPx}px)`,
+          transition: animating
+            ? `transform ${ROLLER_MS}ms ${ROLLER_EASING}`
+            : 'none',
+        }}
+      >
+        {cells.map((c, i) => (
+          <div
+            key={`${i}-${c}`}
+            style={{
+              width: cellWidthPx,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {renderCell(c)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
 export interface StepperProps {
   label: string;
   suffix?: string;
@@ -509,6 +689,16 @@ export interface StepperProps {
    *  Wider text labels (e.g. "Major", "Pos 1") pass a larger value so they don't
    *  wrap or shift neighbours. Only affects labelKind='text'. */
   labelWidthCh?: number;
+  /** Return the label `offset` cells from the current value (−2..+2). When provided, the
+   *  value renders as the animated ROLLER WHEEL (neighbours visible at the faded edges, the
+   *  strip slides one cell per step). When omitted, a plain static label renders. The Dynamic
+   *  Loop branch (nextKeyLabel) always uses its own KeyChangeDisplay regardless. */
+  neighborFor?: (offset: number) => string;
+  /** Press-and-hold to AUTO-REPEAT (accelerating), for continuous ranges like tempo where
+   *  stepping one tap at a time is tedious. A TAP behaves exactly like a normal step (one
+   *  animated slide); only a genuine hold kicks in fast repeat (committing values directly,
+   *  bypassing the per-step slide). Default off — discrete pickers (key) would overshoot. */
+  holdRepeat?: boolean;
 }
 
 export function Stepper({
@@ -523,15 +713,87 @@ export function Stepper({
   disableNext = false,
   nextKeyLabel = null,
   labelWidthCh = 3,
+  neighborFor,
+  holdRepeat = false,
 }: StepperProps) {
+  // The strip handle — chevrons drive its slide; the value commit (onPrev/onNext) is deferred
+  // until the slide completes so the parent's new label is the value that slid into centre.
+  const stripRef = useRef<RollerStripHandle>(null);
+  const animate = neighborFor != null;
+  // dir → the deferred commit the strip fires after sliding.
+  const commit = (dir: number) => (dir < 0 ? onPrev() : onNext());
+
+  // One animated step (a tap): slide the wheel, which commits on transition-end. Falls back to
+  // a direct commit when not animating.
+  const slideStep = (dir: number) =>
+    animate && stripRef.current ? stripRef.current.step(dir) : commit(dir);
+
+  // ── Press-and-hold auto-repeat (holdRepeat) ──────────────────────────────────
+  // A TAP = one normal slideStep. A genuine HOLD (button still down past the threshold) kicks
+  // in an accelerating direct-commit repeat — bypassing the per-step slide so fast scrubbing
+  // doesn't queue dozens of slides. Mirrors the gym RollerPicker's tap-vs-hold split.
+  const HOLD_THRESHOLD = 350; // ms held before fast repeat starts
+  const holdTimerRef = useRef<number | null>(null);
+  const handlersRef = useRef({ onPrev, onNext });
+  handlersRef.current = { onPrev, onNext };
+  const stopHold = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+  useEffect(() => stopHold, []);
+  const startHold = (dir: number) => {
+    if (disabled) return;
+    slideStep(dir); // the same animated step a plain tap does
+    let delay = 200; // repeat cadence once auto-repeat starts
+    const tick = () => {
+      delay = Math.max(45, delay * 0.82); // accelerate, floor ~22/sec
+      commit(dir); // direct commit during the fast repeat (no slide queue)
+      holdTimerRef.current = window.setTimeout(tick, delay);
+    };
+    holdTimerRef.current = window.setTimeout(tick, HOLD_THRESHOLD);
+  };
+
+  // Chevron wiring: hold-repeat uses pointer events (down starts, up/leave/cancel stops);
+  // otherwise a plain click does one animated step.
+  const prevHandlers = holdRepeat
+    ? {
+        onPointerDown: () => startHold(-1),
+        onPointerUp: stopHold,
+        onPointerLeave: stopHold,
+        onPointerCancel: stopHold,
+      }
+    : { onClick: () => slideStep(-1) };
+  const nextHandlers = holdRepeat
+    ? {
+        onPointerDown: () => startHold(1),
+        onPointerUp: stopHold,
+        onPointerLeave: stopHold,
+        onPointerCancel: stopHold,
+      }
+    : { onClick: () => slideStep(1) };
+
+  // Cell width = the VISIBLE FOOTPRINT (the viewport is one cell). Sized to hold the glyph
+  // plus a little edge room for the swipe feather — NOT extra-wide (the viewport clips the
+  // neighbours regardless, so width is purely the resting footprint). Note keeps its 84px
+  // (a comfortable letter slot); tempo is snug to its digits (~17px/ch + padding) so the
+  // control isn't spread open.
+  const cellWidthPx =
+    labelKind === 'note' ? 84 : Math.round(labelWidthCh * 17) + 8;
+  const renderNote = (v: string) => <NoteLabel label={v} />;
+  const renderText = (v: string) => (
+    <span className="text-base font-semibold text-white tabular-nums">{v}</span>
+  );
+
   return (
     <div className="flex items-center gap-1" aria-label={ariaLabel}>
       <button
         type="button"
-        onClick={onPrev}
+        {...prevHandlers}
         disabled={disabled || disablePrev}
         aria-label={`${ariaLabel} down`}
-        className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="touch-none select-none p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <ChevronLeft className="w-4 h-4" aria-hidden />
       </button>
@@ -542,32 +804,57 @@ export function Stepper({
       {labelKind === 'note' ? (
         <span className="flex w-[84px] items-center justify-center">
           {nextKeyLabel ? (
+            // Dynamic Loop's own crossfading current→next display (already animated).
             <KeyChangeDisplay currentLabel={label} nextLabel={nextKeyLabel} />
+          ) : animate ? (
+            // Plain key as the roller WHEEL — neighbour keys visible + sliding, accidental-
+            // centred (NoteLabel) in each cell.
+            <RollerStrip
+              ref={stripRef}
+              currentLabel={label}
+              neighborFor={neighborFor!}
+              renderCell={renderNote}
+              onStepCommit={commit}
+              cellWidthPx={cellWidthPx}
+            />
           ) : (
             <NoteLabel label={label} />
           )}
         </span>
       ) : (
-        // FIXED-WIDTH numeric label: the value sits in a constant-width,
-        // tabular-figures slot (right-aligned) so 2↔3 digit changes (99↔100)
-        // don't reflow the suffix or the neighbouring controls. The suffix
-        // ("BPM") is a separate fixed element after it.
+        // FIXED-WIDTH numeric label: the value sits in a constant-width, tabular-figures slot
+        // so 2↔3 digit changes (99↔100) don't reflow the suffix or the neighbours. The value
+        // rides the roller wheel; the suffix ("BPM") is a fixed element after it.
         <span className="flex items-center justify-center text-base font-semibold text-white">
-          <span
-            className="inline-block whitespace-nowrap tabular-nums"
-            style={{ width: `${labelWidthCh}ch`, textAlign: labelWidthCh > 3 ? 'center' : 'right' }}
-          >
-            {label}
-          </span>
+          {animate ? (
+            <RollerStrip
+              ref={stripRef}
+              currentLabel={label}
+              neighborFor={neighborFor!}
+              renderCell={renderText}
+              onStepCommit={commit}
+              cellWidthPx={cellWidthPx}
+            />
+          ) : (
+            <span
+              className="inline-block whitespace-nowrap tabular-nums"
+              style={{
+                width: `${labelWidthCh}ch`,
+                textAlign: labelWidthCh > 3 ? 'center' : 'right',
+              }}
+            >
+              {label}
+            </span>
+          )}
           {suffix && <span className="ml-1.5">{suffix.trim()}</span>}
         </span>
       )}
       <button
         type="button"
-        onClick={onNext}
+        {...nextHandlers}
         disabled={disabled || disableNext}
         aria-label={`${ariaLabel} up`}
-        className="p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="touch-none select-none p-1.5 rounded-md text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <ChevronRight className="w-4 h-4" aria-hidden />
       </button>
