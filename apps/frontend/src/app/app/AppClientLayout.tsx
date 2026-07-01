@@ -12,6 +12,7 @@ import { LeatherBackground } from '@/shared/components/LeatherBackground';
 // @xstate/react + test re-exports don't get dragged into the shell chunk.
 import { XStateDevToolsProvider } from '@/domains/playback/machines/XStateDevToolsProvider';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
+import { AuthWelcomeOverlay } from '@/domains/user/components/auth/AuthWelcomeOverlay';
 import { AppAudioWarmup } from './AppAudioWarmup';
 import { AppGymWarmup } from './AppGymWarmup';
 import { routeNeedsAudioProvider } from './audioRoutes';
@@ -152,6 +153,9 @@ export function AppClientLayout({ children }: { children: ReactNode }) {
         <XStateDevToolsProvider showStatus={true}>
           {/* AudioProvider only on audio routes (see audioRoute above). */}
           {audioRoute ? <AudioProvider>{inner}</AudioProvider> : inner}
+          {/* Branded welcome beat after a fresh login (any method): shows the logo over the
+              already-loading shell, then fades out revealing it. One-shot; no-op otherwise. */}
+          <AuthWelcomeOverlay />
           {/* Route-aware background warm-up: after first paint, on routes that
               can reach audio (gym/college/tutorials), warms the engine into the
               WindowRegistry singleton so it's ready when the user acts. No-op on

@@ -9,6 +9,7 @@ import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { AuthWarmingScreen } from '@/domains/user/components/auth/AuthWarmingScreen';
+import { markJustLoggedIn } from '@/domains/user/components/auth/justLoggedIn';
 
 function isEmailConfirmation(
   searchParams: URLSearchParams | ReturnType<typeof useSearchParams>,
@@ -74,6 +75,7 @@ function AuthCallbackContent() {
               description: 'Your email is confirmed.',
             });
           }
+          markJustLoggedIn(); // welcome overlay fires once on landing (magic-link / OAuth fallback)
           redirectAfterAuth(session.user);
           return;
         }
@@ -132,6 +134,7 @@ function AuthCallbackContent() {
             description: 'Your email is confirmed.',
           });
         }
+        markJustLoggedIn(); // welcome overlay fires once on landing
         redirectAfterAuth(data.user);
       } catch (error) {
         logger.error('[Auth Debug] Callback handling error:', error);
