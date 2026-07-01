@@ -51,8 +51,10 @@ export function AuthWelcomeOverlay({ show }: { show: boolean }) {
         transition: `opacity ${FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
       }}
     >
+      {/* authWelcomeRise + the reduced-motion rule live in globals.css (the .auth-welcome-logo
+          class) — NOT an inline <style> here, which would break SSR hydration (React #418). */}
       <h1
-        className="font-heading select-none text-center text-[clamp(44px,8vw,84px)] font-normal uppercase leading-[0.9] tracking-[0.12em] text-[#E8650A]"
+        className="auth-welcome-logo font-heading select-none text-center text-[clamp(44px,8vw,84px)] font-normal uppercase leading-[0.9] tracking-[0.12em] text-[#E8650A]"
         style={{
           textShadow:
             '0 0 8px rgba(232,101,10,0.13), 0 0 13px rgba(232,101,10,0.15)',
@@ -61,16 +63,6 @@ export function AuthWelcomeOverlay({ show }: { show: boolean }) {
       >
         Bassicology
       </h1>
-
-      <style>{`
-        @keyframes authWelcomeRise {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          [style*="authWelcomeRise"] { animation: none !important; }
-        }
-      `}</style>
     </div>
   );
 }
