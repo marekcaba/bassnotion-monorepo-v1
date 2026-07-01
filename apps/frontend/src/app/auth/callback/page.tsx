@@ -8,6 +8,7 @@ import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
+import { AuthWarmingScreen } from './AuthWarmingScreen';
 
 function isEmailConfirmation(
   searchParams: URLSearchParams | ReturnType<typeof useSearchParams>,
@@ -33,7 +34,9 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { setUser, setSession } = useAuth();
-  const { redirectAfterAuth } = useAuthRedirect();
+  // Land straight on Backstage (the app home) after OAuth — skip the '/' → /backstage bounce so the
+  // user goes from the warming screen to Backstage in ONE hop, no intermediate flash.
+  const { redirectAfterAuth } = useAuthRedirect({ defaultRedirect: '/backstage' });
   const { logger } = useCorrelation('AuthCallback');
 
   useEffect(() => {
@@ -153,32 +156,12 @@ function AuthCallbackContent() {
     logger,
   ]);
 
-  return (
-    <div className="flex h-screen w-screen items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-lg font-semibold">Completing sign in...</h2>
-        <p className="text-muted-foreground mt-2">
-          Please wait while we verify your credentials.
-        </p>
-      </div>
-    </div>
-  );
+  return <AuthWarmingScreen message="Warming up your session" />;
 }
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen w-screen items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold">Loading...</h2>
-            <p className="text-muted-foreground mt-2">
-              Please wait while we process your authentication.
-            </p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthWarmingScreen message="Warming up your session" />}>
       <AuthCallbackContent />
     </Suspense>
   );
