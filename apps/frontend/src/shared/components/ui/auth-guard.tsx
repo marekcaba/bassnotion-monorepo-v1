@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
 
@@ -17,42 +16,33 @@ export function AuthGuard({
   redirectTo = '/login',
 }: AuthGuardProps) {
   const { isAuthenticated, isReady } = useAuth();
-  const _router = useRouter();
   const { navigateWithTransition } = useViewTransitionRouter();
 
   useEffect(() => {
-    // Only redirect when auth is ready and user is definitely not authenticated
-    // TODO: Review non-null assertion - consider null safety
+    // Only redirect when auth is ready and the user is definitely not authenticated.
     if (isReady && !isAuthenticated) {
       navigateWithTransition(redirectTo);
     }
   }, [isReady, isAuthenticated, navigateWithTransition, redirectTo]);
 
-  // If auth is still loading, show fallback or children
-  // TODO: Review non-null assertion - consider null safety
-  if (!isReady) {
-    return fallback || children;
+  // FALLBACK GATE (post-SSR). The PRIMARY logged-out gate is now the EDGE middleware, which
+  // 307s an unauthenticated request to /login BEFORE any HTML ships (see middleware.ts — the
+  // sb-bn cookie-presence check on /app*, /college*, APP_ROUTES). And the P3 auth-store seed
+  // makes isReady/isAuthenticated true on first paint for a logged-in member, so `!isReady`
+  // essentially never fires on a fresh load. This client guard therefore only catches the cases
+  // the edge can't: a CLIENT-SIDE sign-out, a cross-tab logout, an expired-mid-session token, or
+  // a preview deploy where the edge host-rules don't apply. In those cases the useEffect above
+  // navigates away.
+  //
+  // While auth resolves OR during that brief redirect hop we render `fallback ?? children` (not a
+  // spinner): the edge already handled the common logged-out load, so flashing a lone spinner for
+  // the rare soft-nav redirect is noise. Rendering children for the sub-second redirect window is
+  // harmless (the page's own data is auth-gated server-side + by the query `enabled` flags) and
+  // avoids a jarring blank-spinner flash.
+  if (!isReady || !isAuthenticated) {
+    return <>{fallback ?? children}</>;
   }
 
-  // Not authenticated → the useEffect above is already navigating away.
-  // Render a neutral spinner (not a scary "Access Denied" card) during that
-  // brief redirect window. The store reports isReady=true the instant auth
-  // state clears (signout, or a logged-out load of a protected route), so
-  // showing an error-looking screen here just flashes alarming UI at a user
-  // who is simply being redirected.
-  if (!isAuthenticated) {
-    return (
-      fallback || (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div
-            className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground"
-            aria-label="Redirecting"
-          />
-        </div>
-      )
-    );
-  }
-
-  // User is authenticated, show protected content
+  // Authenticated → protected content.
   return <>{children}</>;
 }
