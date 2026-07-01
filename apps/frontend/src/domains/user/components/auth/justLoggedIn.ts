@@ -1,5 +1,7 @@
 'use client';
 
+import { WELCOME_COOKIE } from './welcomeCookie';
+
 /**
  * One-shot "the user just logged in" signal, backed by a short-lived COOKIE (bn-welcome).
  *
@@ -17,7 +19,9 @@
  * host-only, path=/, sameSite=lax (survives the OAuth top-level redirect), NOT httpOnly (the client
  * overlay clears it), short Max-Age (60s) as a belt-and-suspenders auto-expiry.
  */
-export const WELCOME_COOKIE = 'bn-welcome';
+// WELCOME_COOKIE is imported from the neutral './welcomeCookie' (see top) — it must NOT be defined
+// in this 'use client' module, or the server reader would import a client-reference proxy, not the
+// string. Server + client both import the constant from welcomeCookie.ts.
 
 /** Client-side setter (email/magic-link). The OAuth server route sets the same cookie server-side. */
 export function markJustLoggedIn(): void {
