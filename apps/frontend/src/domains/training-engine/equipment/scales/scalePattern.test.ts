@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   generatePatternDegrees,
   buildScaleLadder,
+  buildLadderFromPath,
   degreesToPositions,
   PATTERN_PRESETS,
   type ScalePatternRule,
@@ -126,5 +127,80 @@ describe('degreesToPositions — nearest-position fingering', () => {
     const ladder = buildScaleLadder(u);
     const pos = degreesToPositions([0, 9999], ladder);
     expect(pos.length).toBe(1); // the off-ladder degree is skipped
+  });
+});
+
+describe('buildLadderFromPath — constrain a pattern to a known authored path', () => {
+  // 4-string open MIDI: 4=E(28) 3=A(33) 2=D(38) 1=G(43). A path's notes → its own ladder.
+  it('builds rungs from ONLY the path notes, ascending by pitch', () => {
+    // E(28), F#(30), G#(32) up string 4 — three ascending notes.
+    const path = [
+      { string: 4, fret: 0 }, // 28
+      { string: 4, fret: 2 }, // 30
+      { string: 4, fret: 4 }, // 32
+    ];
+    const ladder = buildLadderFromPath(path, 4);
+    expect(ladder.map((r) => r.midi)).toEqual([28, 30, 32]);
+    expect(ladder[0]!.positions).toEqual([{ string: 4, fret: 0 }]);
+  });
+
+  it('groups equal pitches across positions into one rung (e.g. unison spots)', () => {
+    // E at string-4 fret-0 (28) AND the same E reachable elsewhere — both land on one rung.
+    const path = [
+      { string: 4, fret: 0 }, // 28
+      { string: 4, fret: 5 }, // 33 = A, also open string 3
+      { string: 3, fret: 0 }, // 33 = A (same pitch as above)
+    ];
+    const ladder = buildLadderFromPath(path, 4);
+    expect(ladder.map((r) => r.midi)).toEqual([28, 33]);
+    // the 33 rung carries BOTH positions, sorted by fret
+    expect(ladder[1]!.positions).toEqual([
+      { string: 3, fret: 0 },
+      { string: 4, fret: 5 },
+    ]);
+  });
+
+  it('de-dups identical repeated positions (a path may revisit a spot)', () => {
+    const path = [
+      { string: 4, fret: 2 },
+      { string: 4, fret: 2 }, // same spot again
+    ];
+    const ladder = buildLadderFromPath(path, 4);
+    expect(ladder).toHaveLength(1);
+    expect(ladder[0]!.positions).toHaveLength(1);
+  });
+
+  it('skips notes on strings the neck does not have', () => {
+    // String 5 doesn't exist on a 4-string neck → that note is dropped.
+    const path = [
+      { string: 4, fret: 0 },
+      { string: 5, fret: 0 }, // off-neck
+    ];
+    const ladder = buildLadderFromPath(path, 4);
+    expect(ladder.map((r) => r.midi)).toEqual([28]);
+  });
+
+  it('a pattern over the path stays WITHIN the path — no whole-neck notes leak in', () => {
+    // A small 5-note path on string 4: frets 0,2,4,5,7 (E F# G# A B).
+    const path = [
+      { string: 4, fret: 0 },
+      { string: 4, fret: 2 },
+      { string: 4, fret: 4 },
+      { string: 4, fret: 5 },
+      { string: 4, fret: 7 },
+    ];
+    const ladder = buildLadderFromPath(path, 4);
+    const allowed = new Set(path.map((p) => `${p.string}:${p.fret}`));
+
+    const degrees = generatePatternDegrees({ cell: [0, 2], stride: 1 }, ladder.length);
+    const positions = degreesToPositions(degrees, ladder);
+
+    // Every generated position is one of the path's own notes — never the whole neck.
+    expect(positions.length).toBeGreaterThan(0);
+    positions.forEach((p) => {
+      expect(allowed.has(`${p.string}:${p.fret}`)).toBe(true);
+    });
+    // And the ladder is only as tall as the path (5 notes), so the pattern can't climb past it.
+    expect(ladder).toHaveLength(5);
   });
 });

@@ -23,6 +23,7 @@ import {
   PartyPopper,
   BookOpen,
   Timer,
+  Guitar,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -37,6 +38,7 @@ const BLOCK_ICONS: Record<
   exercise: Music,
   groove: Sparkles,
   'groove-card': Disc3,
+  scales: Guitar,
   text: FileText,
   celebration: PartyPopper,
   explain: BookOpen,

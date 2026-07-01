@@ -12,7 +12,8 @@
  * named (cell, stride) pairs that pre-fill the editor.
  */
 
-import type { UniverseNote } from './noteUniverse';
+import { OPEN_STRING_MIDI, type UniverseNote } from './noteUniverse';
+import type { StringCount } from './scaleGenerator';
 
 /** A repeating pattern cell + how far it advances each repeat. All in SCALE DEGREES. */
 export interface ScalePatternRule {
@@ -122,6 +123,39 @@ export function buildScaleLadder(universe: UniverseNote[]): LadderRung[] {
     const list = byMidi.get(n.midi) ?? [];
     list.push({ string: n.string, fret: n.fret });
     byMidi.set(n.midi, list);
+  }
+  return [...byMidi.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([midi, positions]) => ({
+      midi,
+      positions: positions.sort((p, q) => p.fret - q.fret),
+    }));
+}
+
+/**
+ * Build the ladder from a KNOWN, AUTHORED PATH instead of the whole neck — so a pattern
+ * generated over it climbs ONLY that path's notes, using the path's own fingering positions.
+ * Each distinct pitch in the path's `{string, fret}` events becomes one rung (its midi from
+ * the open-string convention); the rung's positions are wherever that pitch appears in the
+ * path. Ascending by pitch, so degree 0 = the path's lowest note. Notes off the supported
+ * neck are skipped. This is the constrained counterpart to buildScaleLadder.
+ */
+export function buildLadderFromPath(
+  events: { string: number; fret: number }[],
+  stringCount: StringCount,
+): LadderRung[] {
+  const open = OPEN_STRING_MIDI[stringCount];
+  const byMidi = new Map<number, FretPos[]>();
+  for (const e of events) {
+    const openMidi = open[e.string];
+    if (openMidi === undefined) continue; // string not on this neck
+    const midi = openMidi + e.fret;
+    const list = byMidi.get(midi) ?? [];
+    // De-dup identical positions (a path may revisit the same spot).
+    if (!list.some((p) => p.string === e.string && p.fret === e.fret)) {
+      list.push({ string: e.string, fret: e.fret });
+    }
+    byMidi.set(midi, list);
   }
   return [...byMidi.entries()]
     .sort((a, b) => a[0] - b[0])

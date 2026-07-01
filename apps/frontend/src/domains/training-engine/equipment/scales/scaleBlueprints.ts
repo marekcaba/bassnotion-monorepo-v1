@@ -53,6 +53,8 @@ export const SCALE_BLUEPRINTS: Record<ScaleType, ScaleBlueprint> = {
   mixolydian: { positions: standardPositions(7) },
   minor_pentatonic: { positions: standardPositions(5) },
   major_pentatonic: { positions: standardPositions(5) },
+  lydian_b7: { positions: standardPositions(7) }, // 7-note, standard boxes
+  altered: { positions: standardPositions(7) },
 };
 
 /** How many box positions a scale type has (for the position picker). */

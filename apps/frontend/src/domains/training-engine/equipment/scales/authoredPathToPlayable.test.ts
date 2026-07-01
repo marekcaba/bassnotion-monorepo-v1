@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   authoredPathToPlayable,
   authoredPathBeats,
+  buildUpDownEvents,
 } from './authoredPathToPlayable';
 
 const note = (string: number, fret: number, durationTicks = 240) => ({
@@ -92,5 +93,65 @@ describe('authoredPathBeats', () => {
   it('is 0 for empty / malformed', () => {
     expect(authoredPathBeats([])).toBe(0);
     expect(authoredPathBeats(null)).toBe(0);
+  });
+});
+
+describe('buildUpDownEvents — paths run up to the top, then back down', () => {
+  it('reverses the middle — BOTH endpoints dropped (top + bottom play once per loop)', () => {
+    const asc = [note(4, 0), note(4, 2), note(4, 4)]; // E F# G# (up)
+    const out = buildUpDownEvents(asc, null);
+    // up E F# G#, then DOWN only the middle (F#) — the top G# (turnaround) and the bottom E
+    // (first note of the NEXT loop) are both skipped, so the loop reads E F# G# F# | E F# …
+    expect(out.map((e) => (e as { fret: number }).fret)).toEqual([0, 2, 4, 2]);
+  });
+
+  it('loop seam does NOT duplicate the bottom note', () => {
+    const asc = [note(4, 0), note(4, 2), note(4, 4)];
+    const out = buildUpDownEvents(asc, null);
+    const frets = out.map((e) => (e as { fret: number }).fret);
+    // The last event of the sequence is NOT the same as the first (no doubled bottom on wrap).
+    expect(frets[frets.length - 1]).not.toBe(frets[0]);
+  });
+
+  it('uses the authored descending array when present (admin owns those notes)', () => {
+    const asc = [note(4, 0), note(4, 2)];
+    const desc = [note(3, 5), note(3, 2)]; // a different hand-authored descent
+    const out = buildUpDownEvents(asc, desc);
+    expect(out).toEqual([...asc, ...desc]);
+  });
+
+  it('drops trailing rests before reversing (descent does not open on silence)', () => {
+    const asc = [note(4, 0), note(4, 2), note(4, 4), rest(240)];
+    const out = buildUpDownEvents(asc, null);
+    // trailing rest trimmed; reverse the middle only → just F# on the way down.
+    expect(out.map((e) => (e as { fret?: number }).fret)).toEqual([
+      0,
+      2,
+      4,
+      undefined, // the trailing rest stays in the ASCENDING half (it has no fret)
+      2,
+    ]);
+  });
+
+  it('a two-note path has no middle to mirror (just up)', () => {
+    const asc = [note(4, 0), note(4, 2)];
+    expect(buildUpDownEvents(asc, null)).toEqual(asc); // E F# — nothing between the endpoints
+  });
+
+  it('a single-note path has no descent to add', () => {
+    const asc = [note(4, 0)];
+    expect(buildUpDownEvents(asc, null)).toEqual(asc);
+  });
+
+  it('is empty for an empty / malformed ascending', () => {
+    expect(buildUpDownEvents([], null)).toEqual([]);
+    expect(buildUpDownEvents(null, null)).toEqual([]);
+  });
+
+  it('plays as a real up-down sequence through authoredPathToPlayable', () => {
+    const asc = [note(4, 0, 240), note(4, 2, 240), note(4, 4, 240)];
+    const out = authoredPathToPlayable(buildUpDownEvents(asc, null));
+    // E F# G# F# — climbs to the top midi then steps back down; loops cleanly to E.
+    expect(out.map((n) => n.midi)).toEqual([28, 30, 32, 30]);
   });
 });

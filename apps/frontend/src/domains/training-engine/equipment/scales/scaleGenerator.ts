@@ -33,6 +33,10 @@ export const SCALE_INTERVALS = {
   mixolydian: [0, 2, 4, 5, 7, 9, 10],
   minor_pentatonic: [0, 3, 5, 7, 10],
   major_pentatonic: [0, 2, 4, 7, 9],
+  // Lydian ♭7 (Lydian dominant): 1 2 3 ♯4 5 6 ♭7 — the 13♯11 chord's parent scale.
+  lydian_b7: [0, 2, 4, 6, 7, 9, 10],
+  // Altered (super-Locrian): 1 ♭2 ♯2 3 ♭5 ♯5 ♭7 — the 7alt chord's parent scale.
+  altered: [0, 1, 3, 4, 6, 8, 10],
 } as const;
 
 export type ScaleType = keyof typeof SCALE_INTERVALS;

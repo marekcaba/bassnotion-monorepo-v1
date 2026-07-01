@@ -23,6 +23,12 @@ import { useRepResultSync } from '@/domains/training-engine/hooks/useRepResultSy
 import { useEntitlement } from '@/domains/billing/hooks/useEntitlement';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useStreak } from '@/domains/drill/hooks/useStreak';
+import { useProgress } from '@/domains/progress/hooks/useProgress';
+import { getDrillBricks } from '@/domains/drill/utils/drillBricks';
+import {
+  DrillSummaryScreen,
+  type DrillSummaryItem,
+} from '@/domains/drill/components/DrillSummaryScreen';
 
 /**
  * Scoped keyframes for the gym's one-shot staggered entrance (CSS-only — no
@@ -614,17 +620,27 @@ function GymPageInner() {
 
   const autoStartLatchRef = React.useRef(false);
   const floorLatchRef = React.useRef(false);
+  const doneLatchRef = React.useRef(false);
   if (searchParams.get('start') === '1') autoStartLatchRef.current = true;
   if (searchParams.get('floor') === '1') floorLatchRef.current = true;
+  // ?done=1 — the rep just completed on /gym/rep and bounced back here. An optimistic first-paint
+  // hint for the "session completed" overlay; the durable truth is doneTodayUtc (server-derived).
+  if (searchParams.get('done') === '1') doneLatchRef.current = true;
   const autoStartRep = autoStartLatchRef.current;
   const returningToFloor = floorLatchRef.current;
+  const justCompleted = doneLatchRef.current;
 
-  // Strip ?start / ?floor from the URL once latched, so the address bar reads a clean /gym and the
-  // signal can't fire again on reload/back. Use the Next router (not raw history.replaceState, which
-  // desyncs App Router's internal URL and can resurrect the params on the next client nav). The latch
-  // refs above already hold the behavior, so the resulting empty-searchParams re-render is harmless.
+  // Strip ?start / ?floor / ?done from the URL once latched, so the address bar reads a clean /gym
+  // and the signal can't fire again on reload/back. Use the Next router (not raw
+  // history.replaceState, which desyncs App Router's internal URL and can resurrect the params on
+  // the next client nav). The latch refs above already hold the behavior, so the resulting
+  // empty-searchParams re-render is harmless.
   React.useEffect(() => {
-    if (searchParams.get('start') === '1' || searchParams.get('floor') === '1') {
+    if (
+      searchParams.get('start') === '1' ||
+      searchParams.get('floor') === '1' ||
+      searchParams.get('done') === '1'
+    ) {
       router.replace('/gym', { scroll: false });
     }
   }, [searchParams, router]);
@@ -653,6 +669,7 @@ function GymPageInner() {
     repMode,
     topicProgress,
     goalTitle,
+    doneTodayUtc,
     goals,
     chooseGoal,
     placeAndStart,
@@ -753,6 +770,35 @@ function GymPageInner() {
     () => exercises,
     [exercises, exercises?.length, exercises?.[0]?.id],
   );
+
+  // COMPLETED-SESSION card: when today's rep is done we show the recap in the overlay (in place of
+  // the front door), rebuilt from the same progress cache the drill frame reads. showCompleted =
+  // the durable server truth (doneTodayUtc) OR the just-completed latch (?done=1) for instant first
+  // paint right after finishing. Persists until the UTC day rolls over (doneTodayUtc flips false).
+  const showCompleted = (doneTodayUtc || justCompleted) && isMember;
+  // While the session is still resolving (status 'loading') we don't yet know done-vs-not-done,
+  // so the overlay shows a neutral spinner instead of the front door (which would flip to the
+  // completed card once doneTodayUtc lands → the "Six minutes → Session complete" flash on load).
+  // The ?done=1 latch (justCompleted) means we already know it's done, so skip the wait.
+  const sessionResolving = isMember && status === 'loading' && !justCompleted;
+  const { data: repProgress } = useProgress(slug, { enabled: !!slug });
+  const completedSummaryItems = React.useMemo<DrillSummaryItem[]>(() => {
+    if (!memoizedTutorial) return [];
+    const bricks = getDrillBricks(memoizedTutorial);
+    const dataById = new Map(
+      (repProgress?.blocks ?? []).map((b) => [b.blockId, b.data ?? null]),
+    );
+    return bricks.map((brick) => ({
+      brick,
+      result: dataById.get(brick.id) ?? null,
+    }));
+  }, [memoizedTutorial, repProgress]);
+  // The summary must NOT paint until progress reflects the completion, or it shows a stale
+  // 0-conquered "Bricks laid." headline for a beat before the conquered data lands → then flips to
+  // "Reps that count." Require every brick to carry a recorded result before rendering the card.
+  const completedDataReady =
+    completedSummaryItems.length > 0 &&
+    completedSummaryItems.every((i) => i.result != null);
 
   // Membership gate. While auth + entitlement resolve, show the ONE neutral
   // loading spinner (never flash the wall to a member, nor the gym to a
@@ -962,7 +1008,43 @@ function GymPageInner() {
                   FIXED min-height so the block's size doesn't change between the placeholder, the
                   live front door, and the "Are you ready?" step → justify-center never re-shifts. */}
               <div className="gym-rise gym-d2 flex w-full max-w-[26rem] flex-col justify-start" style={{ minHeight: 360 }}>
-                {slug && memoizedTutorial && !isLoading ? (
+                {sessionResolving ? (
+                  // Session not yet resolved (status 'loading') → we DON'T yet know whether today's
+                  // rep is done. Show a neutral spinner rather than committing to the "Six minutes."
+                  // front door, which would then flip to the completed card once doneTodayUtc lands
+                  // (the confusing flash). The ?done=1 latch (justCompleted) skips this — we already
+                  // know it's done.
+                  <div className="flex min-h-[360px] w-full items-center justify-center">
+                    <div
+                      className="h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#E8A44A]"
+                      role="status"
+                      aria-label="Loading today's rep"
+                    />
+                  </div>
+                ) : showCompleted ? (
+                  // TODAY'S REP IS DONE → the "session completed" recap, in the same overlay the
+                  // student started from. No "Six minutes." front door until tomorrow's rep.
+                  // "Run it again" replays (the drill is idempotent for the day — no double-climb).
+                  // Wait for completedDataReady so we never flash a stale 0-conquered "Bricks laid."
+                  // headline before the conquered result lands in the progress cache.
+                  completedDataReady ? (
+                    <DrillSummaryScreen
+                      title={goalTitle ?? undefined}
+                      items={completedSummaryItems}
+                      onRestart={() => navigateWithTransition('/gym/rep?start=1')}
+                      onDone={dismissOverlay}
+                      streak={streak ?? null}
+                    />
+                  ) : (
+                    <div className="flex min-h-[360px] w-full items-center justify-center">
+                      <div
+                        className="h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#E8A44A]"
+                        role="status"
+                        aria-label="Loading your session recap"
+                      />
+                    </div>
+                  )
+                ) : slug && memoizedTutorial && !isLoading ? (
                   <DrillSessionFrame
                     tutorial={memoizedTutorial}
                     tutorialSlug={slug}

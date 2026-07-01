@@ -25,8 +25,10 @@ import {
   FRETBOARD_CANVAS_HEIGHT,
   FRETBOARD_WINDOW,
 } from './fretboardViewConfig';
+import { computeFretboardGeometry } from './fretboardGeometry';
+import { useFretboardSizeTier } from './useFretboardSizeTier';
 import {
-  // FretboardCalibrationPanel,  // ← uncomment (+ the mount below) to re-calibrate
+  FretboardCalibrationPanel,
   CALIBRATION_ENABLED,
   type FretboardCalibrationValues,
 } from './FretboardCalibrationPanel';
@@ -161,28 +163,73 @@ export function ScaleFretboardWindow({
     [stringCount],
   );
 
+  // RESPONSIVE SIZE TIER — measure the card container's own width and pick a tier. Enabled: the
+  // board scales to its tier (mobile/tablet/desktop/large on the 640/1024/1536 thresholds). Tablet
+  // is the 1.0 baseline (today's calibration). `sizeRef` attaches to the root div, which is
+  // width:100% so it reflects the space the card/page grants the fretboard.
+  const {
+    ref: sizeRef,
+    scaleFactor: tierScaleFactor,
+    viewportWidth: tierViewportWidth,
+  } = useFretboardSizeTier({ enabled: true });
+
   // DEV tuning: the playhead sphere config (size/color/anim/easing). The PlayheadPanel
   // adjusts it live when NEXT_PUBLIC_PLAYHEAD_PANEL=true; otherwise the baked default.
   const [playheadCfg, setPlayheadCfg] = React.useState<PlayheadConfig>(
     DEFAULT_PLAYHEAD_CONFIG,
   );
 
-  // DEV calibration: live overrides for the centering/fade params, seeded from the
-  // base config. When CALIBRATION_ENABLED, the panel adjusts these live; otherwise
-  // the base config is used as-is.
-  // `setCal` unused while the panel is commented out; restore on re-calibration.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // DEV calibration: live overrides for the centering/fade params. SEEDED FROM THE TIER-SCALED
+  // values (not the raw baseline) so opening the panel doesn't snap the board back to the tablet
+  // proportions — it matches what's currently on screen, and you tune FROM there. The seed applies
+  // the SAME contentScale×f + sceneX re-anchor + viewportWidth as the live (non-panel) path below.
   const [cal, setCal] = React.useState<FretboardCalibrationValues>(() => ({
-    sceneX: baseConfig.sceneX,
+    sceneX:
+      baseConfig.sceneX -
+      (tierViewportWidth - FRETBOARD_WINDOW.viewportWidth) / 2,
     offsetX: baseConfig.offsetX,
     tiltAxisOffsetX: baseConfig.tiltAxisOffsetX,
-    contentScale: baseConfig.contentScale,
+    contentScale: baseConfig.contentScale * tierScaleFactor,
     contentScaleX: baseConfig.contentScaleX,
+    contentScaleY: baseConfig.contentScaleY,
+    rotationX: baseConfig.rotationX,
+    rotationY: baseConfig.rotationY,
+    rotationZ: baseConfig.rotationZ,
     leftFadeZone: baseConfig.leftFadeZone,
     rightFadeZone: baseConfig.rightFadeZone,
-    viewportWidth: FRETBOARD_WINDOW.viewportWidth,
-    windowHeight: FRETBOARD_CANVAS_HEIGHT,
+    viewportWidth: tierViewportWidth,
+    windowHeight: FRETBOARD_CANVAS_HEIGHT * tierScaleFactor,
+    // The scroll↔fret px rate, seeded from the geometry's baseline × the tier factor so the panel
+    // starts matching the live board; drag the slider to tune scroll reach + sphere tracking.
+    screenPxPerFret: computeFretboardGeometry({
+      maxFrets,
+      viewportWidth: tierViewportWidth,
+      scaleFactor: tierScaleFactor,
+    }).screenPxPerFret,
   }));
+
+  // RE-SEED the panel when the resolved tier changes. useState's initializer runs ONCE on first
+  // render — before the ResizeObserver has measured, so it captures the tablet fallback (factor
+  // 1.0 / viewport 700). Once the real tier resolves (and on any resize), refresh `cal` to the
+  // tier-scaled values so the panel matches the live board instead of snapping it to baseline.
+  // Only when the panel is enabled (it's the only consumer of `cal`); a no-op otherwise.
+  React.useEffect(() => {
+    if (!CALIBRATION_ENABLED) return;
+    setCal((prev) => ({
+      ...prev,
+      sceneX:
+        baseConfig.sceneX -
+        (tierViewportWidth - FRETBOARD_WINDOW.viewportWidth) / 2,
+      contentScale: baseConfig.contentScale * tierScaleFactor,
+      viewportWidth: tierViewportWidth,
+      windowHeight: FRETBOARD_CANVAS_HEIGHT * tierScaleFactor,
+      screenPxPerFret: computeFretboardGeometry({
+        maxFrets,
+        viewportWidth: tierViewportWidth,
+        scaleFactor: tierScaleFactor,
+      }).screenPxPerFret,
+    }));
+  }, [tierScaleFactor, tierViewportWidth, baseConfig, maxFrets]);
 
   // The active calibration: an explicit override (the admin panel) wins; else the live
   // `cal` when the env-gated dev panel is on; else nothing (use the baked base config).
@@ -198,6 +245,10 @@ export function ScaleFretboardWindow({
       tiltAxisOffsetX,
       contentScale,
       contentScaleX,
+      contentScaleY,
+      rotationX,
+      rotationY,
+      rotationZ,
       leftFadeZone,
       rightFadeZone,
     } = activeCal;
@@ -208,6 +259,10 @@ export function ScaleFretboardWindow({
       tiltAxisOffsetX,
       contentScale,
       contentScaleX,
+      contentScaleY,
+      rotationX,
+      rotationY,
+      rotationZ,
       leftFadeZone,
       rightFadeZone,
     };
@@ -218,11 +273,30 @@ export function ScaleFretboardWindow({
   // content is centered on viewportWidth, so widening alone shifts it right; we cancel
   // that by pulling sceneX left by half the extra width → LEFT EDGE STAYS ANCHORED,
   // right edge extends. The outer box grows to fit so the wider canvas isn't clipped.
-  const viewportWidth = activeCal
-    ? activeCal.viewportWidth
-    : FRETBOARD_WINDOW.viewportWidth;
-  const height = activeCal ? activeCal.windowHeight : FRETBOARD_CANVAS_HEIGHT;
-  const anchoredConfig = overlay3DConfig;
+  // viewportWidth precedence: the dev calibration panel (when active) wins; else the responsive
+  // tier's width. With the tier disabled (step 4) tierViewportWidth === FRETBOARD_WINDOW.viewport
+  // (700), so this is identical to the old `activeCal ? … : FRETBOARD_WINDOW.viewportWidth`.
+  const viewportWidth = activeCal ? activeCal.viewportWidth : tierViewportWidth;
+  // Height scales with the tier too, so the board's vertical proportion grows with its width.
+  const height = activeCal
+    ? activeCal.windowHeight
+    : FRETBOARD_CANVAS_HEIGHT * tierScaleFactor;
+
+  // RESPONSIVE SIZE — scale the 3D scene to the tier. `contentScale` is the TRUE uniform size
+  // lever (one Three.js group scale over dots/neck/rings/sphere — see [[fretboard-scale-lever]]),
+  // so the whole board zooms by the factor. Because the content is centered on `viewportWidth`,
+  // the wider canvas would shift the neck RIGHT; we cancel that by pulling `sceneX` left by half
+  // the extra width, keeping the LEFT EDGE anchored while the right edge extends. The dev
+  // calibration panel sets these by hand, so we DON'T re-scale when it's active (no double-scale).
+  const anchoredConfig = React.useMemo(() => {
+    if (activeCal || tierScaleFactor === 1) return overlay3DConfig;
+    const extraWidth = viewportWidth - FRETBOARD_WINDOW.viewportWidth;
+    return {
+      ...overlay3DConfig,
+      contentScale: overlay3DConfig.contentScale * tierScaleFactor,
+      sceneX: overlay3DConfig.sceneX - extraWidth / 2,
+    };
+  }, [activeCal, overlay3DConfig, tierScaleFactor, viewportWidth]);
 
   // ── MOVEMENT: the tutorial's model (the working reference) ─────────────────────────
   // A native horizontal scroll container drives the pan: the canvas reads its scrollLeft
@@ -232,34 +306,35 @@ export function ScaleFretboardWindow({
   // range use the MEASURED screen-px-per-fret mapping (SCREEN_PX_PER_FRET) below, since the
   // 3D renders at contentScale through a perspective camera (on-screen px/fret ≠ content).
 
-  // SCROLL RANGE — scrollLeft (DOM px) does NOT pan content 1:1: the 3D is rendered at
-  // contentScale through a perspective camera, so DOM-px under-covers the scaled content.
-  // MEASURED on the real board: at scroll 660 the neck reached ~fret 17 (from the default
-  // center ~fret 2.5) → ≈45.5 on-screen px per fret. Scroll to put the last fret at the
-  // viewport CENTER would be (lastFret − 2.5)×45.5; we want it at the RIGHT EDGE instead
-  // (so the neck stops with the last fret flush right, no blank space), which is half a
-  // viewport less. The spacer is exactly this wide so the browser clamps scroll there.
-  const SCREEN_PX_PER_FRET = 45.5;
-  const DEFAULT_CENTER_FRET = 2.5;
-  // CENTERING calibration — what scrollLeft puts a given fret at the VISUAL CENTER.
-  // CENTER_FRET_AT_0 = the fret centered at scrollLeft 0; CENTER_PX_PER_FRET = scroll px per
-  // fret of pan (same rate as the scroll range, 45.5). MEASURED 2026-06-28: scrollLeft 56
-  // centered fret-mid 6.0 → anchor = 6.0 − 56/45.5 ≈ 4.77.
-  const CENTER_FRET_AT_0 = 4.77;
-  const CENTER_PX_PER_FRET = 45.5;
-  // +200px of slack past the right-edge stop (eye-tuned 2026-06-28) so the last fret isn't
-  // jammed flush against the edge.
-  const SCROLL_SLACK = 200;
-  const maxScroll = Math.max(
-    0,
-    (maxFrets - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET -
-      viewportWidth / 2 +
-      SCROLL_SLACK,
+  // SCROLL/CENTERING geometry — the MEASURED scrollLeft↔fret mapping (≈45.5 px/fret at the
+  // baseline contentScale 1.17 + viewportWidth 700) now lives in the pure, tested
+  // computeFretboardGeometry. scaleFactor defaults to 1 here (no size tier yet) → byte-identical
+  // to the old inline math; the responsive tiers will pass a real factor that scales the px-rates
+  // in lockstep with contentScale so the scroll + sphere stay locked to the dots.
+  // scaleFactor is 1.0 while the tier is disabled → byte-identical geometry. When the size step
+  // enables it, the px-rates scale in lockstep with contentScale (see [[fretboard-scale-lever]]).
+  // Memoized so the scrollForFret/fitsInView helpers keep a STABLE identity across renders —
+  // the idle-drift camera effect depends on them, and a fresh geometry each render would restart
+  // its rAF loop every frame (killing the smooth continuous drift).
+  const calPxPerFret = activeCal ? activeCal.screenPxPerFret : undefined;
+  const geometry = React.useMemo(
+    () =>
+      computeFretboardGeometry({
+        maxFrets,
+        viewportWidth,
+        scaleFactor: tierScaleFactor,
+        // When the dev calibration panel is active, its px/fret slider drives the scroll mapping
+        // (absolute value); otherwise the baked baseline × tier factor is used.
+        screenPxPerFretOverride: calPxPerFret,
+      }),
+    [maxFrets, viewportWidth, tierScaleFactor, calPxPerFret],
   );
-  // Spacer is EXACTLY this scroll range wide (= maxScroll + viewportWidth), so the browser
-  // natively clamps scrollLeft to [0, maxScroll] — you can reach the last fret but not scroll
-  // into empty void past it.
-  const fullContentWidth = maxScroll + viewportWidth;
+  const {
+    maxScroll,
+    fullContentWidth,
+    scrollForFret: scrollForFretGeom,
+    fitsInView: fitsInViewGeom,
+  } = geometry;
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -274,10 +349,7 @@ export function ScaleFretboardWindow({
     (fret: number, durationMs = 650) => {
       const el = scrollContainerRef.current;
       if (!el) return;
-      const target = Math.min(
-        Math.max((fret - CENTER_FRET_AT_0) * CENTER_PX_PER_FRET, 0),
-        maxScroll,
-      );
+      const target = scrollForFretGeom(fret);
       const from = el.scrollLeft;
       if (Math.abs(target - from) < 1) {
         el.scrollLeft = target;
@@ -296,7 +368,8 @@ export function ScaleFretboardWindow({
       };
       centerTweenRef.current = requestAnimationFrame(step);
     },
-    [maxScroll],
+    // scrollForFretGeom closes over the geometry, which is a function of these inputs.
+    [maxFrets, viewportWidth],
   );
   React.useEffect(
     () => () => {
@@ -322,8 +395,7 @@ export function ScaleFretboardWindow({
     }
     const lo = Math.min(...shownFrets);
     const hi = Math.max(...shownFrets);
-    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
-    const fitsInView = hi - lo <= viewFrets - 1.5;
+    const fitsInView = fitsInViewGeom(lo, hi);
     // Fits → center the whole fret SPAN's midpoint; doesn't fit → center the first lit fret.
     const firstFret =
       typeof exerciseNotes[0]?.fret === 'number'
@@ -353,72 +425,92 @@ export function ScaleFretboardWindow({
   };
   const endDrag = () => setIsDragging(false);
 
-  // ── AUTO-FOLLOW CAMERA — during playback, SLOWLY pan the neck to keep the active note in
-  //    view — but ONLY WHEN NEEDED. If the whole exercise's fret span already fits in the
-  //    window, the camera holds still (no sliding). When it doesn't fit, the view only nudges
-  //    (gently, slowly) as the active note nears the left/right edge, then settles. Reads the
-  //    gym's own clock (getPlaybackBeat). Pauses while dragging; stops when not playing. ──
+  // ── IDLE-DRIFT CAMERA. The neck now shows ~12 frets at once, so there's no room-to-room
+  //    jumping — the camera stays STILL by default and only drifts when the ACTIVE NOTE reaches
+  //    the trigger zone (~fret 9, i.e. it's wandering toward the right edge of what's visible).
+  //    Then it drifts VERY SLOWLY and CONTINUOUSLY toward keeping the active note comfortably in
+  //    frame — an exponential (critically-damped) approach so there's no start/stop, just an
+  //    almost-imperceptible glide. Holds if the whole exercise fits; pauses on drag; stops when
+  //    not playing. No note clustering, no look-ahead, no fixed-duration tween. ──
   const isDraggingRef = React.useRef(isDragging);
   isDraggingRef.current = isDragging;
   React.useEffect(() => {
-    if (!getPlaybackBeat || !playheadNotes || playheadNotes.length === 0)
-      return;
-    // Does the WHOLE exercise fit in the view? View width in frets = viewport / px-per-fret.
-    // If the exercise span fits (with a margin), never pan — all notes are always visible.
-    const frets = playheadNotes.map((n) => n.fret);
-    const span = Math.max(...frets) - Math.min(...frets);
-    const viewFrets = viewportWidth / SCREEN_PX_PER_FRET;
-    const fitsInView = span <= viewFrets - 1.5; // 1.5-fret margin so edges aren't jammed
+    if (!getPlaybackBeat) return;
+    const notes = playheadNotes ?? [];
+    if (notes.length === 0) return;
+
+    // Whole exercise already visible? Then never move — everything's in sight.
+    const allFrets = notes.map((n) => n.fret);
+    const fitsInView = fitsInViewGeom(Math.min(...allFrets), Math.max(...allFrets));
+
+    const loop = loopBeats && loopBeats > 0 ? loopBeats : null;
+
+    // The active note's fret at a beat = the last note whose startBeat has passed (loop-wrapped).
+    const activeFretAt = (b: number): number => {
+      const wrapped = loop ? ((b % loop) + loop) % loop : b;
+      let fret = notes[0]!.fret;
+      for (const n of notes) {
+        if (n.startBeat <= wrapped) fret = n.fret;
+        else break;
+      }
+      return fret;
+    };
+
+    // ── DRIFT TUNING ──────────────────────────────────────────────────────────
+    // The camera drifts only once the active note is at/above this fret (it's heading toward the
+    // right edge of the visible window). Below it, the camera holds dead still.
+    const TRIGGER_FRET = 9;
+    // Where we try to keep the active note once drifting — a hair left of centre so there's
+    // runway ahead of it. Expressed as a fret offset the scroll aims to put at viewport centre.
+    const FRAME_FRET_LEAD = 2; // aim the scroll ~2 frets AHEAD of the active note
+    // Critically-damped approach: each frame move a small FRACTION of the remaining distance,
+    // capped to a MAX pixels/second so even a big jump stays idle-slow. Tiny fraction + hard cap
+    // = "almost like idle, but very very smooth".
+    const APPROACH_PER_SEC = 0.6; // 60% of the gap closes per second (very gentle)
+    const MAX_DRIFT_PX_PER_SEC = 55; // hard speed ceiling — the "idle" feel
+    const SNAP_EPSILON = 0.5; // px; stop fidgeting when essentially there
 
     let raf = 0;
-    const tick = () => {
+    let lastNow = 0;
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const el = scrollContainerRef.current;
       const beat = getPlaybackBeat();
-      // Not playing, mid-drag, counting in, or the exercise fits → hold position, no pan.
-      if (
-        !el ||
-        beat === null ||
-        beat < 0 ||
-        isDraggingRef.current ||
-        fitsInView
-      )
+      if (!el || beat === null || beat < 0 || isDraggingRef.current || fitsInView) {
+        lastNow = now;
         return;
-
-      // Active note's fret (the sphere's current note).
-      let idx = 0;
-      for (let i = 0; i < playheadNotes.length; i++) {
-        if (playheadNotes[i]!.startBeat <= beat) idx = i;
-        else break;
       }
-      const followFret = playheadNotes[idx]!.fret;
+      const dt = lastNow ? Math.min((now - lastNow) / 1000, 0.05) : 0; // clamp big gaps
+      lastNow = now;
 
-      // Where the active note currently sits on screen (px from the left edge).
-      const fretScreenX =
-        (followFret - DEFAULT_CENTER_FRET) * SCREEN_PX_PER_FRET - el.scrollLeft;
-      // EDGE BUFFER — only pan when the note drifts into the outer ~25% on either side; while
-      // it's comfortably in frame, the camera holds completely still.
-      const buffer = viewportWidth * 0.25;
-      let target = el.scrollLeft;
-      if (fretScreenX < buffer) {
-        // Drifting off the LEFT → pan left so the note returns to the buffer line.
-        target = el.scrollLeft + (fretScreenX - buffer);
-      } else if (fretScreenX > viewportWidth - buffer) {
-        // Drifting off the RIGHT → pan right.
-        target = el.scrollLeft + (fretScreenX - (viewportWidth - buffer));
-      } else {
-        return; // comfortably centered → no movement at all
-      }
-      target = Math.min(Math.max(target, 0), maxScroll);
-      // VERY SLOW ease toward the target — a calm drift, not a chase.
-      el.scrollLeft += (target - el.scrollLeft) * 0.02;
+      const activeFret = activeFretAt(beat);
+      // SYMMETRIC target: above the trigger, keep the active note (a touch ahead) framed → drift
+      // UP as the run climbs. At/below the trigger, target HOME (scroll 0) → drift back DOWN the
+      // same continuous way as the run descends. So ascending and descending mirror each other;
+      // the camera returns exactly as it left, and rests at home when the run is in the low zone.
+      const target =
+        activeFret >= TRIGGER_FRET
+          ? scrollForFretGeom(activeFret + FRAME_FRET_LEAD)
+          : 0;
+      const gap = target - el.scrollLeft;
+      if (Math.abs(gap) < SNAP_EPSILON) return;
+
+      // Exponential approach, speed-capped → continuous, ultra-smooth, never a jerk.
+      const ease = 1 - Math.exp(-APPROACH_PER_SEC * dt); // fraction of gap to close this frame
+      let stepPx = gap * ease;
+      const maxStep = MAX_DRIFT_PX_PER_SEC * dt;
+      if (Math.abs(stepPx) > maxStep) stepPx = Math.sign(stepPx) * maxStep;
+      el.scrollLeft += stepPx;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [getPlaybackBeat, playheadNotes, viewportWidth, maxScroll]);
+  }, [getPlaybackBeat, playheadNotes, loopBeats, fitsInViewGeom, scrollForFretGeom]);
 
   return (
     <div
+      // sizeRef measures THIS container's width (= the space the card grants the fretboard) to
+      // pick the responsive tier. It's width:100%, so it reflects the card/page constraints.
+      ref={sizeRef}
       style={{
         position: 'relative',
         width: '100%',
@@ -427,10 +519,10 @@ export function ScaleFretboardWindow({
         overflow: 'visible',
       }}
     >
-      {/* DEV calibration panel — commented out (values baked into fretboardViewConfig.ts).
-          To re-calibrate: uncomment this + the import above, and set
-          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true in .env.local. (Panel is draggable.) */}
-      {/* <FretboardCalibrationPanel values={cal} onChange={setCal} /> */}
+      {/* DEV calibration panel — draggable; renders null unless
+          NEXT_PUBLIC_FRETBOARD_CALIBRATION=true. Edits the scene centering/fade/window params
+          live; copy the printed values into fretboardViewConfig.ts when they look right. */}
+      <FretboardCalibrationPanel values={cal} onChange={setCal} />
 
       {/* DEV playhead tuners — draggable; render null unless NEXT_PUBLIC_PLAYHEAD_PANEL=true.
           PlayheadPanel = the sphere (size/color/anim/bezier/ripple). AnticipationPanel = the
@@ -454,8 +546,18 @@ export function ScaleFretboardWindow({
         onMouseMove={onMouseMove}
         onMouseUp={endDrag}
         onMouseLeave={endDrag}
-        className="h-full w-full overflow-x-auto overflow-y-hidden"
+        className="h-full overflow-x-auto overflow-y-hidden"
         style={{
+          // The scroll WINDOW must be exactly viewportWidth (the visible canvas window), centered
+          // in the card — NOT w-full. The spacer below is fullContentWidth (= maxScroll +
+          // viewportWidth), so it overflows this window by exactly maxScroll → drag range exists
+          // at every tier. When the card was widened (responsive tiers), a w-full container grew
+          // wider than the spacer and ate the whole scroll range → drag stopped working.
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: viewportWidth,
           cursor: isDragging ? 'grabbing' : 'grab',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',

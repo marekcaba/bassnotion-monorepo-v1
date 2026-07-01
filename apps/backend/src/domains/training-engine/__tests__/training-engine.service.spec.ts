@@ -1067,6 +1067,25 @@ describe('deriveStudentSignals (pure)', () => {
     expect(s.daysSinceLastConquered).toBeNull();
     expect(s.consecutiveWins).toBe(0);
   });
+
+  // PAID-TIER GUARD (regression). A rep recorded as 'completed' is NOT a win — only 'conquered'
+  // advances the tempo climb. The scales rep-block MUST record 'conquered' on its Conquer bar, or
+  // the daily climb silently never progresses (ScalesBlockView.completeRep('conquered')). If this
+  // ever flips to counting 'completed', a whole membership goal would look like it works but never
+  // climb. Keep 'completed' explicitly NON-winning.
+  it("does NOT count a 'completed' rep as a win (only 'conquered' climbs the tempo)", () => {
+    const completed = [
+      makeRepResult({ id: 'c2', result: 'completed', tempoBpm: 100 }),
+      makeRepResult({ id: 'c1', result: 'completed', tempoBpm: 100 }),
+    ];
+    expect(deriveStudentSignals(completed, climb, '2026-06-12').consecutiveWins).toBe(0);
+
+    const conquered = [
+      makeRepResult({ id: 'k2', result: 'conquered', tempoBpm: 100 }),
+      makeRepResult({ id: 'k1', result: 'conquered', tempoBpm: 100 }),
+    ];
+    expect(deriveStudentSignals(conquered, climb, '2026-06-12').consecutiveWins).toBe(2);
+  });
 });
 
 describe('TrainingEngineService.assembleStudentState', () => {

@@ -84,6 +84,10 @@ export interface PathsByKey {
   /** Library bucket + which performance controls apply. Defaults to 'path' (old exercises
    *  authored before this field existed were full-neck paths). */
   pathKind: PathKind;
+  /** The CHORD TYPE this exercise belongs under (maj7, m9, 13♯11, …) — the gym groups by it.
+   *  Set by the admin page on save; legacy content omits it (the gym derives from scaleType).
+   *  Stored opaque here (a string) so the editor doesn't depend on the chord vocabulary. */
+  chordType?: string;
   /** VARIANT GROUPING — the same logical exercise has many fingerings on bass. `variantGroup`
    *  is the exercise IDENTITY ("Two octaves"); `variantLabel` is this fingering ("v1", "Open
    *  strings"). The student tool groups by `variantGroup` and offers the labels within it.
@@ -140,6 +144,9 @@ export function PathEditor({
   onGenerate,
   onPopulate,
   onPopulateOne,
+  pathSourceOptions = [],
+  sourcePathId = '',
+  onSourcePathChange,
 }: {
   stringCount: 4 | 5 | 6;
   maxFrets: number;
@@ -160,6 +167,13 @@ export function PathEditor({
     to: PathKey,
     method: 'slide' | 'nearest',
   ) => void;
+  /** Saved PATH exercises a pattern can be constrained to (same scale/neck). When one is
+   *  picked, Generate climbs only that path's notes. Only meaningful for the 'pattern' kind. */
+  pathSourceOptions?: { id: string; label: string }[];
+  /** The currently selected source path id ('' = whole neck). */
+  sourcePathId?: string;
+  /** Change the source path selection. */
+  onSourcePathChange?: (id: string) => void;
 }) {
   const [dir, setDir] = React.useState<'ascending' | 'descending'>('ascending');
   const [activeDuration, setActiveDuration] =
@@ -663,6 +677,26 @@ export function PathEditor({
           Generate from a pattern
         </div>
         <div className="flex flex-wrap items-end gap-3">
+          {/* SOURCE PATH — constrain the pattern to a saved PATH's notes (the known
+              fingering) instead of the whole neck. Only shown for the 'pattern' kind. */}
+          {paths.pathKind === 'pattern' && onSourcePathChange && (
+            <label className="text-xs">
+              <span className="mb-1 block text-gray-500">On path</span>
+              <select
+                value={sourcePathId}
+                onChange={(e) => onSourcePathChange(e.target.value)}
+                className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                title="Generate the pattern over a known authored path's notes (not the whole neck)"
+              >
+                <option value="">Whole neck</option>
+                {pathSourceOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="text-xs">
             <span className="mb-1 block text-gray-500">Preset</span>
             <select
@@ -727,6 +761,15 @@ export function PathEditor({
           degrees the cell slides each repeat. Generate fills the {dir} path
           with eighth notes; drag the dots to set the real fingerings. “Save
           preset” keeps your cell with this exercise.
+          {paths.pathKind === 'pattern' && (
+            <>
+              {' '}
+              <span className="text-indigo-400">On path</span> climbs the pattern
+              through only that saved path’s notes (the known fingering) for this
+              key, instead of the whole neck — author the path first, then build
+              the pattern over it.
+            </>
+          )}
         </p>
       </div>
 

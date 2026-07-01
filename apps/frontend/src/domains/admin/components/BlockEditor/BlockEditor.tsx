@@ -36,6 +36,7 @@ import { TextBlockForm } from './configs/TextBlockForm.js';
 import { CelebrationBlockForm } from './configs/CelebrationBlockForm.js';
 import { ExplainBlockForm } from './configs/ExplainBlockForm.js';
 import { TaskBlockForm } from './configs/TaskBlockForm.js';
+import { ScalesBlockForm } from './configs/ScalesBlockForm.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -124,6 +125,18 @@ function createDefaultBlock(type: BlockType, order: number): AnyBlock {
         // previewCaption / stateCaptions so a future story can opt
         // back into per-card overrides if a specific groove wants
         // bespoke voice.
+      },
+    }),
+    scales: () => ({
+      id,
+      type: 'scales' as const,
+      title: 'Scales',
+      order,
+      showInIsland: true,
+      config: {
+        // Empty = tool default / open; a rep or admin authors the locked preset
+        // (exerciseId + key + tempo). Attended completion by default.
+        exerciseId: null,
       },
     }),
     text: () => ({
@@ -460,6 +473,9 @@ const EditingPanel = React.memo(function EditingPanel({
       )}
       {block.type === 'task' && (
         <TaskBlockForm config={block.config} onChange={handleConfigChange} />
+      )}
+      {block.type === 'scales' && (
+        <ScalesBlockForm config={block.config} onChange={handleConfigChange} />
       )}
     </div>
   );

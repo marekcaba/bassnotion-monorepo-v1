@@ -28,7 +28,7 @@ import React from 'react';
 import { getTone } from '@/domains/playback/utils/tone';
 import { getLogger } from '@/utils/logger.js';
 import { WamMetronome } from '@/domains/playback/modules/instruments/adapters/wam/WamMetronome';
-import { loadDroneStem } from './droneStem';
+import { DroneDeck, nextBarBoundary } from './DroneDeck';
 import { buildBassSamplerUrls, midiToToneNote } from './bassSampleMap';
 import type { PlayableNote } from './scalePath';
 
@@ -52,6 +52,11 @@ const CLICK_GAIN_ACCENT = 0.3;
  *  share one AudioContext, so output latency is common-mode and cancels in their relative offset
  *  (portable across all devices). Only re-tune if the click ASSET changes again. */
 const CLICK_LATENCY_COMP = 0;
+/** Drone crossfade duration (seconds) for a mid-play key/chord transition. Medium blend:
+ *  long enough that the two tonal centres audibly wash into each other, short enough that
+ *  distant key changes don't sit dissonant for long. The transition is aligned to the next
+ *  bar by the caller; no count-in fires (count-in is a once-per-take preamble). */
+const DRONE_CROSSFADE_SEC = 0.7;
 
 export interface UseScaleSequencerOptions {
   /** The ordered, timed scale notes to play (from buildScalePath). */
@@ -62,6 +67,23 @@ export interface UseScaleSequencerOptions {
   bpm: number;
   /** The drone chord symbol (A7, Cmaj7 …) — its .ogg loops under the scale. */
   droneSymbol: string;
+  /** Whether the sustained drone plays under the scale. Default true. Toggling mid-play
+   *  fades it in/out (no click); the scale notes + metronome keep going either way. */
+  droneEnabled?: boolean;
+  /** Drone level 0..1 (the volume knob). Default 1. */
+  droneVolume?: number;
+  /** Bass-sampler (the scale notes) level 0..1. Default 1. Applied to a gain node between the
+   *  sampler and the output, so it's a live, linear control independent of the drone + click. */
+  bassVolume?: number;
+  /** Metronome click level 0..1. Default 1. Scales the metronome's own output gain. */
+  metronomeVolume?: number;
+  /** FREESTYLE: when true, drone key changes crossfade IMMEDIATELY (no bar-alignment — there's
+   *  no grid in time-free mode) and over `droneCrossfadeSec`. Default false (exercise mode:
+   *  bar-aligned, short). */
+  freestyle?: boolean;
+  /** Drone crossfade duration (seconds) for a mid-play key change. Default 0.7 (snappy, for
+   *  exercise key changes); freestyle passes a long value (3–5s) for slow drifts. */
+  droneCrossfadeSec?: number;
   /** Resume a prewarmed context inside the play gesture (Safari). */
   onBeforePlay?: () => Promise<void> | void;
   /** RECORD MODE: when true, the scale-note SAMPLER is muted (drone + click still play), so the
@@ -70,6 +92,9 @@ export interface UseScaleSequencerOptions {
   /** Auto-stop after this many full loops (in addition to the count-in). 0/undefined = play
    *  forever (the default). Used by record mode so a take is exactly N loops then stops. */
   maxLoops?: number;
+  /** Fired when the maxLoops auto-stop completes (the take ran its full N loops), NOT when the
+   *  user hits stop. A rep brick uses this to mark itself complete after the required loops. */
+  onAutoStop?: () => void;
 }
 
 export interface UseScaleSequencerReturn {
@@ -78,6 +103,8 @@ export interface UseScaleSequencerReturn {
   /** 0 when not counting in; 1..COUNT_IN_BEATS during the count-in. */
   countInBeat: number;
   play: () => Promise<void>;
+  /** FREESTYLE: start only the held drone immediately (no count-in / metronome / bass). */
+  startFreestyle: () => Promise<void>;
   stop: () => void;
   audioContext: AudioContext | null;
   /** Current elapsed playback position in BEATS from the scale loop's beat 0, looped to
@@ -87,6 +114,9 @@ export interface UseScaleSequencerReturn {
   /** Absolute audioContext time (seconds) of the scale loop's beat 0 — the grid anchor the
    *  listening engine needs to align the player's recorded onsets. null before the first play. */
   getLoopStartAudioTime: () => number | null;
+  /** Wall-clock audio time of the NEXT loop seam (loopStart + k×loopSeconds). Feeds the
+   *  Dynamic Loop counter; null during count-in or when stopped. */
+  getNextSeamTime: () => number | null;
 }
 
 export function useScaleSequencer({
@@ -94,11 +124,21 @@ export function useScaleSequencer({
   loopBeats,
   bpm,
   droneSymbol,
+  droneEnabled = true,
+  droneVolume = 1,
+  bassVolume = 1,
+  metronomeVolume = 1,
+  freestyle = false,
+  droneCrossfadeSec = 0.7,
   onBeforePlay,
   silentBass = false,
   maxLoops = 0,
+  onAutoStop,
 }: UseScaleSequencerOptions): UseScaleSequencerReturn {
   const [isPlaying, setIsPlaying] = React.useState(false);
+  // Live ref so the auto-stop timeout calls the latest callback without re-arming.
+  const onAutoStopRef = React.useRef(onAutoStop);
+  onAutoStopRef.current = onAutoStop;
   const [countInBeat, setCountInBeat] = React.useState(0);
   // The tool is ready to start whenever there's a scale to play — samples load lazily on
   // the first click (inside the play gesture), so we DON'T gate the button on a post-load
@@ -112,10 +152,15 @@ export function useScaleSequencer({
   // pitch-interpolation. Typed loose because we resolve Tone at runtime via getTone().
   const samplerRef = React.useRef<any>(null);
   const loadedSignatureRef = React.useRef<string>(''); // current sampler's url signature
+  // A gain node the bass sampler routes THROUGH (sampler → bassGain → destination), so the
+  // scale-note level is a live, linear 0..1 control independent of the drone + metronome.
+  const bassGainRef = React.useRef<GainNode | null>(null);
   const metronomeRef = React.useRef<WamMetronome | null>(null);
 
   // Live scheduling state (refs so the RAF loop reads fresh values without re-subscribing).
-  const droneNodeRef = React.useRef<AudioBufferSourceNode | null>(null);
+  // The drone is a two-deck crossfading player (see DroneDeck): start() lays the first drone
+  // at loopStart; crossfadeTo() blends one tonal centre into the next mid-play, bar-aligned.
+  const droneDeckRef = React.useRef<DroneDeck | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const loopStartRef = React.useRef(0); // audioContext time when the scale loop (beat 0) begins
   const nextNoteIdxRef = React.useRef(0); // index of the next un-armed note in the path
@@ -136,6 +181,15 @@ export function useScaleSequencer({
   const loopBeatsRef = React.useRef(loopBeats);
   const bpmRef = React.useRef(bpm);
   const silentBassRef = React.useRef(silentBass);
+  const droneSymbolRef = React.useRef(droneSymbol);
+  const droneEnabledRef = React.useRef(droneEnabled);
+  const droneVolumeRef = React.useRef(droneVolume);
+  const bassVolumeRef = React.useRef(bassVolume);
+  const metronomeVolumeRef = React.useRef(metronomeVolume);
+  const freestyleRef = React.useRef(freestyle);
+  freestyleRef.current = freestyle;
+  const droneCrossfadeSecRef = React.useRef(droneCrossfadeSec);
+  droneCrossfadeSecRef.current = droneCrossfadeSec;
   React.useEffect(() => {
     pathRef.current = path;
   }, [path]);
@@ -164,12 +218,21 @@ export function useScaleSequencer({
     const ctx = Tone.getContext().rawContext as AudioContext;
     ctxRef.current = ctx;
 
+    // Bass-sampler output gain — the sampler connects to this (not straight to destination) so
+    // its level is a live 0..1 control. Created once, seeded at the current bassVolume.
+    const bassGain = ctx.createGain();
+    bassGain.gain.setValueAtTime(bassVolumeRef.current, ctx.currentTime);
+    bassGain.connect(ctx.destination);
+    bassGainRef.current = bassGain;
+
     // Metronome — give it Tone's raw context so its clicks land on the same clock.
     const metronome = new WamMetronome(ctx);
     await metronome.createAudioNode();
     const metDest = metronome.getDestination?.();
     if (metDest) metDest.connect(ctx.destination);
     metronomeRef.current = metronome;
+    // Apply the current metronome level to its own output gain.
+    applyMetronomeVolume(metronomeVolumeRef.current);
 
     return ctx;
   }, []);
@@ -214,7 +277,12 @@ export function useScaleSequencer({
       release: 0.12,
       curve: 'exponential',
       volume: -3,
-    }).toDestination();
+    });
+    // Route through the bass GAIN node (sampler → bassGain → destination) so the scale-note
+    // level is a live, linear control. Fall back to the destination if the gain isn't up yet
+    // (shouldn't happen — ensureAudio runs first — but keeps it safe).
+    if (bassGainRef.current) sampler.connect(bassGainRef.current);
+    else sampler.toDestination();
     await Tone.loaded(); // wait for every buffer to fetch + decode
     samplerRef.current = sampler;
     loadedSignatureRef.current = signature;
@@ -224,34 +292,108 @@ export function useScaleSequencer({
     });
   }, []);
 
-  // Start (or restart) the looping drone stem under the scale.
+  // Lay the FIRST drone of a take at the loop's beat 0 (after the count-in). No fade —
+  // there's nothing to blend from. Mid-play transitions go through the watch effect below.
   const startDrone = React.useCallback(
     async (ctx: AudioContext, startAt: number) => {
-      // Tear down any prior drone.
-      stopDrone();
-      const buffer = await loadDroneStem(droneSymbol, ctx);
-      if (!buffer) return; // graceful: no stem yet → play dry
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.loop = true;
-      node.connect(ctx.destination);
-      node.start(startAt);
-      droneNodeRef.current = node;
+      let deck = droneDeckRef.current;
+      if (!deck) {
+        deck = new DroneDeck(ctx);
+        droneDeckRef.current = deck;
+      }
+      // Apply the current on/off + level BEFORE start so the deck is built at the right
+      // master gain (stop() drops the master, so a fresh take must re-assert these).
+      deck.setVolume(droneVolumeRef.current);
+      deck.setEnabled(droneEnabledRef.current);
+      await deck.start(droneSymbolRef.current, startAt);
     },
-    [droneSymbol],
+    [],
   );
 
+  // Live drone on/off + volume — push changes straight to the deck (fades, no click). The
+  // refs are read by startDrone too, so toggling before play just sets the next take's state.
+  React.useEffect(() => {
+    droneEnabledRef.current = droneEnabled;
+    droneDeckRef.current?.setEnabled(droneEnabled);
+  }, [droneEnabled]);
+  React.useEffect(() => {
+    droneVolumeRef.current = droneVolume;
+    droneDeckRef.current?.setVolume(droneVolume);
+  }, [droneVolume]);
+
+  // ── BASS-SAMPLER + METRONOME volume — live, independent of the drone. Each ramps its own
+  //    gain node so a slider move glides (no zipper) and only affects that source. ──
+  const VOL_RAMP_SEC = 0.06;
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+  const applyBassVolume = React.useCallback((v: number) => {
+    const g = bassGainRef.current;
+    const ctx = ctxRef.current;
+    if (!g || !ctx) return;
+    const now = ctx.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now);
+    g.gain.linearRampToValueAtTime(clamp01(v), now + VOL_RAMP_SEC);
+  }, []);
+
+  const applyMetronomeVolume = React.useCallback((v: number) => {
+    // WamMetronomeNode exposes its output gain via `.gain` (an AudioParam). Scaling it scales
+    // ALL clicks (the per-click velocity multiplies through it).
+    const param = metronomeRef.current?.audioNode?.gain as
+      | AudioParam
+      | undefined;
+    const ctx = ctxRef.current;
+    if (!param || !ctx) return;
+    const now = ctx.currentTime;
+    param.cancelScheduledValues(now);
+    param.setValueAtTime(param.value, now);
+    param.linearRampToValueAtTime(clamp01(v), now + VOL_RAMP_SEC);
+  }, []);
+
+  React.useEffect(() => {
+    bassVolumeRef.current = bassVolume;
+    applyBassVolume(bassVolume);
+  }, [bassVolume, applyBassVolume]);
+  React.useEffect(() => {
+    metronomeVolumeRef.current = metronomeVolume;
+    applyMetronomeVolume(metronomeVolume);
+  }, [metronomeVolume, applyMetronomeVolume]);
+
   function stopDrone() {
-    if (droneNodeRef.current) {
-      try {
-        droneNodeRef.current.stop();
-      } catch {
-        /* already stopped */
-      }
-      droneNodeRef.current.disconnect();
-      droneNodeRef.current = null;
-    }
+    droneDeckRef.current?.stop();
   }
+
+  // ── MID-PLAY DRONE TRANSITION (key / chord-type change) ──────────────────────
+  // When droneSymbol changes WHILE PLAYING, blend the new tonal centre in — bar-aligned,
+  // crossfaded, NO count-in (the count-in is a once-per-take preamble; a mid-play change
+  // transitions seamlessly, the same contract the groove card uses for key changes).
+  // Before the first play (or after stop) we just stash the latest symbol in the ref so the
+  // next play() starts on it.
+  React.useEffect(() => {
+    droneSymbolRef.current = droneSymbol;
+    const deck = droneDeckRef.current;
+    const ctx = ctxRef.current;
+    if (!deck || !ctx || !isActiveRef.current) return; // not playing → next play() picks it up
+    if (deck.targetSymbol === droneSymbol) return; // already there / heading there
+
+    if (freestyleRef.current) {
+      // FREESTYLE: time-free, no grid to align to — start the (long) crossfade right away.
+      const at = ctx.currentTime + LOOKAHEAD;
+      void deck.crossfadeTo(droneSymbol, at, droneCrossfadeSecRef.current);
+      return;
+    }
+    // EXERCISE mode: align the crossfade to the NEXT BAR boundary, computed from the grid
+    // (loopStart + k×barSeconds) — the tempo math, NOT the visual read-head. The lookahead
+    // guard pushes a fade that would land too soon to the following bar (clean scheduling).
+    const barSec = BEATS_PER_BAR * beatDuration();
+    const nextBar = nextBarBoundary(
+      ctx.currentTime,
+      loopStartRef.current,
+      barSec,
+      LOOKAHEAD,
+    );
+    void deck.crossfadeTo(droneSymbol, nextBar, DRONE_CROSSFADE_SEC);
+  }, [droneSymbol, beatDuration]);
 
   // ── The rolling-lookahead scheduler ──────────────────────────────────────
   // Two INDEPENDENT streams, each event armed EXACTLY ONCE within the lookahead window:
@@ -408,10 +550,11 @@ export function useScaleSequencer({
       const curLoopBeats = loopBeatsRef.current || 1;
       const takeEnd = loopStart + loops * curLoopBeats * bd;
       const stopInMs = (takeEnd - ctx.currentTime) * 1000;
-      autoStopRef.current = window.setTimeout(
-        () => stopRef.current?.(),
-        Math.max(0, stopInMs),
-      );
+      autoStopRef.current = window.setTimeout(() => {
+        stopRef.current?.();
+        // The take ran its full N loops (not a user stop) → notify (a rep brick completes here).
+        onAutoStopRef.current?.();
+      }, Math.max(0, stopInMs));
     }
   }, [
     onBeforePlay,
@@ -421,6 +564,32 @@ export function useScaleSequencer({
     startDrone,
     tick,
   ]);
+
+  // ── FREESTYLE — start ONLY the drone, immediately (no count-in, no scheduler). The rolling
+  //    `tick` is what fires the bass sampler + metronome, so by simply NOT starting it, the
+  //    click + scale notes are silent — exactly the "freeze a chord and jam" mode. The drone
+  //    holds at the current key; the time-based transposer (in the view) drives key changes.
+  //    stop() tears the drone down the same as for play(), so no separate teardown is needed. ──
+  const startFreestyle = React.useCallback(async () => {
+    if (isActiveRef.current) return;
+    isActiveRef.current = true;
+    await onBeforePlay?.();
+    const ctx = await ensureAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    setIsPlaying(true);
+    setCountInBeat(0);
+    // The drone is the ONLY thing playing. Use loopStart = now so getLoopStartAudioTime /
+    // getNextSeamTime have a sane anchor (the time-transposer uses its own timer, not seams,
+    // but other readers shouldn't see a stale zero).
+    const start = ctx.currentTime + 0.05;
+    loopStartRef.current = start;
+    nextNoteIdxRef.current = 0;
+    loopIterRef.current = 0;
+    nextBeatRef.current = 0;
+    await startDrone(ctx, start);
+    // NO `tick` scheduler, NO count-in, NO auto-stop — just the held drone.
+  }, [onBeforePlay, ensureAudio, startDrone]);
 
   // Stable pointer to stop() for the auto-stop timer (stop is defined below; avoids a TDZ/dep cycle).
   const stopRef = React.useRef<(() => void) | null>(null);
@@ -475,14 +644,33 @@ export function useScaleSequencer({
     return loopStartRef.current || null;
   }, [isPlaying]);
 
+  // Wall-clock audio time of the NEXT loop seam — the same authoritative grid the rest of
+  // the tool quantises to (loopStart + k×loopSeconds), NOT a read-head/phase. The groove-
+  // card Dynamic Loop counter reads this: as `now` climbs toward a fixed seam the value
+  // holds, then JUMPS FORWARD by one loop when we cross it — exactly the wrap signal
+  // useLoopCounter detects. null during the count-in (no loop has started) or when stopped.
+  const getNextSeamTime = React.useCallback((): number | null => {
+    const ctx = ctxRef.current;
+    if (!ctx || !isPlaying) return null;
+    const loopStart = loopStartRef.current;
+    const loopSec = (loopBeatsRef.current || 1) * beatDuration();
+    if (loopSec <= 0) return null;
+    const elapsed = ctx.currentTime - loopStart;
+    if (elapsed < 0) return null; // still counting in — no seam yet
+    const seamsPassed = Math.floor(elapsed / loopSec);
+    return loopStart + (seamsPassed + 1) * loopSec;
+  }, [isPlaying, beatDuration]);
+
   return {
     isPlaying,
     isReady,
     countInBeat,
     play,
+    startFreestyle,
     stop,
     audioContext: ctxRef.current,
     getPlaybackBeat,
     getLoopStartAudioTime,
+    getNextSeamTime,
   };
 }
