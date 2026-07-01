@@ -527,6 +527,8 @@ export type {
   DrillCompletionResult,
   DrillCompletionData,
   TaskBlockConfig,
+  ScalesBlockConfig,
+  ScalesBlock,
   TextBlock,
   CelebrationBlock,
   ExplainBlock,

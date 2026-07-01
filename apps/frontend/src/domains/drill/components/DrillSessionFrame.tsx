@@ -132,7 +132,7 @@ export function DrillSessionFrame({
     [progress],
   );
 
-  const { phase, start, restart } = useDrillSession({
+  const { phase, start, restart, complete } = useDrillSession({
     isDrill: true,
     brickIds,
     completedIds,
@@ -220,28 +220,39 @@ export function DrillSessionFrame({
     );
   }
 
-  if (phase === 'summary') {
-    return (
-      <DrillSummaryScreen
-        title={tutorial.title}
-        items={summaryItems}
-        onRestart={restart}
-        onDone={() => navigateWithTransition(onExitTo)}
-        // Post-record value once the mutation lands; until then the cached
-        // pre-session streak so the line never pops in from nothing.
-        streak={recordSession.data ?? cachedStreak.data ?? null}
-      />
-    );
-  }
-
-  // 'running' → the normal player.
+  // 'running' → the normal player. In the 'summary' phase we keep the player MOUNTED underneath
+  // (its playback has stopped — the last brick auto-stopped and the user clicked Complete) and
+  // lay the recap on top as a GLASS OVERLAY, so the rep result appears in place over the gym
+  // rather than replacing it. The whole rep flow stays "here" from Complete-click to result.
   return (
-    <YouTubeWidgetPage
-      tutorialData={tutorial}
-      tutorialSlug={tutorialSlug}
-      exercises={exercises}
-      hideChrome
-    />
+    <>
+      <YouTubeWidgetPage
+        tutorialData={tutorial}
+        tutorialSlug={tutorialSlug}
+        exercises={exercises}
+        hideChrome
+        // The last brick's "Complete the rep" click flips to the summary (works on replay too —
+        // bypasses the auto-flip's completedThisAttempt guard).
+        onRepComplete={complete}
+      />
+      {phase === 'summary' && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-10 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+        >
+          <DrillSummaryScreen
+            title={tutorial.title}
+            items={summaryItems}
+            onRestart={restart}
+            onDone={() => navigateWithTransition(onExitTo)}
+            // Post-record value once the mutation lands; until then the cached
+            // pre-session streak so the line never pops in from nothing.
+            streak={recordSession.data ?? cachedStreak.data ?? null}
+          />
+        </div>
+      )}
+    </>
   );
 }
 

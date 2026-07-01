@@ -15,6 +15,7 @@ import type {
   DrillCompletionCriterion,
   GrooveCardBlockConfig,
   TaskBlockConfig,
+  ScalesBlockConfig,
 } from '@bassnotion/contracts';
 
 /** One drill brick, flattened for the plan/summary UI. */
@@ -22,7 +23,7 @@ export interface DrillBrick {
   /** Block id — joins to BlockProgressEntry / blockProgress map. */
   id: string;
   /** Which kind of brick (drives the icon + "no audio" hint). */
-  kind: 'groove' | 'task';
+  kind: 'groove' | 'task' | 'scales';
   /** Human label for the plan/summary row. */
   title: string;
   /** Optional second line (groove subtitle / task heading). */
@@ -40,6 +41,8 @@ export interface DrillBrick {
  */
 export function isDrillBrickBlock(block: AnyBlock): boolean {
   if (block.type === 'task') return true;
+  // A scales block is always a rep brick (it's a locked deliverable, attended completion).
+  if (block.type === 'scales') return true;
   if (block.type === 'groove-card') {
     const cfg = block.config as GrooveCardBlockConfig;
     return !!cfg.role || !!cfg.completionCriterion;
@@ -77,6 +80,15 @@ export function getDrillBricks(
           kind: 'task' as const,
           title: cfg.heading?.trim() || block.title || 'Practice',
           subtitle: cfg.instruction,
+          criterion: cfg.completionCriterion,
+        };
+      }
+      if (block.type === 'scales') {
+        const cfg = block.config as ScalesBlockConfig;
+        return {
+          id: block.id,
+          kind: 'scales' as const,
+          title: cfg.exerciseName?.trim() || block.title || 'Scales',
           criterion: cfg.completionCriterion,
         };
       }

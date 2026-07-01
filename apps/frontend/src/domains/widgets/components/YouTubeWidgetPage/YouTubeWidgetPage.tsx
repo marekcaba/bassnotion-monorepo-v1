@@ -80,6 +80,9 @@ interface YouTubeWidgetPageProps {
   initialExerciseId?: string; // Optional: pre-select a specific exercise (e.g., from favorites)
   /** Hide logo, navbar, back button, and user indicator (used inside /app layout) */
   hideChrome?: boolean;
+  /** The last drill brick's explicit "Complete the rep" click bubbles here — the drill frame
+   *  uses it to flip to the summary even on a same-day replay (bypasses the auto-flip guard). */
+  onRepComplete?: () => void;
 }
 
 // Inner component that has access to sync context
@@ -89,6 +92,7 @@ function YouTubeWidgetPageContent({
   exercises,
   initialExerciseId,
   hideChrome = false,
+  onRepComplete,
 }: YouTubeWidgetPageProps) {
   // XState Phase 2: Page initialization state machine — called for
   // its side effects (state transitions + lifecycle telemetry). The
@@ -1875,6 +1879,30 @@ function YouTubeWidgetPageContent({
                   </div>
                 </div>
               )}
+
+              {/* SCALES block — the gym Scales tool as a rep brick. Wider container than the
+                  groove card: the fretboard runs ~940px at full size and its own responsive
+                  tiers scale it down on narrower widths. */}
+              {block.type === 'scales' && (
+                <div className="flex h-full w-full items-center justify-center px-4 py-8">
+                  <div className="w-full max-w-[1560px]">
+                    <BlockRenderer
+                      block={block}
+                      isActive={isBlockActive}
+                      // Pass the TRUE completion state (no `&& !wasPreCompleted`): a scales brick
+                      // completed on a prior visit must keep showing its NEXT button for
+                      // navigation. (The groove card resets pre-completed to replay its timer; a
+                      // scales rep brick doesn't — it stays "done" and navigable.)
+                      isCompleted={isBlockCompleted}
+                      onComplete={markBlockComplete}
+                      onNext={scrollToNextBlock}
+                      // The last brick's "Complete the rep" click bubbles to the drill frame so it
+                      // flips to the summary even on a same-day replay.
+                      onRepComplete={onRepComplete}
+                    />
+                  </div>
+                </div>
+              )}
             </section>
           );
         })}
@@ -1890,6 +1918,7 @@ export function YouTubeWidgetPage({
   exercises,
   initialExerciseId,
   hideChrome,
+  onRepComplete,
 }: YouTubeWidgetPageProps) {
   // useCorrelation is called for the side effect of generating a
   // correlation ID and binding it to logs from this scope; the
@@ -1974,6 +2003,7 @@ export function YouTubeWidgetPage({
           exercises={exercises}
           initialExerciseId={initialExerciseId}
           hideChrome={hideChrome}
+          onRepComplete={onRepComplete}
         />
       </SyncProvider>
     </TransportProvider>

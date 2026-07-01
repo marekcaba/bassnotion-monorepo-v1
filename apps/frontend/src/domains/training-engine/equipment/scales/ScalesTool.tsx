@@ -130,6 +130,10 @@ export interface ScalesToolProps {
   /** The mount CONTEXT (gig / rep / gym) — the shared gym-tool contract. Resolves lock, result
    *  sink, and the exercise preset. Defaults to open GYM when omitted. See GymToolContext. */
   context?: GymToolContext;
+  /** REP: fired when the tool auto-stops after the preset's loop count (the brick is "done by
+   *  loops"). The rep brick uses this to complete + advance. When set, the tool auto-stops after
+   *  `preset.recordLoops` loops on every play (not just record mode). */
+  onLoopsComplete?: () => void;
 }
 
 /** The default OPEN-GYM context — open practice, nothing locked, nothing stored. */
@@ -145,6 +149,7 @@ export function ScalesTool({
   maxFrets = 14,
   onBeforePlay,
   context,
+  onLoopsComplete,
 }: ScalesToolProps) {
   // The single context the whole tool reads from (defaults to open gym). All axis behavior
   // below derives from `ctx` — the shared 3-context (gig/rep/gym) gym-tool contract.
@@ -549,8 +554,13 @@ export function ScalesTool({
     onBeforePlay,
     // Record mode mutes the scale-note bass so the student plays it (clean mic capture).
     silentBass: recordMode,
-    // In record mode the take auto-stops after `recordLoops` loops; free play loops forever.
-    maxLoops: recordMode ? recordLoops : 0,
+    // Auto-stop after N loops: in RECORD mode (take capture) OR in a REP brick (onLoopsComplete
+    // set) — the brick "completes by loops". Open free play (neither) loops forever.
+    maxLoops: recordMode || onLoopsComplete ? recordLoops : 0,
+    // A rep brick completes when its required loops finish (not on a user stop). Only wire this
+    // when the caller wants loop-count completion (onLoopsComplete) and NOT during record capture.
+    onAutoStop:
+      onLoopsComplete && !recordMode ? onLoopsComplete : undefined,
   });
 
   // LISTENING: in RECORD mode every play is a graded take. The seam captures the player's bass,

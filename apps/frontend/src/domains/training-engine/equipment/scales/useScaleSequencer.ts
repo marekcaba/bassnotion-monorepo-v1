@@ -92,6 +92,9 @@ export interface UseScaleSequencerOptions {
   /** Auto-stop after this many full loops (in addition to the count-in). 0/undefined = play
    *  forever (the default). Used by record mode so a take is exactly N loops then stops. */
   maxLoops?: number;
+  /** Fired when the maxLoops auto-stop completes (the take ran its full N loops), NOT when the
+   *  user hits stop. A rep brick uses this to mark itself complete after the required loops. */
+  onAutoStop?: () => void;
 }
 
 export interface UseScaleSequencerReturn {
@@ -130,8 +133,12 @@ export function useScaleSequencer({
   onBeforePlay,
   silentBass = false,
   maxLoops = 0,
+  onAutoStop,
 }: UseScaleSequencerOptions): UseScaleSequencerReturn {
   const [isPlaying, setIsPlaying] = React.useState(false);
+  // Live ref so the auto-stop timeout calls the latest callback without re-arming.
+  const onAutoStopRef = React.useRef(onAutoStop);
+  onAutoStopRef.current = onAutoStop;
   const [countInBeat, setCountInBeat] = React.useState(0);
   // The tool is ready to start whenever there's a scale to play — samples load lazily on
   // the first click (inside the play gesture), so we DON'T gate the button on a post-load
@@ -543,10 +550,11 @@ export function useScaleSequencer({
       const curLoopBeats = loopBeatsRef.current || 1;
       const takeEnd = loopStart + loops * curLoopBeats * bd;
       const stopInMs = (takeEnd - ctx.currentTime) * 1000;
-      autoStopRef.current = window.setTimeout(
-        () => stopRef.current?.(),
-        Math.max(0, stopInMs),
-      );
+      autoStopRef.current = window.setTimeout(() => {
+        stopRef.current?.();
+        // The take ran its full N loops (not a user stop) → notify (a rep brick completes here).
+        onAutoStopRef.current?.();
+      }, Math.max(0, stopInMs));
     }
   }, [
     onBeforePlay,

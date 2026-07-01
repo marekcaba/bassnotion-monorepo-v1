@@ -35,6 +35,10 @@ interface UseDrillSessionResult {
   start: () => void;
   /** summary → plan (call from the summary's "run it again"). */
   restart: () => void;
+  /** running → summary, EXPLICITLY (the last brick's "Complete the rep" click). Bypasses the
+   *  completedThisAttempt replay guard — the guard only prevents an AUTOMATIC mount-time bounce;
+   *  an explicit user click should always flip once every brick is complete, replay or not. */
+  complete: () => void;
 }
 
 export function useDrillSession({
@@ -64,12 +68,20 @@ export function useDrillSession({
   const allComplete =
     brickIds.length > 0 && brickIds.every((id) => completedIds.has(id));
 
+  // Explicit "Complete the rep" intent (set by complete()). Once armed, the effect below flips to
+  // summary as soon as allComplete is true — which may be a tick AFTER the click (the last brick's
+  // completion has to propagate through the progress cache first). This makes the flip robust to
+  // the async gap between marking the brick done and allComplete becoming true.
+  const [completeIntent, setCompleteIntent] = useState(false);
+
   useEffect(() => {
-    if (!isDrill) return;
-    if (phase === 'running' && allComplete && completedThisAttempt) {
+    if (!isDrill || phase !== 'running' || !allComplete) return;
+    // Flip on a fresh in-attempt completion (auto) OR an explicit Complete click (intent).
+    if (completedThisAttempt || completeIntent) {
       setPhase('summary');
+      setCompleteIntent(false);
     }
-  }, [isDrill, phase, allComplete, completedThisAttempt]);
+  }, [isDrill, phase, allComplete, completedThisAttempt, completeIntent]);
 
   // Entering the running phase snapshots the current completions as the
   // baseline for THIS attempt. Both the first run and every "run it again" go
@@ -86,5 +98,11 @@ export function useDrillSession({
   }, [completedIds]);
   const restart = useCallback(() => setPhase('plan'), []);
 
-  return { phase, start, restart };
+  // Explicit completion (the last brick's "Complete the rep" click). Arm the intent; the effect
+  // above flips to summary once allComplete is true (immediately if already so, or a tick later
+  // after the just-completed last brick propagates). Bypasses the completedThisAttempt guard —
+  // that guard only stops an AUTOMATIC mount-time bounce, not a user's explicit request.
+  const complete = useCallback(() => setCompleteIntent(true), []);
+
+  return { phase, start, restart, complete };
 }
