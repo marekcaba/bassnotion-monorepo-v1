@@ -1,11 +1,17 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useAuth } from './use-auth';
 import { supabase } from '@/infrastructure/supabase/client';
 import { apiClient } from '@/lib/api-client';
-import type { UserProfile } from '@bassnotion/contracts';
+import { profileService } from '../api/profile';
+import type {
+  BassConfigurationData,
+  LearningStyle,
+  UserProfile,
+  UserProfileData,
+} from '@bassnotion/contracts';
 import { getLogger } from '@/utils/logger.js';
 
 const logger = getLogger('user:profile');
@@ -231,4 +237,63 @@ export function useUserProfile(): UseUserProfileReturn {
     },
     invalidate,
   };
+}
+
+/**
+ * Profile MUTATION hooks — the single, correct way to write the profile.
+ *
+ * WHY: the profile query (['user-profile', userId]) is cached with staleTime 10min +
+ * refetchOnMount:false, so a page that soft-navigates in (e.g. /gym/scales reading the bass config)
+ * reads the CACHED profile. If a save writes the backend but not the cache, every other page shows
+ * the OLD value until a hard refresh. These hooks close that gap: on success they invalidate the
+ * profile query WITH refetchType:'all', which invalidates AND immediately refetches the active query
+ * (bypassing refetchOnMount) — so the change propagates across the whole app with no reload.
+ *
+ * Route ALL settings saves through these instead of calling profileService.* directly, so no save
+ * can ever forget to refresh the shared cache again. (invalidate-and-refetch rather than a manual
+ * setQueryData merge, because updateBassConfiguration returns the raw snake_case profiles row, a
+ * different shape than the API-mapped cache value — refetch keeps the shapes correct.)
+ */
+function useInvalidateProfile() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return () =>
+    queryClient.invalidateQueries({
+      queryKey: ['user-profile', user?.id],
+      // 'all' refetches the active query NOW even though refetchOnMount is false — the whole point.
+      refetchType: 'all',
+    });
+}
+
+/** Update display name / bio / avatar. Refreshes the shared profile cache on success. */
+export function useUpdateProfile() {
+  const invalidateProfile = useInvalidateProfile();
+  return useMutation({
+    mutationFn: (data: UserProfileData) => profileService.updateProfile(data),
+    onSuccess: () => invalidateProfile(),
+  });
+}
+
+/** Update the learning style. Refreshes the shared profile cache on success. */
+export function useUpdateLearningStyle() {
+  const invalidateProfile = useInvalidateProfile();
+  return useMutation({
+    mutationFn: (style: LearningStyle) =>
+      profileService.updateLearningStyle(style),
+    onSuccess: () => invalidateProfile(),
+  });
+}
+
+/**
+ * Update the bass configuration (string count / fret count). Refreshes the shared profile cache on
+ * success — THIS is what makes /gym/scales (and the tutorial fretboard) pick up a new string/fret
+ * count immediately on navigation, no hard refresh.
+ */
+export function useUpdateBassConfiguration() {
+  const invalidateProfile = useInvalidateProfile();
+  return useMutation({
+    mutationFn: (config: BassConfigurationData) =>
+      profileService.updateBassConfiguration(config),
+    onSuccess: () => invalidateProfile(),
+  });
 }

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { profileService } from '../api/profile';
-import { useUserProfile } from '../hooks/use-user-profile';
+import {
+  useUserProfile,
+  useUpdateBassConfiguration,
+} from '../hooks/use-user-profile';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 
 interface BassSettings {
@@ -17,6 +19,10 @@ interface BassSettingsCardProps {
 export function BassSettingsCard({ onSettingsChange }: BassSettingsCardProps) {
   const { correlationId, logger } = useCorrelation('BassSettingsCard');
   const { profile, isLoading: isLoadingProfile } = useUserProfile();
+  // Save THROUGH the mutation hook so the shared ['user-profile'] cache is refreshed on success —
+  // this is what makes /gym/scales + the tutorial fretboard pick up the new string/fret count
+  // immediately on navigation, no hard refresh.
+  const updateBassConfig = useUpdateBassConfiguration();
   const [settings, setSettings] = useState<BassSettings | null>(null);
   const [originalSettings, setOriginalSettings] = useState<BassSettings | null>(
     null,
@@ -84,7 +90,7 @@ export function BassSettingsCard({ onSettingsChange }: BassSettingsCardProps) {
     setIsSaving(true);
 
     try {
-      await profileService.updateBassConfiguration(settings);
+      await updateBassConfig.mutateAsync(settings);
       setOriginalSettings(settings);
       onSettingsChange?.(settings);
       setJustSaved(true);
