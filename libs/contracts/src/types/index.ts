@@ -595,6 +595,15 @@ export type {
 // Value export (pure mapper, not a type) — drill completion → ProgressSignal.
 export { drillCompletionToSignal } from './training.js';
 
+// Gym tool CONTEXT contract — the shared shape every gym equipment tool takes (gig/rep/gym).
+export type {
+  GymToolContext,
+  GymToolContextKind,
+  GymToolPreset,
+  GymToolResultSink,
+  RepBrickPayload,
+} from './equipment-context.js';
+
 // Value export (const, not a type) — eighth-note slots per bar for chord charts.
 export { CHORD_SLOTS_PER_BAR } from './block.js';
 

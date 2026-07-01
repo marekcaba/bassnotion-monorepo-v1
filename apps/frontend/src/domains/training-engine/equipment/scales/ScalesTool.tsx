@@ -73,7 +73,7 @@ import {
   useEquipmentListening,
   type EquipmentScoreResult,
 } from '../listening/useEquipmentListening';
-import type { Gig } from '@bassnotion/contracts';
+import type { Gig, GymToolContext } from '@bassnotion/contracts';
 import { submitTake } from '../../api/training-engine.api';
 
 /** Tempo bounds for the scale sequencer (BPM). */
@@ -119,23 +119,6 @@ interface PathsByKeyLite {
   defaultTempo?: number;
 }
 
-/**
- * ASSIGNMENT mode — when present, the tool is a LOCKED gig deliverable, not open practice. The
- * exercise + key + tempo + loop count are dialed in from the gig and the student can't change them
- * (it's an assignment); record mode is forced on; the result banner offers Submit + Retake (the
- * replace-on-resubmit flow). Absent → the normal open practice tool.
- */
-export interface ScalesAssignment {
-  /** The gig being performed (drives the Submit target + the banner title). */
-  gig: Gig;
-  /** A stable id for the backing groove driving the transport/clock — stored in the take's
-   *  reconstruction recipe so the history player can rebuild the exact backing. */
-  backingId?: string;
-  /** Called after a take is successfully submitted — the perform page uses it to collapse back
-   *  to the /gigs list (which then shows this gig checkmarked). */
-  onSubmitted?: () => void;
-}
-
 export interface ScalesToolProps {
   /** The backing groove (stems/bpm/key). Drives the transport + the shared clock. */
   backingConfig: GrooveCardBlockConfig;
@@ -144,20 +127,32 @@ export interface ScalesToolProps {
   maxFrets?: number;
   /** Resume the prewarmed AudioContext inside the play gesture (Safari). */
   onBeforePlay?: () => Promise<void> | void;
-  /** When set, the tool runs as a LOCKED gig deliverable (see ScalesAssignment). */
-  assignment?: ScalesAssignment;
+  /** The mount CONTEXT (gig / rep / gym) — the shared gym-tool contract. Resolves lock, result
+   *  sink, and the exercise preset. Defaults to open GYM when omitted. See GymToolContext. */
+  context?: GymToolContext;
 }
+
+/** The default OPEN-GYM context — open practice, nothing locked, nothing stored. */
+const GYM_CONTEXT: GymToolContext = {
+  kind: 'gym',
+  locked: false,
+  resultSink: { kind: 'none' },
+};
 
 export function ScalesTool({
   backingConfig,
   stringCount = 4,
   maxFrets = 14,
   onBeforePlay,
-  assignment,
+  context,
 }: ScalesToolProps) {
-  // In assignment mode the controls are LOCKED to the gig's presets (the student can't change
-  // exercise/key/tempo/loops/record-mode — it's a deliverable).
-  const locked = !!assignment;
+  // The single context the whole tool reads from (defaults to open gym). All axis behavior
+  // below derives from `ctx` — the shared 3-context (gig/rep/gym) gym-tool contract.
+  const ctx: GymToolContext = context ?? GYM_CONTEXT;
+  // AXIS 1 — locked (gig + rep lock the pickers; gym is open). Caller-computed, read here.
+  const locked = ctx.locked;
+  // AXIS 2 — the submit sink (gig). Non-null only when a take can be submitted against a gig.
+  const submitSink = ctx.resultSink.kind === 'submit' ? ctx.resultSink : null;
   // The tool is organised around CHORD SOUNDS: the student picks a chord type (Maj7, Dom7,
   // Min9, 13♯11, …) + key — the tonal centre they play over. The practiced fretboard NOTES
   // are that chord's PARENT SCALE, and the drone IS the chord. scaleType is DERIVED from the
@@ -184,22 +179,20 @@ export function ScalesTool({
   // through normally first (hear it, follow the lights), THEN arm Rec and hit record. Locked mode
   // keeps the Rec toggle visible (so they can arm it); only the loop count + content are fixed.
   const [recordMode, setRecordMode] = React.useState(false);
-  // How many full loops a record-mode take captures before auto-stopping (1-8). Assignment mode
-  // takes this from the gig (the admin-set deliverable length); open play defaults to 2.
+  // How many full loops a record-mode take captures before auto-stopping (1-8). A locked context
+  // (gig/rep) takes this from the preset (the admin-set deliverable length); open gym defaults to 2.
   const [recordLoops, setRecordLoops] = React.useState(
-    assignment?.gig.recordLoops ?? 2,
+    ctx.preset?.recordLoops ?? 2,
   );
   // The most recent graded take (record mode) — shown as a small result banner. Audio + grade are
   // held in memory; they're only PERSISTED if the student SUBMITS the take against an assignment.
   const [lastTake, setLastTake] = React.useState<EquipmentScoreResult | null>(
     null,
   );
-  // The gig the student must deliver (if any) — inherited via their enrolled goal. When present
-  // + the student has a graded take with audio, a "Submit this take" affordance appears. Open
-  // gym play stores nothing.
-  // In assignment mode the gig is GIVEN (the perform route passed it). In open practice we DON'T
-  // surface a submit affordance — submission only happens on the dedicated /gigs perform page.
-  const activeGig = assignment?.gig ?? null;
+  // The gig the student must deliver (if any) — from the submit sink (gig context). When present
+  // + the student has a graded take with audio, a "Submit this take" affordance appears. Rep + open
+  // gym play surface no submit (rep records completion elsewhere; gym stores nothing).
+  const activeGig = submitSink?.gig ?? null;
   const [submitState, setSubmitState] = React.useState<
     'idle' | 'submitting' | 'done' | 'error'
   >('idle');
@@ -207,7 +200,8 @@ export function ScalesTool({
 
   // CONTENT picker: the kind tab (Runs/Patterns/Paths), which exercise GROUP within it, and
   // which fingering VARIANT within the group. groupIdx === -1 = "Auto" (generated box scale).
-  const [kind, setKind] = React.useState<ExerciseKind>('scale');
+  // Default to Paths on load (gigs with an assignment override this via the auto-load effect).
+  const [kind, setKind] = React.useState<ExerciseKind>('path');
   const [groupIdx, setGroupIdx] = React.useState(-1); // -1 = Auto
   const [variantIdx, setVariantIdx] = React.useState(0); // fingering within the group
 
@@ -283,7 +277,7 @@ export function ScalesTool({
           recordLoops,
           position: view,
           stringCount,
-          backingId: assignment?.backingId ?? null,
+          backingId: submitSink?.backingId ?? null,
           // The take's beat 0 sits `preRollSec` into the clip (the mic armed at the count-in
           // start). The replayer phases the click grid + starts the drone there.
           preRollSec: lastTake.preRollSec ?? null,
@@ -309,8 +303,8 @@ export function ScalesTool({
       setSubmitState('done');
       // Collapse back to the /gigs list (which now shows this gig checkmarked). Brief delay so
       // the "✓ Submitted" confirmation is visible before the page navigates.
-      if (assignment?.onSubmitted) {
-        setTimeout(() => assignment.onSubmitted?.(), 700);
+      if (submitSink?.onSubmitted) {
+        setTimeout(() => submitSink.onSubmitted?.(), 700);
       }
     } catch {
       setSubmitState('error');
@@ -325,8 +319,7 @@ export function ScalesTool({
     stringCount,
     root,
     scaleType,
-    assignment?.backingId,
-    assignment?.onSubmitted,
+    submitSink,
   ]);
 
   // ── The exercise LIBRARY: authored scale exercises for the gym Scales tool. Grouped by
@@ -388,11 +381,14 @@ export function ScalesTool({
   //    contain the target, select its group + variant. The effect re-runs as state converges, so
   //    both phases land. Keyed so it only drives toward the target, never fights manual input
   //    (there is none — the controls are locked). Tempo is set here too (clamped). ──
-  const assignedExerciseId = assignment?.gig.exerciseId ?? null;
+  // Drives any LOCKED context's preset (gig OR rep) into the pickers. Keyed on the preset's
+  // exerciseId; fires only when there's a preset to honour (open gym has none).
+  const preset = ctx.preset ?? null;
+  const presetExerciseId = preset?.exerciseId ?? null;
   React.useEffect(() => {
-    if (!assignment || !assignedExerciseId) return;
+    if (!preset || !presetExerciseId) return;
 
-    const target = library.find((ex) => ex.id === assignedExerciseId);
+    const target = library.find((ex) => ex.id === presetExerciseId);
     if (!target) return; // library not loaded yet (or exercise removed) — try again on next data.
 
     const payload = target.payload as PathsByKeyLite | null;
@@ -403,17 +399,17 @@ export function ScalesTool({
     if (chordType !== targetChord) setChordType(targetChord);
     if (kind !== targetKind) setKind(targetKind);
 
-    // KEY — the gig's scaleKey is an ASCII PathKey; convert to a keyStep offset from the backing
+    // KEY — the preset's scaleKey is an ASCII PathKey; convert to a keyStep offset from the backing
     // key's pc (same math the open tool uses for an exercise's defaultKey).
-    if (assignment.gig.scaleKey) {
-      const targetPc = parsePitchClass(assignment.gig.scaleKey);
+    if (preset.scaleKey) {
+      const targetPc = parsePitchClass(preset.scaleKey);
       if (targetPc != null) {
         const step = pcToKeyStep(targetPc, keyBasePc);
         setKeyStep((cur) => (cur === step ? cur : step));
       }
     }
-    if (typeof assignment.gig.tempoBpm === 'number') {
-      const t = Math.max(MIN_BPM, Math.min(MAX_BPM, assignment.gig.tempoBpm));
+    if (typeof preset.tempoBpm === 'number') {
+      const t = Math.max(MIN_BPM, Math.min(MAX_BPM, preset.tempoBpm));
       setBpm((cur) => (cur === t ? cur : t));
     }
 
@@ -422,7 +418,7 @@ export function ScalesTool({
     if (chordType === targetChord && kind === targetKind) {
       for (let gi = 0; gi < exerciseGroups.length; gi++) {
         const vi = exerciseGroups[gi]!.variants.findIndex(
-          (ex) => ex.id === assignedExerciseId,
+          (ex) => ex.id === presetExerciseId,
         );
         if (vi >= 0) {
           if (groupIdx !== gi) setGroupIdx(gi);
@@ -432,11 +428,15 @@ export function ScalesTool({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assignment, assignedExerciseId, library, exerciseGroups, chordType, kind, keyBasePc]);
+  }, [preset, presetExerciseId, library, exerciseGroups, chordType, kind, keyBasePc]);
 
   // The selected group + the selected fingering variant within it (null = Auto / generated).
+  // Kinds WITHOUT an Auto option (path/pattern) have no "null" state — groupIdx -1 means "first
+  // group", matching the picker's groupSlot clamp. Only the 'scale' kind maps -1 → Auto (null).
+  const resolvedGroupIdx =
+    kind === 'scale' ? groupIdx : Math.max(groupIdx, 0);
   const selectedGroup =
-    groupIdx >= 0 ? (exerciseGroups[groupIdx] ?? null) : null;
+    resolvedGroupIdx >= 0 ? (exerciseGroups[resolvedGroupIdx] ?? null) : null;
   const selectedExercise = selectedGroup
     ? (selectedGroup.variants[
         Math.min(variantIdx, selectedGroup.variants.length - 1)

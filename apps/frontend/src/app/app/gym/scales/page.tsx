@@ -45,6 +45,8 @@ export default function GymScalesPage() {
             backingConfig={WAITLIST_DEMO_CONFIG}
             stringCount={stringCount}
             maxFrets={maxFrets}
+            // GYM context: open practice — nothing locked, nothing stored.
+            context={{ kind: 'gym', locked: false, resultSink: { kind: 'none' } }}
           />
         </div>
       </div>
