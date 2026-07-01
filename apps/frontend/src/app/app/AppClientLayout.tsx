@@ -80,7 +80,14 @@ function isDeepAppRoute(pathname: string): boolean {
  * `metadata: { robots: { index: false } }` (the app member surface must not be
  * indexed; see docs/deployment/APP_SUBDOMAIN_RUNBOOK.md Step 9).
  */
-export function AppClientLayout({ children }: { children: ReactNode }) {
+export function AppClientLayout({
+  children,
+  showWelcome = false,
+}: {
+  children: ReactNode;
+  /** Server-decided (bn-welcome cookie) — paint the welcome overlay in the first HTML. */
+  showWelcome?: boolean;
+}) {
   // Internal /app/* path (clean on the app subdomain, re-prefixed by the hook).
   const pathname = useInternalPathname();
   const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -153,9 +160,10 @@ export function AppClientLayout({ children }: { children: ReactNode }) {
         <XStateDevToolsProvider showStatus={true}>
           {/* AudioProvider only on audio routes (see audioRoute above). */}
           {audioRoute ? <AudioProvider>{inner}</AudioProvider> : inner}
-          {/* Branded welcome beat after a fresh login (any method): shows the logo over the
-              already-loading shell, then fades out revealing it. One-shot; no-op otherwise. */}
-          <AuthWelcomeOverlay />
+          {/* Branded welcome beat after a fresh login (any method): server-decided (showWelcome
+              from the bn-welcome cookie) so it's in the first HTML paint, then fades out revealing
+              the loaded shell. One-shot (client clears the cookie); no-op otherwise. */}
+          <AuthWelcomeOverlay show={showWelcome} />
           {/* Route-aware background warm-up: after first paint, on routes that
               can reach audio (gym/college/tutorials), warms the engine into the
               WindowRegistry singleton so it's ready when the user acts. No-op on

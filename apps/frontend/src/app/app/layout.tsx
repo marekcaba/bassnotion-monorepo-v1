@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { HydrationBoundary } from '@tanstack/react-query';
 import { prefetchAppShell } from '@/lib/server/prefetchAppShell';
+import { readWelcomeCookie } from '@/lib/server/readWelcomeCookie';
 import { AppClientLayout } from './AppClientLayout';
 import { AuthStoreHydrator } from './AuthStoreHydrator';
 
@@ -27,11 +28,14 @@ export const metadata: Metadata = {
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { serverAuthed, dehydratedState } = await prefetchAppShell();
+  // Server-decide the welcome overlay from the bn-welcome cookie, so it's painted in the FIRST HTML
+  // (no client-side "Backstage → overlay" flash). The client overlay clears the cookie → fires once.
+  const showWelcome = await readWelcomeCookie();
 
   return (
     <HydrationBoundary state={dehydratedState}>
       <AuthStoreHydrator serverAuthed={serverAuthed} />
-      <AppClientLayout>{children}</AppClientLayout>
+      <AppClientLayout showWelcome={showWelcome}>{children}</AppClientLayout>
     </HydrationBoundary>
   );
 }
