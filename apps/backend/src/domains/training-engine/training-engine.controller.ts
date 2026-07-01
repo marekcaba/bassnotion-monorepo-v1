@@ -211,6 +211,24 @@ export class TrainingEngineController {
   }
 
   /**
+   * GET /api/v1/training-engine/enrollments/:enrollmentId/today-rep-status
+   *
+   * READ-ONLY "is today's rep already done?" — for the SSR shell (P3). The POST today-rep MINTS
+   * (plans the rep + mints the virtual tutorial), so it must NOT run on a page load; this GET
+   * returns just { doneTodayUtc } from a pure climb read so the gym can server-render the
+   * completed-vs-fresh screen without a flip. Never mutates.
+   */
+  @Get('enrollments/:enrollmentId/today-rep-status')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getTodayRepStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId') enrollmentId: string,
+  ): Promise<{ doneTodayUtc: boolean }> {
+    return this.trainingEngineService.getTodayRepStatus(user.id, enrollmentId);
+  }
+
+  /**
    * GET /api/v1/training-engine/enrollments/:enrollmentId/graduation
    *
    * Read-time view of where the enrollment stands against its 30-day window

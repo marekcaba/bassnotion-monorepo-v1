@@ -879,6 +879,43 @@ export class TrainingEngineService {
   }
 
   /**
+   * READ-ONLY sibling of getTodayRep's doneTodayUtc — for SSR (P3).
+   *
+   * The gym's "is today's rep already done?" verdict WITHOUT the mint: getTodayRep is a POST
+   * because it mints the virtual-tutorial row + plans the rep; the SSR shell must NOT trigger that
+   * on a page load. This computes the same marker (climb.lastRepDate === today UTC) from a pure
+   * assembleStudentState read — so the gym can server-render the completed-vs-fresh screen with zero
+   * flip. Same membership gate as getTodayRep. NEVER mutates.
+   *
+   * NOTE: does NOT return a slug/bricks — the client still POSTs today-rep to actually plan+mint the
+   * playable rep. This is purely the boolean the first paint needs.
+   */
+  async getTodayRepStatus(
+    userId: string,
+    goalEnrollmentId: string,
+  ): Promise<{ doneTodayUtc: boolean }> {
+    const window = await this.resolveMembershipWindow(userId);
+    if (!window.hasAccess) {
+      throw new ForbiddenException(
+        'The Bass Gym is part of the membership — renew to keep training.',
+      );
+    }
+
+    const enrollment = await this.repository.findEnrollmentById(
+      userId,
+      goalEnrollmentId,
+    );
+    if (!enrollment) {
+      throw new NotFoundException('Goal enrollment not found for this user');
+    }
+
+    // Pure read — same climb the POST path reads, same "done today" marker, no advance, no mint.
+    const student = await this.assembleStudentState(userId, goalEnrollmentId);
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    return { doneTodayUtc: student.climb.lastRepDate === todayUtc };
+  }
+
+  /**
    * Resolve a goal snapshot's block_set into a BlockPool the engine plans from.
    *
    * v1 (the SPEED seed): each block_set entry embeds the full TutorialBlock
