@@ -145,7 +145,12 @@ export async function middleware(req: NextRequest) {
       pathname.startsWith('/college/') ||
       matchesPrefix(pathname, APP_ROUTES);
     if (isProtectedRoute && !isLocalHost(host) && !hasAuthCookie(req)) {
-      const login = new URL(`${APP_ORIGIN}/login`);
+      // Redirect to /login on the SAME origin the request arrived on (req.url), NOT the hardcoded
+      // APP_ORIGIN — otherwise a logged-out load on app-STAGING bounces to PRODUCTION login. The app
+      // host serves /login on its own origin (PASS_THROUGH, single-origin auth), so same-origin is
+      // correct on both app.bassicology.com and app-staging.bassicology.com. Mirrors the '/' →
+      // /backstage redirect below, which builds from req.url for the same reason.
+      const login = new URL('/login', req.url);
       login.searchParams.set('next', `${pathname}${search}`);
       return NextResponse.redirect(login, 307);
     }
