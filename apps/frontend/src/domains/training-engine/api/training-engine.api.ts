@@ -175,6 +175,8 @@ export async function planTodayRep(
   /** Content-ladder (Build B): per-topic quota bars for the gym path view.
    *  Present only on a multi-topic goal; absent for single-focal SPEED. */
   topicProgress?: TopicProgress[];
+  /** True when today's rep is already done (UTC) — the gym shows the completed state. */
+  doneTodayUtc?: boolean;
 }> {
   await ensureAuthToken();
   return apiClient.post<{
@@ -182,6 +184,7 @@ export async function planTodayRep(
     bricks: TutorialBlock[];
     goalTitle?: string | null;
     topicProgress?: TopicProgress[];
+    doneTodayUtc?: boolean;
   }>(
     `/api/v1/training-engine/enrollments/${encodeURIComponent(
       enrollmentId,

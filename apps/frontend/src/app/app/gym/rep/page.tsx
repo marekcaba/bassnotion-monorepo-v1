@@ -80,9 +80,11 @@ function GymRepContent() {
           isFloor={repMode === 'floor'}
           // Start running immediately (the front door + "Are you ready?" happened on /gym).
           autoRun
-          // After the summary, "done" → the gym FLOOR. ?floor=1 tells /gym to open with the rep
-          // overlay already DISMISSED (the front door + ready already happened — don't re-prompt).
-          onExitTo="/gym?floor=1"
+          // On completion, DON'T show the recap here — bounce straight to /gym, where it appears in
+          // the gym overlay as "Session completed" (?done=1). Keeps the flow "in place" (started in
+          // the gym overlay, ends in the gym overlay).
+          redirectOnSummary
+          onExitTo="/gym?done=1"
         />
       ) : (
         // Brief resolve — usually instant from the warm cache (the effect above bounces to /gym if

@@ -201,6 +201,8 @@ export class TrainingEngineController {
     bricks: TutorialBlock[];
     goalTitle?: string | null;
     topicProgress?: TopicProgress[];
+    /** True when today's rep is already done (UTC) — the gym shows the completed state. */
+    doneTodayUtc?: boolean;
   }> {
     // Story 5: the gym can request the short 'floor' rep. Anything but the
     // explicit 'floor' string plans the full rep.

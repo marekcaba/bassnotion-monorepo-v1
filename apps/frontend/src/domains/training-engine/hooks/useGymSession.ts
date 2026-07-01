@@ -77,6 +77,10 @@ export interface GymSession {
   /** The goal's user-facing title (coach header names the goal); null until the
    *  rep is planned, or for goals that predate the title snapshot. */
   goalTitle: string | null;
+  /** True when TODAY's rep is already done (UTC) — the gym shows the "session completed" state
+   *  instead of a fresh rep. DB-backed (climb.lastRepDate), so it persists across reloads and
+   *  clears when the UTC day rolls over. */
+  doneTodayUtc: boolean;
   /** status 'choosing' → the enrollable goals to pick from (the goal picker). */
   goals: EnrollableGoal[];
   /** The goal the student picked (set by chooseGoal), shown on the placement
@@ -124,6 +128,7 @@ export function useGymSession(
     null,
   );
   const [goalTitle, setGoalTitle] = useState<string | null>(null);
+  const [doneTodayUtc, setDoneTodayUtc] = useState(false);
   // Goal picker (the "set up your goal for the month" step).
   const [goals, setGoals] = useState<EnrollableGoal[]>([]);
   const [chosenGoal, setChosenGoal] = useState<EnrollableGoal | null>(null);
@@ -149,6 +154,7 @@ export function useGymSession(
         bricks: repBricks,
         goalTitle: repGoalTitle,
         topicProgress: repTopicProgress,
+        doneTodayUtc: repDoneToday,
       } = user?.id
         ? await queryClient.fetchQuery({
             queryKey: gymKeys.todayRep(user.id, active.id, mode),
@@ -162,6 +168,8 @@ export function useGymSession(
       setGoalTitle(repGoalTitle ?? null);
       // Content-ladder (Build B): the path bars ride the today-rep response.
       setTopicProgress(repTopicProgress ?? null);
+      // Is today's rep already done? → the gym shows the completed state (persists per UTC day).
+      setDoneTodayUtc(!!repDoneToday);
       // Best-effort: a graduation-check failure must not block the rep.
       try {
         const grad = await fetchGraduation(active.id);
@@ -361,6 +369,7 @@ export function useGymSession(
     repMode,
     topicProgress,
     goalTitle,
+    doneTodayUtc,
     goals,
     chosenGoal,
     chooseGoal,

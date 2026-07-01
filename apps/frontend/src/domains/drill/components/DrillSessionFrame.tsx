@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import type { Tutorial } from '@bassnotion/contracts';
 import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
@@ -90,6 +91,11 @@ interface DrillSessionFrameProps {
   autoRun?: boolean;
   /** Where the summary's "done" goes. Default '/' ; /gym/rep passes '/gym' (back to the floor). */
   onExitTo?: string;
+  /** When true, DON'T show the summary here — the moment the rep completes, navigate to onExitTo.
+   *  Used on /gym/rep so the recap appears back in the /gym OVERLAY (in place, over the gym), not
+   *  as a terminal screen on the rep leaf. Standalone drill tutorials leave this off (summary
+   *  shows in place — there's no gym overlay to bounce to). */
+  redirectOnSummary?: boolean;
   /** Override "Let's go" on the ready step: instead of running the rep IN PLACE (start()), call
    *  this — the /gym overlay uses it to fade out + navigate to /gym/rep, where the rep runs on the
    *  leather. When unset, "Let's go" runs in place (the standalone drill-tutorial behavior). */
@@ -107,10 +113,12 @@ export function DrillSessionFrame({
   autoStart = false,
   autoRun = false,
   onExitTo = '/',
+  redirectOnSummary = false,
   onLetsGo,
 }: DrillSessionFrameProps) {
   const { profile } = useUserProfile();
   const { navigateWithTransition } = useViewTransitionRouter();
+  const router = useRouter();
 
   // Same query key the player uses → shared cache. The player marks blocks
   // complete (useCompleteBlock updates this cache), so completedIds here update
@@ -190,6 +198,20 @@ export function DrillSessionFrame({
     }
   }, [phase, recordSession, isFloor]);
 
+  // /gym/rep: the moment the rep completes, DON'T show the summary here — bounce to onExitTo so the
+  // recap appears in the /gym overlay instead (in place, over the gym). One-shot per summary.
+  // Use a PLAIN router.replace (not a view transition): a view transition keeps THIS page's
+  // summary painted while /gym fades in, so both recaps flash at once. A plain replace swaps
+  // without lingering the outgoing summary.
+  const redirectedRef = useRef(false);
+  useEffect(() => {
+    if (redirectOnSummary && phase === 'summary' && !redirectedRef.current) {
+      redirectedRef.current = true;
+      router.replace(onExitTo);
+    }
+    if (phase !== 'summary') redirectedRef.current = false;
+  }, [redirectOnSummary, phase, onExitTo, router]);
+
   const summaryItems = useMemo<DrillSummaryItem[]>(() => {
     const dataById = new Map(
       (progress?.blocks ?? []).map((b) => [b.blockId, b.data ?? null]),
@@ -220,10 +242,10 @@ export function DrillSessionFrame({
     );
   }
 
-  // 'running' → the normal player. In the 'summary' phase we keep the player MOUNTED underneath
-  // (its playback has stopped — the last brick auto-stopped and the user clicked Complete) and
-  // lay the recap on top as a GLASS OVERLAY, so the rep result appears in place over the gym
-  // rather than replacing it. The whole rep flow stays "here" from Complete-click to result.
+  // 'running' → the normal player. In the 'summary' phase, the STANDALONE case (drill tutorial)
+  // lays the recap on top as a glass overlay in place. The /gym/rep case (redirectOnSummary) never
+  // renders the summary here — the effect above bounces to /gym, where the recap shows in the gym
+  // overlay. Either way the player stays MOUNTED (playback already stopped).
   return (
     <>
       <YouTubeWidgetPage
@@ -235,7 +257,7 @@ export function DrillSessionFrame({
         // bypasses the auto-flip's completedThisAttempt guard).
         onRepComplete={complete}
       />
-      {phase === 'summary' && (
+      {phase === 'summary' && !redirectOnSummary && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 px-4 py-10 backdrop-blur-md"
           role="dialog"

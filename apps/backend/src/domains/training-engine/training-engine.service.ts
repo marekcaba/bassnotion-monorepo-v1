@@ -751,6 +751,10 @@ export class TrainingEngineService {
      *  Already assembled on StudentState — surfaced here so the gym gets it in
      *  the same round-trip it already makes to plan the rep. */
     topicProgress?: TopicProgress[];
+    /** True when TODAY's rep is already done — the climb advanced today (UTC), so the gym shows
+     *  the "session completed" state instead of a fresh rep. Derived from climb.lastRepDate ===
+     *  today; flips back to false when the UTC day rolls over. DB-backed → survives reloads. */
+    doneTodayUtc?: boolean;
   }> {
     const logger = this.requestContext?.getLogger() || this.staticLogger;
     const correlationId = this.requestContext?.getCorrelationId();
@@ -859,11 +863,18 @@ export class TrainingEngineService {
       }
     }
 
+    // Today's rep is "done" when the climb last advanced TODAY (UTC) — the same marker
+    // advanceClimbForToday stamps + short-circuits on. DB-backed, so it persists across reloads
+    // and clears when the UTC day rolls over.
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const doneTodayUtc = climb.lastRepDate === todayUtc;
+
     return {
       slug,
       bricks,
       goalTitle,
       topicProgress: student.topicProgress,
+      doneTodayUtc,
     };
   }
 
