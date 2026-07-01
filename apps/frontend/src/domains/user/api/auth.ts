@@ -1,4 +1,5 @@
 import { supabase } from '@/infrastructure/supabase/client';
+import { markJustLoggedIn } from '@/domains/user/components/auth/justLoggedIn';
 import {
   RegistrationData,
   LoginData,
@@ -362,6 +363,10 @@ export class AuthService {
 
   async signInWithGoogle() {
     try {
+      // Mark the fresh login NOW (client) — the OAuth code exchange happens server-side, so no
+      // client JS runs between Google and Backstage. sessionStorage persists through the round-trip;
+      // the /app welcome overlay consumes it once on landing.
+      markJustLoggedIn();
       const redirectUrl = `${window.location.origin}/auth/callback`;
 
       logger.debug('Initiating Google sign-in...', {
