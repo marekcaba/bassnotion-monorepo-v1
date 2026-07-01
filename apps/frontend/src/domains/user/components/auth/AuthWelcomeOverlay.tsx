@@ -1,42 +1,43 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { consumeJustLoggedIn } from './justLoggedIn';
+import { clearJustLoggedIn } from './justLoggedIn';
 
 /**
  * AuthWelcomeOverlay (Approach B) — the branded welcome beat after a fresh login.
  *
- * Mounted in the /app shell ABOVE the content. On mount it consumes the one-shot "just logged in"
- * flag (see justLoggedIn.ts); if set, it shows the BASSICOLOGY logo — with the glow — over an
- * OPAQUE base for a beat, then fades the whole overlay out, revealing the Backstage that has been
- * loading behind it the whole time. Because Backstage carries its own LeatherBackground, the leather
- * surface is CONTINUOUS: the overlay's own base fades to transparent onto the identical leather, so
- * the background never flashes — only the logo appears then dissolves.
+ * SERVER-DECIDED: the /app server layout reads the bn-welcome cookie and passes `show`. When true,
+ * this renders in the FIRST HTML paint — the opaque overlay covers Backstage from frame one, so
+ * there's no client-side "Backstage → overlay → Backstage" flash. It shows the BASSICOLOGY logo
+ * (with the glow) over the same app gradient for a beat, then fades out revealing the Backstage that
+ * loaded behind it. Backstage carries its own LeatherBackground, so the leather is CONTINUOUS —
+ * only the logo appears then dissolves.
  *
- * Fires exactly once per fresh login (flag is read-and-cleared), for EVERY method (email / OAuth /
- * magic-link), and never on a normal load or refresh. Renders null when there's nothing to show.
+ * On mount the client clears the bn-welcome cookie (non-httpOnly) so it fires exactly once — never
+ * on a refresh. When show=false it renders null (zero cost on normal navigation).
  */
 
-// Total time the logo is held before it begins to fade (ms) + the fade duration (ms).
+// How long the logo is held before it begins to fade (ms) + the fade duration (ms).
 const HOLD_MS = 900;
 const FADE_MS = 650;
 
-export function AuthWelcomeOverlay() {
-  // 'show' = overlay mounted + opaque; 'fading' = fading out; null = gone (renders nothing).
-  const [phase, setPhase] = useState<'show' | 'fading' | null>(null);
+export function AuthWelcomeOverlay({ show }: { show: boolean }) {
+  // 'show' = opaque; 'fading' = fading out; 'done' = fully gone.
+  const [phase, setPhase] = useState<'show' | 'fading' | 'done'>('show');
 
   useEffect(() => {
-    if (!consumeJustLoggedIn()) return; // not a fresh login → never render.
-    setPhase('show');
+    if (!show) return;
+    // Clear the one-shot cookie immediately so a refresh won't re-show the overlay.
+    clearJustLoggedIn();
     const fadeAt = window.setTimeout(() => setPhase('fading'), HOLD_MS);
-    const doneAt = window.setTimeout(() => setPhase(null), HOLD_MS + FADE_MS);
+    const doneAt = window.setTimeout(() => setPhase('done'), HOLD_MS + FADE_MS);
     return () => {
       window.clearTimeout(fadeAt);
       window.clearTimeout(doneAt);
     };
-  }, []);
+  }, [show]);
 
-  if (phase === null) return null;
+  if (!show || phase === 'done') return null;
 
   return (
     <div

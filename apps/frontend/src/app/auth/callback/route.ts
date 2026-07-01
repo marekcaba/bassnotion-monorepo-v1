@@ -77,7 +77,17 @@ export async function GET(req: NextRequest) {
   try {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) throw error;
-    // Success: session cookies are on `success`; go straight to Backstage.
+    // Success: session cookies are on `success`. Set the one-shot bn-welcome cookie so the /app
+    // server layout paints the welcome overlay in the first HTML (the client overlay clears it).
+    // Not httpOnly (the client clears it), sameSite=lax, short max-age as auto-expiry.
+    success.cookies.set('bn-welcome', '1', {
+      path: '/',
+      maxAge: 60,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false,
+    });
+    // Go straight to Backstage.
     return success;
   } catch {
     // Server exchange failed (verifier not sent / any error) → hand the SAME code to the client
