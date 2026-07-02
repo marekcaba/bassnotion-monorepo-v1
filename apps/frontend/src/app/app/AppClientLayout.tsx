@@ -13,6 +13,10 @@ import { LeatherBackground } from '@/shared/components/LeatherBackground';
 import { XStateDevToolsProvider } from '@/domains/playback/machines/XStateDevToolsProvider';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
 import { AuthWelcomeOverlay } from '@/domains/user/components/auth/AuthWelcomeOverlay';
+import {
+  useWelcomePhase,
+  WELCOME_FADE_MS,
+} from '@/domains/user/components/auth/useWelcomePhase';
 import { AppAudioWarmup } from './AppAudioWarmup';
 import { AppGymWarmup } from './AppGymWarmup';
 import { routeNeedsAudioProvider } from './audioRoutes';
@@ -92,6 +96,11 @@ export function AppClientLayout({
   const pathname = useInternalPathname();
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
+  // Post-login welcome: ONE phase drives the logo overlay fading OUT + the content fading IN, over
+  // the shell's unchanging leather (the overlay is transparent), so the crossfade is seamless.
+  const welcomePhase = useWelcomePhase(showWelcome);
+  const welcomeActive = welcomePhase !== 'done';
+
   // The first column (nav sidebar) NEVER collapses — always expanded, on every
   // /app route. (It used to collapse to an icon rail on deep routes.)
   const sidebarExpanded = true;
@@ -148,13 +157,25 @@ export function AppClientLayout({
           // ancestor would break — so opt it out of the <main> mount fade.
           {...(pathname === '/app/gym' ? { 'data-no-page-fade': '' } : {})}
         >
-          {/* Branded welcome beat after a fresh login (any method): server-decided (showWelcome
-              from the bn-welcome cookie) so it's in the first HTML paint. SCOPED HERE inside <main>
-              (absolute inset-0) so the sidebar/header shell stays visible and only the WORKSPACE
-              pane "boots" — the logo holds, then fades out revealing the loaded content. One-shot
-              (client clears the cookie); no-op otherwise. */}
-          <AuthWelcomeOverlay show={showWelcome} />
-          {children}
+          {/* Branded welcome beat after a fresh login (server-decided showWelcome, first HTML paint,
+              scoped to <main> so the sidebar shell stays). The overlay is TRANSPARENT — the shell's
+              continuous leather shows through — and the CONTENT below crossfades IN over that same
+              unmoving leather as the logo fades OUT. One phase drives both (lockstep, seamless). */}
+          <AuthWelcomeOverlay phase={welcomePhase} />
+          {/* Content wrapper: hidden while the welcome logo holds, fades IN as it fades out. Once the
+              welcome is done (or never fired), it's a plain always-opaque passthrough. */}
+          {welcomeActive ? (
+            <div
+              style={{
+                opacity: welcomePhase === 'fading' ? 1 : 0,
+                transition: `opacity ${WELCOME_FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+              }}
+            >
+              {children}
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </TooltipProvider>

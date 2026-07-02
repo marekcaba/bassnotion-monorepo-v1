@@ -40,7 +40,10 @@ export function AppSidebar({ expanded }: AppSidebarProps) {
   return (
     <div
       className={cn(
-        'flex h-svh shrink-0 flex-col border-r border-white/[0.06] bg-[#141318] transition-[width] duration-200 ease-in-out overflow-hidden',
+        // relative z-10: sit above the shell's z-0 LeatherBackground so the sidebar's solid
+        // #141318 reads fully opaque (without a stacking context the screen-blended leather bled
+        // through, making it look faintly transparent/textured).
+        'relative z-10 flex h-svh shrink-0 flex-col border-r border-white/[0.06] bg-[#141318] transition-[width] duration-200 ease-in-out overflow-hidden',
         expanded ? 'w-[11rem]' : 'w-[3.25rem] min-w-[3.25rem]',
       )}
     >
