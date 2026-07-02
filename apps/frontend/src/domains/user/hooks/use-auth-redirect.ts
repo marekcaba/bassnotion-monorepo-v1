@@ -89,7 +89,10 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
   );
 
   const redirectAfterAuth = useCallback(
-    async (user: User | null) => {
+    // `dest` is an optional post-login destination (from a validated ?redirect= param). It takes
+    // precedence over defaultRedirect, but ONLY after the verify-email / assessment gates — those
+    // are hard prerequisites that must still fire even when a redirect was requested.
+    async (user: User | null, dest?: string | null) => {
       if (!user) {
         scheduleRedirect('/login');
         return;
@@ -116,8 +119,8 @@ export const useAuthRedirect = (options: UseAuthRedirectOptions = {}) => {
         // This prevents blocking users if the API is down
       }
 
-      // Redirect to dashboard or default route
-      scheduleRedirect(defaultRedirect);
+      // Requested destination (?redirect=) wins over the default landing.
+      scheduleRedirect(dest || defaultRedirect);
     },
     [
       scheduleRedirect,

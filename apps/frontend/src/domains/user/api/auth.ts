@@ -361,13 +361,18 @@ export class AuthService {
     return data;
   }
 
-  async signInWithGoogle() {
+  async signInWithGoogle(dest?: string | null) {
     try {
       // Mark the fresh login NOW (client) — the OAuth code exchange happens server-side, so no
       // client JS runs between Google and Backstage. sessionStorage persists through the round-trip;
       // the /app welcome overlay consumes it once on landing.
       markJustLoggedIn();
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      // Post-login destination (a validated ?redirect= path) rides along as `next` on the callback
+      // URL. Google preserves the redirectTo path + its query, so the server /auth/callback route
+      // reads `next`, re-validates it, and 307s there instead of the default Backstage landing.
+      const callback = new URL('/auth/callback', window.location.origin);
+      if (dest) callback.searchParams.set('next', dest);
+      const redirectUrl = callback.toString();
 
       logger.debug('Initiating Google sign-in...', {
         redirectUrl,

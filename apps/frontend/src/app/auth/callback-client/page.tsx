@@ -10,6 +10,7 @@ import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router'
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import { AuthWarmingScreen } from '@/domains/user/components/auth/AuthWarmingScreen';
 import { markJustLoggedIn } from '@/domains/user/components/auth/justLoggedIn';
+import { safeRedirectPath } from '@/domains/user/components/auth/safeRedirect';
 
 function isEmailConfirmation(
   searchParams: URLSearchParams | ReturnType<typeof useSearchParams>,
@@ -42,6 +43,9 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
+      // Post-login destination threaded from the server route as `next` (validated ?redirect= path).
+      // Re-validate here; null → redirectAfterAuth falls back to the /backstage default.
+      const dest = safeRedirectPath(searchParams.get('next'));
       // Debug: Log URL and search params
       logger.debug('[Auth Debug] Callback URL info:', {
         fullUrl: window.location.href,
@@ -76,7 +80,7 @@ function AuthCallbackContent() {
             });
           }
           markJustLoggedIn(); // welcome overlay fires once on landing (magic-link / OAuth fallback)
-          redirectAfterAuth(session.user);
+          redirectAfterAuth(session.user, dest);
           return;
         }
 
@@ -135,7 +139,7 @@ function AuthCallbackContent() {
           });
         }
         markJustLoggedIn(); // welcome overlay fires once on landing
-        redirectAfterAuth(data.user);
+        redirectAfterAuth(data.user, dest);
       } catch (error) {
         logger.error('[Auth Debug] Callback handling error:', error);
         toast({

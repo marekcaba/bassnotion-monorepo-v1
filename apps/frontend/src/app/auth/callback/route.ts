@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { safeRedirectPath } from '@/domains/user/components/auth/safeRedirect';
 
 /**
  * SERVER OAuth callback (Approach B / Option 2). Google (and magic-link) redirect here with a
@@ -29,13 +30,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(login);
   }
 
+  // Optional post-login destination threaded from the login page as `next` (a validated ?redirect=
+  // path, e.g. /gym). Re-validate HERE too — never trust the query blindly — and default to
+  // /backstage. Middleware rewrites the clean path onto /app/*, where the welcome overlay renders.
+  const next = safeRedirectPath(url.searchParams.get('next')) ?? '/backstage';
+
   // No code → can't exchange here; hand to the client fallback (also covers hash-fragment flows).
+  // Carry `next` along so the client fallback lands on the same requested destination.
   if (!code) {
-    return NextResponse.redirect(new URL('/auth/callback-client', req.url));
+    const clientFallback = new URL('/auth/callback-client', req.url);
+    if (next !== '/backstage') clientFallback.searchParams.set('next', next);
+    return NextResponse.redirect(clientFallback);
   }
 
-  // The response we write refreshed session cookies onto (a redirect to /backstage on success).
-  const success = NextResponse.redirect(new URL('/backstage', req.url));
+  // The response we write refreshed session cookies onto (a redirect to the requested destination,
+  // or /backstage, on success).
+  const success = NextResponse.redirect(new URL(next, req.url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,13 +97,15 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: false,
     });
-    // Go straight to Backstage.
+    // Go straight to the requested destination (or Backstage).
     return success;
   } catch {
     // Server exchange failed (verifier not sent / any error) → hand the SAME code to the client
     // callback, which re-runs the exchange the proven browser-side way. Zero user impact.
+    // Carry `next` so the client fallback still lands on the requested destination.
     const fallback = new URL('/auth/callback-client', req.url);
     fallback.searchParams.set('code', code);
+    if (next !== '/backstage') fallback.searchParams.set('next', next);
     return NextResponse.redirect(fallback);
   }
 }

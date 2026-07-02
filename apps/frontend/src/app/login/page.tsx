@@ -20,6 +20,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { authService } from '@/domains/user/api/auth';
 import { markJustLoggedIn } from '@/domains/user/components/auth/justLoggedIn';
+import { safeRedirectPath } from '@/domains/user/components/auth/safeRedirect';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -38,9 +39,14 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
   const reason = searchParams.get('reason');
+  // Optional post-login destination (?redirect=/gym). Validated to a safe in-app path so a crafted
+  // link can't open-redirect; null → fall back to the default landing (Backstage). Used by every
+  // login method below; the Google flow threads it through the OAuth callback (see handleGoogleSignIn).
+  const redirectDest = safeRedirectPath(searchParams.get('redirect'));
 
   const { setUser, setSession, isAuthenticated, isReady } = useAuth();
-  const { redirectAfterAuth, redirectToDashboard } = useAuthRedirect();
+  const { redirectAfterAuth, redirectToDashboard, scheduleRedirect } =
+    useAuthRedirect();
   const { toast } = useToast();
   const { logger } = useCorrelation('LoginPage');
 
@@ -53,10 +59,24 @@ function LoginPageContent() {
   useEffect(() => {
     if (reason === 'idle') return;
     if (isReady && isAuthenticated) {
-      logger.info('User already authenticated, redirecting to dashboard');
-      redirectToDashboard();
+      logger.info('User already authenticated, redirecting');
+      // Honor ?redirect= for an already-signed-in user too (e.g. a deep link
+      // opened in a session that's still logged in), else the default landing.
+      if (redirectDest) {
+        scheduleRedirect(redirectDest);
+      } else {
+        redirectToDashboard();
+      }
     }
-  }, [isReady, isAuthenticated, reason, redirectToDashboard, logger]);
+  }, [
+    isReady,
+    isAuthenticated,
+    reason,
+    redirectDest,
+    scheduleRedirect,
+    redirectToDashboard,
+    logger,
+  ]);
 
   useEffect(() => {
     if (message === 'check-email') {
@@ -81,8 +101,10 @@ function LoginPageContent() {
         const result = await authService.signInWithBackend(data);
         if (result.success) {
           markJustLoggedIn(); // welcome overlay fires once on landing
-          // Clean landing: app host '/' rewrites to /app (Backstage home).
-          navigateWithTransition('/');
+          // Land on the requested ?redirect= dest if present, else Backstage
+          // (app host '/' rewrites to /app). The welcome overlay renders on
+          // whichever /app page this lands on (it's scoped to the content pane).
+          navigateWithTransition(redirectDest ?? '/');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Login failed',
@@ -94,7 +116,7 @@ function LoginPageContent() {
           markJustLoggedIn(); // welcome overlay fires once on landing
           setUser(authData.user);
           setSession(authData.session);
-          redirectAfterAuth(authData.user);
+          redirectAfterAuth(authData.user, redirectDest);
         } else {
           throw new Error('Authentication failed - no user data received');
         }
@@ -117,7 +139,7 @@ function LoginPageContent() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      await authService.signInWithGoogle();
+      await authService.signInWithGoogle(redirectDest);
     } catch (error) {
       toast({
         title: 'Error',
