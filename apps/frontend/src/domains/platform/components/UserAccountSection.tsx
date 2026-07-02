@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInternalPathname } from '@/lib/hooks/use-internal-pathname';
-import { ChevronsUpDown, Edit2, LogOut, Shield } from 'lucide-react';
+import { ChevronsUpDown, Edit2, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -79,14 +79,6 @@ export function UserAccountSection({
     }
   }, [tutorialSlug, navigateWithTransition]);
 
-  const handleAdminClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      navigateWithTransition('/admin/tutorials');
-    },
-    [navigateWithTransition],
-  );
-
   const handleSignOut = useCallback(async () => {
     // Navigate to /login FIRST, before clearing auth state. This unmounts
     // AuthGuard before isAuthenticated flips false, so it never fires its
@@ -130,24 +122,9 @@ export function UserAccountSection({
           <span className="flex-1 truncate text-left text-sm text-[#8A8690]">
             {displayName}
           </span>
-          {isAdmin && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={handleAdminClick}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleAdminClick(e as unknown as React.MouseEvent);
-                }
-              }}
-              className="flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.5px] text-[#E8A44A] border border-[#E8A44A]/20 bg-[#E8A44A]/8 hover:bg-[#E8A44A]/15 transition-colors cursor-pointer"
-              aria-label="Go to admin panel"
-            >
-              <Shield className="size-3" />
-              Admin
-            </span>
-          )}
+          {/* The admin entry moved to a dedicated sidebar nav item (the Shield "Admin" row in
+              BOTTOM_NAV_ITEMS, admin-gated) when /admin moved into the app shell — the old amber chip
+              here was removed to avoid a duplicate entry. isAdmin still gates "Edit Tutorial" below. */}
           <ChevronsUpDown className="size-4 shrink-0 text-[#5A5660]" />
         </button>
       </DropdownMenuTrigger>

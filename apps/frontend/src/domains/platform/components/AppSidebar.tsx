@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { useUserProfile } from '@/domains/user/hooks/use-user-profile';
 import { MAIN_NAV_ITEMS, BOTTOM_NAV_ITEMS } from '../constants/navigation';
 import { useNavPrefetch } from '../hooks/useNavPrefetch';
 import { SidebarNav } from './SidebarNav';
@@ -28,6 +29,14 @@ const PREFETCH_URLS = [...MAIN_NAV_ITEMS, ...BOTTOM_NAV_ITEMS]
 
 export function AppSidebar({ expanded }: AppSidebarProps) {
   const { navigateWithTransition } = useViewTransitionRouter();
+  const { profile, cachedRole } = useUserProfile();
+  const isAdmin = profile?.role === 'admin' || cachedRole === 'admin';
+
+  // Hide adminOnly items (the Admin panel) from non-admins. The route stays AdminGuard-gated
+  // regardless — this only removes the nav entry so it doesn't show for members.
+  const bottomNavItems = isAdmin
+    ? BOTTOM_NAV_ITEMS
+    : BOTTOM_NAV_ITEMS.filter((item) => !item.adminOnly);
 
   // Warm the spine's route chunks after first paint so first-click === re-visit.
   useNavPrefetch(PREFETCH_URLS);
@@ -94,7 +103,7 @@ export function AppSidebar({ expanded }: AppSidebarProps) {
 
       {/* Bottom section */}
       <div className="flex flex-col gap-1 pb-3">
-        <SidebarNav items={BOTTOM_NAV_ITEMS} expanded={expanded} />
+        <SidebarNav items={bottomNavItems} expanded={expanded} />
 
         {/* User account */}
         <UserAccountSection expanded={expanded} />

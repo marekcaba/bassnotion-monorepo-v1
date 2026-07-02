@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { navigateToApp } from '@/lib/marketing-url';
 import { BunnyQuizPlayer } from '@/domains/assessment/components';
 import { useCorrelation } from '@/shared/hooks/useCorrelation';
 import type { AssessmentConfig } from '@bassnotion/contracts';
@@ -167,10 +168,10 @@ export default function AssessmentPage() {
             We&apos;re still setting up your assessment. Please check back soon.
           </p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => navigateToApp('/backstage', (url) => router.push(url))}
             className="inline-flex items-center gap-2.5 bg-[#E8650A] text-white px-8 py-4 text-[15px] font-semibold tracking-[0.04em] rounded-sm hover:bg-[#B84E08] hover:-translate-y-px transition-all cursor-pointer border-none uppercase"
           >
-            Go to Dashboard
+            Go to Backstage
           </button>
         </div>
       </div>

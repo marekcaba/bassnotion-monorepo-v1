@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { SkillLevel, LearningJourney } from '@bassnotion/contracts';
 import { JourneyRoadmap } from '@/domains/journey/components';
+import { navigateToApp } from '@/lib/marketing-url';
 
 interface ResultsScreenProps {
   skillLevel: SkillLevel;
@@ -94,7 +95,9 @@ export function ResultsScreen({
   }, [percentageScore]);
 
   const handleContinue = () => {
-    router.push('/dashboard');
+    // Land on Backstage (the app home; the legacy /dashboard was removed). ResultsScreen renders on
+    // the APEX assessment page, so navigateToApp full-page-navigates to the app host cross-origin.
+    navigateToApp('/backstage', (url) => router.push(url));
   };
 
   // Minimal overlay content
@@ -162,7 +165,7 @@ export function ResultsScreen({
             'bg-white text-black hover:bg-white/90',
           )}
         >
-          {assignedJourneyId ? 'Start Your Journey' : 'Go to Dashboard'}
+          {assignedJourneyId ? 'Start Your Journey' : 'Go to Backstage'}
         </button>
       </div>
     </div>
@@ -354,7 +357,7 @@ export function ResultsScreen({
               'animate-in fade-in slide-in-from-bottom-2 duration-500 delay-500',
             )}
           >
-            {assignedJourneyId ? 'Start Your Journey' : 'Go to Dashboard'}
+            {assignedJourneyId ? 'Start Your Journey' : 'Go to Backstage'}
           </button>
         </div>
       </div>

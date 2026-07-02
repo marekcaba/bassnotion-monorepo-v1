@@ -5,6 +5,7 @@ import { User, Crown, LogIn, LogOut } from 'lucide-react';
 import { useAuth, useAuthStore } from '../hooks/use-auth';
 import { useUserProfile } from '../hooks/use-user-profile';
 import { useViewTransitionRouter } from '@/lib/hooks/use-view-transition-router';
+import { navigateToApp } from '@/lib/marketing-url';
 import { authService } from '../api/auth';
 
 export function UserIndicator() {
@@ -23,7 +24,11 @@ export function UserIndicator() {
 
   const handleClick = () => {
     if (isAuthenticated || cachedRole) {
-      navigateWithTransition('/dashboard');
+      // Home for a signed-in user is Backstage (the app). This component also renders on APEX pages
+      // (e.g. /pricing), so use navigateToApp — it full-page-navigates to the app host when we're
+      // cross-origin, and does a normal client transition when already on the app host. (The legacy
+      // /dashboard this used to point at was removed in the apex→app migration.)
+      navigateToApp('/backstage', navigateWithTransition);
     } else {
       navigateWithTransition('/login');
     }

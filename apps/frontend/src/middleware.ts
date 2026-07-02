@@ -57,6 +57,7 @@ const APP_ROUTES = [
   '/welcome',
   '/store', // also covers /store/<slug> via the prefix check
   '/tutorials', // covers /tutorials/<slug>
+  '/admin', // member-only admin panel; covers all /admin/* subpages via the prefix check
 ];
 
 // Apex-only routes that must bounce back to the apex if hit on the app host.
@@ -66,13 +67,10 @@ const APP_ROUTES = [
 // route (in APP_ROUTES above) is the in-app stem-splitter room; there is no /library anymore.
 const APEX_ONLY = [
   '/pricing',
-  '/dashboard',
   '/assessment',
   '/preview',
   '/free',
   '/founders',
-  '/drum-record',
-  '/admin',
   '/auth-demo',
 ];
 

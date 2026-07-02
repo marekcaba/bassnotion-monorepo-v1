@@ -6,6 +6,7 @@ import {
   Scissors,
   HelpCircle,
   Settings,
+  Shield,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
@@ -20,6 +21,11 @@ export interface NavItem {
   url: string;
   icon: ComponentType<{ className?: string }>;
   disabled?: boolean;
+  /**
+   * Only render this item for admin users (profile.role === 'admin'). The route itself is still
+   * gated by AdminGuard + the backend AdminGuard; this just hides the nav entry from non-admins.
+   */
+  adminOnly?: boolean;
   /**
    * INTERNAL (/app/*) routes that also highlight this item — PREFIX match
    * (`pathname === p || pathname.startsWith(p + '/')`). Compared against
@@ -100,5 +106,14 @@ export const BOTTOM_NAV_ITEMS: NavItem[] = [
     url: '/settings',
     icon: Settings,
     activePatterns: ['/app/settings'],
+  },
+  // Admin panel — moved onto the app subdomain (was apex-only). Only shown to admins (adminOnly);
+  // the route is still AdminGuard-gated. Clean URL /admin serves /app/admin (+ all subpages).
+  {
+    title: 'Admin',
+    url: '/admin',
+    icon: Shield,
+    activePatterns: ['/app/admin'],
+    adminOnly: true,
   },
 ];

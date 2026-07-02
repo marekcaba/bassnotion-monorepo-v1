@@ -22,7 +22,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-gray-50">
+      {/* min-h-full (not min-h-screen): admin now renders INSIDE the app shell's <main> (which owns
+          the viewport height + scroll), so forcing screen height here would double-scroll. The light
+          admin theme is intentional — the admin panel stays visually distinct from the dark rooms. */}
+      <div className="min-h-full bg-gray-50">
         <nav className="bg-white shadow-sm border-b">
           {/* Full-width + horizontally scrollable: the menu has many items and was overflowing
               past the edge (clipped, no scroll). overflow-x-auto + nowrap links lets it scroll. */}

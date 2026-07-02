@@ -35,3 +35,37 @@ export function navigateToMarketing(
   }
   navigate(url);
 }
+
+/**
+ * Absolute URL on the APP host (app.bassicology.com) — the mirror of marketingUrl().
+ *
+ * Cross-product links FROM the apex (e.g. a public marketing page) TO an app route (/backstage) must
+ * be ABSOLUTE app URLs — a relative path on the apex 404s (the app routes only exist on the app
+ * host). Falls back to a relative path when NEXT_PUBLIC_APP_URL is unset (local/preview, no split).
+ */
+export function appUrl(path: string): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL;
+  if (!base) return path; // local/preview: same-origin relative path
+  return `${base.replace(/\/$/, '')}${path}`;
+}
+
+/**
+ * Navigate to an APP path. If appUrl() resolves to a different origin than the current page (i.e.
+ * we're on the apex), a client transition can't cross origins → full-page navigation. Otherwise
+ * (already on the app host / local) use the client-transition navigate fn.
+ */
+export function navigateToApp(
+  path: string,
+  navigate: (url: string) => void,
+): void {
+  const url = appUrl(path);
+  if (
+    typeof window !== 'undefined' &&
+    /^https?:\/\//.test(url) &&
+    !url.startsWith(window.location.origin)
+  ) {
+    window.location.href = url;
+    return;
+  }
+  navigate(url);
+}

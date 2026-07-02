@@ -34,7 +34,7 @@ import {
 /** The 12 keys, ASCII-spelled to MATCH the gym tool's byKey lookup (which normalizes glyphs to
  *  these). A free-text field would let a typo silently mismatch — hence a fixed picker. Shared
  *  with the scales path editor (the canonical PathKey list). */
-import { SCALE_KEYS_ASCII as KEYS } from '@/app/admin/scales/pathKeys';
+import { SCALE_KEYS_ASCII as KEYS } from '@/app/app/admin/scales/pathKeys';
 
 export default function AdminGigsPage() {
   const [goals, setGoals] = React.useState<AdminGoalSummary[]>([]);
