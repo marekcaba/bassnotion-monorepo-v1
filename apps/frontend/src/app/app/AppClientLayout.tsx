@@ -148,6 +148,12 @@ export function AppClientLayout({
           // ancestor would break — so opt it out of the <main> mount fade.
           {...(pathname === '/app/gym' ? { 'data-no-page-fade': '' } : {})}
         >
+          {/* Branded welcome beat after a fresh login (any method): server-decided (showWelcome
+              from the bn-welcome cookie) so it's in the first HTML paint. SCOPED HERE inside <main>
+              (absolute inset-0) so the sidebar/header shell stays visible and only the WORKSPACE
+              pane "boots" — the logo holds, then fades out revealing the loaded content. One-shot
+              (client clears the cookie); no-op otherwise. */}
+          <AuthWelcomeOverlay show={showWelcome} />
           {children}
         </main>
       </div>
@@ -160,10 +166,8 @@ export function AppClientLayout({
         <XStateDevToolsProvider showStatus={true}>
           {/* AudioProvider only on audio routes (see audioRoute above). */}
           {audioRoute ? <AudioProvider>{inner}</AudioProvider> : inner}
-          {/* Branded welcome beat after a fresh login (any method): server-decided (showWelcome
-              from the bn-welcome cookie) so it's in the first HTML paint, then fades out revealing
-              the loaded shell. One-shot (client clears the cookie); no-op otherwise. */}
-          <AuthWelcomeOverlay show={showWelcome} />
+          {/* (Welcome overlay moved INSIDE <main> above — scoped to the content pane so the
+              sidebar shell stays visible while the workspace boots.) */}
           {/* Route-aware background warm-up: after first paint, on routes that
               can reach audio (gym/college/tutorials), warms the engine into the
               WindowRegistry singleton so it's ready when the user acts. No-op on
