@@ -19,6 +19,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { authService } from '@/domains/user/api/auth';
+import { markJustLoggedIn } from '@/domains/user/components/auth/justLoggedIn';
 import { useAuth } from '@/domains/user/hooks/use-auth';
 import { useAuthRedirect } from '@/domains/user/hooks/use-auth-redirect';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -79,6 +80,7 @@ function LoginPageContent() {
       if (useBackendAuth) {
         const result = await authService.signInWithBackend(data);
         if (result.success) {
+          markJustLoggedIn(); // welcome overlay fires once on landing
           // Clean landing: app host '/' rewrites to /app (Backstage home).
           navigateWithTransition('/');
         } else {
@@ -89,6 +91,7 @@ function LoginPageContent() {
       } else {
         const authData = await authService.signIn(data);
         if (authData.user && authData.session) {
+          markJustLoggedIn(); // welcome overlay fires once on landing
           setUser(authData.user);
           setSession(authData.session);
           redirectAfterAuth(authData.user);

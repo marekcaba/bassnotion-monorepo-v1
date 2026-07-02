@@ -241,6 +241,26 @@
   }
 }
 
+/* ===== AUTH WELCOME OVERLAY ===== */
+/* The post-login welcome logo's entrance. Defined here (NOT as an inline <style> inside the
+   overlay component) so the server-rendered overlay hydrates cleanly — a component-body <style>
+   tag is a React hydration-mismatch source (React #418). */
+@keyframes authWelcomeRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-welcome-logo {
+    animation: none !important;
+  }
+}
+
 /* ===== SCROLLBAR HIDE UTILITY ===== */
 @layer utilities {
   .scrollbar-hide {
