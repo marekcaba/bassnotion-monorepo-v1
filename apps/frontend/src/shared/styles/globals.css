@@ -255,8 +255,32 @@
     transform: translateY(0);
   }
 }
+/* The logo's breathing glow (matches the callback design). */
+@keyframes authLogoGlow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 8px rgba(232, 101, 10, 0.13),
+      0 0 13px rgba(232, 101, 10, 0.15);
+  }
+  50% {
+    text-shadow:
+      0 0 10px rgba(232, 101, 10, 0.25),
+      0 0 17px rgba(232, 101, 10, 0.27);
+  }
+}
+/* The "tuning" line — a warm sweep, the load indicator reimagined as a fretline. */
+@keyframes authTune {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .auth-welcome-logo {
+  .auth-welcome-logo,
+  .auth-welcome-tune {
     animation: none !important;
   }
 }
