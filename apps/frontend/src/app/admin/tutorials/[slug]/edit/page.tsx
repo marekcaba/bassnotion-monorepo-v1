@@ -1583,11 +1583,11 @@ function AdminTutorialEditPageContent({ params }: AdminTutorialPageProps) {
                   {/* Back arrow and auto-save indicator on the left */}
                   <div className="flex items-center gap-3">
                     <Button
-                      onClick={() => router.push('/library')}
+                      onClick={() => router.push('/admin/tutorials')}
                       variant="ghost"
                       size="sm"
                       className="text-white/70 hover:text-white p-2"
-                      title="Back to Library"
+                      title="Back to tutorials"
                     >
                       <ArrowLeft className="w-4 h-4" />
                     </Button>

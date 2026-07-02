@@ -120,7 +120,8 @@ export default function AdminTutorialsPage() {
   };
 
   const handleView = (slug: string) => {
-    window.open(`/library/${slug}`, '_blank');
+    // Preview a tutorial in the modern in-app route (the legacy /library browser was removed).
+    window.open(`/tutorials/${slug}`, '_blank');
   };
 
   const handleDelete = async (id: string) => {
