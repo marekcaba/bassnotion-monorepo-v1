@@ -43,10 +43,12 @@ function FavoriteItem({
   };
 
   const difficultyInfo = getDifficultyLabel(difficulty);
-  // Include exerciseId as query param so the tutorial page pre-selects the exercise
+  // Include exerciseId as query param so the tutorial page pre-selects the exercise. The legacy
+  // /library tutorial browser was removed — a specific tutorial opens at the modern /tutorials/<slug>
+  // (College's tutorial route); the bare "browse tutorials" fallback goes to the College room.
   const targetPath = tutorialSlug
-    ? `/library/${tutorialSlug}?exerciseId=${exerciseId}`
-    : '/library';
+    ? `/tutorials/${tutorialSlug}?exerciseId=${exerciseId}`
+    : '/college';
 
   return (
     <button
@@ -160,7 +162,7 @@ export function MyFavoritesCard() {
           </p>
           <Button
             size="sm"
-            onClick={() => navigateWithTransition('/library')}
+            onClick={() => navigateWithTransition('/college')}
             className="bg-amber-500 hover:bg-amber-600 text-black"
           >
             Browse Library
@@ -201,7 +203,7 @@ export function MyFavoritesCard() {
             variant="ghost"
             size="sm"
             className="w-full mt-2 text-amber-600 hover:text-amber-700 hover:bg-amber-100/50"
-            onClick={() => navigateWithTransition('/library')}
+            onClick={() => navigateWithTransition('/college')}
           >
             View All Favorites
             <ArrowRight className="w-4 h-4 ml-1" />
