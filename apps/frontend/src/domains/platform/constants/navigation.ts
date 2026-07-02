@@ -3,6 +3,7 @@ import {
   Dumbbell,
   Play,
   Martini,
+  Library,
   HelpCircle,
   Settings,
 } from 'lucide-react';
@@ -80,6 +81,15 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     url: '/gigs',
     icon: Play,
     activePatterns: ['/app/gigs'],
+  },
+  // The vault — the standing archive that sits AFTER the journey arc: their recordings, the AI stem
+  // splitter for uploads, and their playlists + recommended music. Not a step in the path; the shelf
+  // you keep coming back to. Clean URL /library serves the /app/library folder.
+  {
+    title: 'Library',
+    url: '/library',
+    icon: Library,
+    activePatterns: ['/app/library'],
   },
 ];
 

@@ -37,6 +37,9 @@ export function routeCanReachAudio(pathname: string): boolean {
     // The gigs LIST: a tap opens a perform leaf that mounts the player, so warm the engine here
     // (after the light list paints) the same way the gym floor warms it for /gym/scales.
     pathname === '/app/gigs' ||
+    // The library (vault): recordings + split stems play here, but the player mounts on interaction,
+    // so the list stays light and we warm the engine in the background after paint (like the gigs list).
+    pathname === '/app/library' ||
     pathname === '/app/bassment' ||
     pathname.startsWith('/app/tutorials')
   );
