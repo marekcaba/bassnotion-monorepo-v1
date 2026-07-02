@@ -3,7 +3,7 @@ import {
   Dumbbell,
   Play,
   Martini,
-  Library,
+  Scissors,
   HelpCircle,
   Settings,
 } from 'lucide-react';
@@ -82,14 +82,14 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     icon: Play,
     activePatterns: ['/app/gigs'],
   },
-  // The vault — the standing archive that sits AFTER the journey arc: their recordings, the AI stem
-  // splitter for uploads, and their playlists + recommended music. Not a step in the path; the shelf
-  // you keep coming back to. Clean URL /library serves the /app/library folder.
+  // The stem splitter — sits AFTER the journey arc: split one of your recordings into stems, mute
+  // the bass, play over the rest. A tool you reach for, not a step in the path. Clean URL /splitter
+  // serves the /app/splitter folder.
   {
-    title: 'Library',
-    url: '/library',
-    icon: Library,
-    activePatterns: ['/app/library'],
+    title: 'Splitter',
+    url: '/splitter',
+    icon: Scissors,
+    activePatterns: ['/app/splitter'],
   },
 ];
 

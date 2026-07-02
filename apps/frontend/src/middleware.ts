@@ -51,7 +51,7 @@ const APP_ROUTES = [
   '/backstage',
   '/gym',
   '/gigs',
-  '/library', // the vault room (recordings / stem splitter / playlists) → /app/library
+  '/splitter', // the stem-splitter room (split a recording → mute bass) → /app/splitter
   '/settings',
   '/studio',
   '/welcome',
@@ -62,8 +62,8 @@ const APP_ROUTES = [
 // Apex-only routes that must bounce back to the apex if hit on the app host.
 // Must include EVERY real top-level (non-/app) page — the fall-through below is
 // an explicit 404, but listing them gives a clean 308 to the canonical host.
-// NOTE: /library was HERE (the legacy v1 tutorial browser) — it's been removed and /library is now
-// the in-app vault room (in APP_ROUTES above).
+// NOTE: /library was HERE (the legacy v1 tutorial browser) — it's been removed. The clean /splitter
+// route (in APP_ROUTES above) is the in-app stem-splitter room; there is no /library anymore.
 const APEX_ONLY = [
   '/pricing',
   '/dashboard',
