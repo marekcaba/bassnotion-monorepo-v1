@@ -72,7 +72,9 @@ function RegisterPageContent() {
       if (useBackendAuth) {
         const result = await authService.signUpWithBackend(data);
         if (result.success) {
-          navigateWithTransition('/dashboard');
+          // Land on Backstage (the app home). Register is served on the app origin (PASS_THROUGH),
+          // so /backstage is same-origin. (The legacy /dashboard this used to point at was removed.)
+          navigateWithTransition('/backstage');
         } else {
           throw new Error(
             result.message || result.error?.message || 'Registration failed',

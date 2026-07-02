@@ -288,8 +288,9 @@ describe('UserIndicator', () => {
       const indicator = screen.getByText('John Doe').closest('div');
       await user.click(indicator!);
 
-      // Assert
-      expect(mockNavigateWithTransition).toHaveBeenCalledWith('/dashboard');
+      // Assert — signed-in home is Backstage (the legacy /dashboard was removed). In the test env
+      // NEXT_PUBLIC_APP_URL is unset, so navigateToApp resolves to the relative /backstage path.
+      expect(mockNavigateWithTransition).toHaveBeenCalledWith('/backstage');
     });
 
     it('should have hover effects for interactive state', () => {

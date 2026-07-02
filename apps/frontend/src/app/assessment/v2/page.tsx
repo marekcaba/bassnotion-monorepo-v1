@@ -11,6 +11,7 @@ import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { navigateToApp } from '@/lib/marketing-url';
 import { SegmentAssessmentPlayer } from '@/domains/assessment/components';
 
 export default function AssessmentV2Page() {
@@ -18,13 +19,11 @@ export default function AssessmentV2Page() {
 
   const handleComplete = useCallback(
     (bucket: string, journeyId?: string) => {
-      // Redirect to dashboard after completion
-      // The journey ID could be used to start a specific learning path
-      if (journeyId) {
-        router.push(`/dashboard?journey=${journeyId}`);
-      } else {
-        router.push('/dashboard');
-      }
+      // After completion land on Backstage (the app home; the legacy /dashboard was removed). This
+      // page lives on the APEX, so navigateToApp full-page-navigates to the app host cross-origin.
+      // The journey ID rides along so the app can start a specific learning path.
+      const dest = journeyId ? `/backstage?journey=${journeyId}` : '/backstage';
+      navigateToApp(dest, (url) => router.push(url));
     },
     [router],
   );
