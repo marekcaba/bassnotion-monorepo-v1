@@ -17,9 +17,11 @@ import { clearJustLoggedIn } from './justLoggedIn';
  * on a refresh. When show=false it renders null (zero cost on normal navigation).
  */
 
-// How long the logo is held before it begins to fade (ms) + the fade duration (ms).
-const HOLD_MS = 900;
-const FADE_MS = 650;
+// How long the logo is held before it begins to fade (ms) + the fade duration (ms). Deliberately
+// long — the sidebar shell is already visible, so this reads as the WORKSPACE booting (the engine
+// starting), which should feel substantial, not a quick splash.
+const HOLD_MS = 1600;
+const FADE_MS = 700;
 
 export function AuthWelcomeOverlay({ show }: { show: boolean }) {
   // 'show' = opaque; 'fading' = fading out; 'done' = fully gone.
@@ -42,7 +44,9 @@ export function AuthWelcomeOverlay({ show }: { show: boolean }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center"
+      // absolute (not fixed): fills its RELATIVE parent — the content <main> to the right of the
+      // sidebar — so the shell (sidebar/header) stays visible and only the WORKSPACE pane boots.
+      className="pointer-events-none absolute inset-0 z-[200] flex items-center justify-center"
       style={{
         // Opaque base over the SAME app gradient, so the leather beneath reads continuous as we fade.
         background:
